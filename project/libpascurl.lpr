@@ -1,0 +1,5 @@
+program libpascurl;
+
+begin
+end.
+
