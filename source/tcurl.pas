@@ -99,41 +99,85 @@ type
     handle : CURL;
     buffer : TStringStream;
   protected
-    class function write_function (ptr : PChar; size : Cardinal;
-      nmemb : Cardinal; data : Pointer) : Cardinal; static; cdecl;
-    class function read_function (buf : PChar; size : QWord; nitems : QWord;
-      data : Pointer) : QWord; static; cdecl;
+    class function WriteFunction (ptr : PChar; size : LongWord;
+      nmemb : LongWord; data : Pointer) : LongWord; static; cdecl;
+    class function ReadFunction (buf : PChar; size : LongWord;
+      nitems : LongWord; data : Pointer) : LongWord; static; cdecl;
 
-    function Write (ptr : PChar; size : QWord; nmemb : QWord) : QWord;
-    function Read (buf : PChar; size : QWord; nitems : QWord) : QWord;
-    function IsOpened : Boolean;
-    procedure SetUrl (url : string);
-    procedure SetFollowRedirect (redirect : boolean);
-    procedure SetReceivedData (received : boolean);
+    function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
+      inline;
+    function Read (buf : PChar; size : LongWord; nitems : LongWord) : LongWord;
+      inline;
+    function IsOpened : Boolean; inline;
+    procedure SetUrl (url : string); inline;
+    procedure SetProxy (proxy : string); inline;
+    procedure SetUserAgent (agent : string); inline;
+    procedure SetPort (port : Longint); inline;
+    procedure SetProxyPort (port : Longint); inline;
+    procedure SetFollowRedirect (redirect : boolean); inline;
+    procedure SetAutoReferer (updateHeaders : boolean); inline;
+    procedure SetIncludeHeader (includeHeader : boolean); inline;
+    procedure SetIgnoreContentLength (ignoreLength : boolean); inline;
+    procedure SetNoBody (noBody : boolean); inline;
+    procedure SetReceivedData (received : boolean); inline;
+    procedure SetTransferEncoding (encoding : boolean); inline;
   public
     constructor Create;
     destructor Destroy; override;
 
     property Opened : Boolean read IsOpened;
     property Url : string write SetUrl;
+    property Proxy : string write SetProxy;
+    property UserAgent : string write SetUserAgent;
+    property Port : Longint write SetPort;
+    property ProxyPort : Longint write SetProxyPort;
     property FollowRedirect : Boolean write SetFollowRedirect default True;
-    property ReceivedData : Boolean write SetReceivedData default true;
+    property AutoReferer : Boolean write SetAutoReferer default True;
+    property IncludeHeader : Boolean write SetIncludeHeader default False;
+    property IgnoreContentLength : Boolean write SetIgnoreContentLength
+      default False;
+    property NoBody : Boolean write SetNoBody default False;
+    property ReceivedData : Boolean write SetReceivedData default True;
+    property TransferEncoding : Boolean write SetTransferEncoding
+      default False;
   end;
 
   { TSessionInfo }
 
   TSessionInfo = class
+  private
+    function GetHttpVersionCode: HttpVersionCode;
   protected
     session : TSession;
     hasInfo : Boolean;
     errorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
   protected
-    function IsOpened : Boolean;
-    function CheckErrors : Boolean;
-    function GetErrorMessage : string;
-    function GetEffectiveUrl : string;
-    function GetResponseCode : StatusCode;
-    function GetContent : string;
+    function IsOpened : Boolean; inline;
+    function CheckErrors : Boolean; inline;
+    function GetErrorMessage : string; inline;
+    function GetEffectiveUrl : string; inline;
+    function GetRedirectUrl : string; inline;
+    function GetContentType : string; inline;
+    function GetPrimaryIP : string; inline;
+    function GetLocalIP : string; inline;
+    function GetResponseCode : StatusCode; inline;
+    function GetContent : string; inline;
+    function GetVerifySSLResult : boolean; inline;
+    function GetVerifySSLProxyResult : boolean; inline;
+    function GetConnectResponseCode : StatusCode; inline;
+    function GetHttpVersion : HTTPVersionCode; inline;
+    function GetRedirectCount : Longint; inline;
+    function GetUploadedBytes : LongWord; inline;
+    function GetDownloadedBytes : LongWord; inline;
+    function GetDownloadSpeedBytesPerSecond : LongWord; inline;
+    function GetUploadSpeedBytesPerSecond : LongWord; inline;
+    function GetHeaderSizeBytes : LongWord; inline;
+    function GetRequestSizeBytes : Longint; inline;
+    function GetContentLengthDownload : LongWord; inline;
+    function GetContentLengthUpload : LongWord; inline;
+    function GetNumConnects : Longint; inline;
+    function GetPrimaryPort : Longint; inline;
+    function GetLocalPort : Longint; inline;
   public
     constructor Create; overload;
     constructor Create (var sess : TSession); overload;
@@ -142,13 +186,46 @@ type
     property HasErrors : Boolean read CheckErrors;
     property ErrorMessage : string read GetErrorMessage;
     property EffectiveUrl : string read GetEffectiveUrl;
+    property RedirectUrl : string read GetRedirectUrl;
+    property ContentType : string read GetContentType;
+    property PimaryIP : string read GetPrimaryIP;
+    property LocalIP : string read GetLocalIP;
     property ResponseCode : StatusCode read GetResponseCode;
     property Content : string read GetContent;
+    property VerifySSLResult : boolean read GetVerifySSLResult;
+    property VerifySSLProxyResult : boolean read GetVerifySSLProxyResult;
+    property ConnectResponseCode : StatusCode read GetConnectResponseCode;
+    property HttpVersion : HttpVersionCode read GetHttpVersionCode;
+    property RedirectCount : Longint read GetRedirectCount;
+    property UploadedBytes : LongWord read GetUploadedBytes;
+    property DownloadedBytes : LongWord read GetDownloadedBytes;
+    property DownloadSpeedBytesPerSecond : LongWord
+      read GetDownloadSpeedBytesPerSecond;
+    property UploadSpeedBytesPerSecond : LongWord
+      read GetUploadSpeedBytesPerSecond;
+    property HeaderSizeBytes : LongWord read GetHeaderSizeBytes;
+    property RequestSizeBytes : Longint read GetRequestSizeBytes;
+    property ContentLengthDownload : LongWord read GetContentLengthDownload;
+    property ContentLengthUpload : LongWord read GetContentLengthUpload;
+    property NumConnects : Longint read GetNumConnects;
+    property PrimaryPort : Longint read GetPrimaryPort;
+    property LocalPort : Longint read GetLocalPort;
   end;
 
 implementation
 
 { TSessionInfo }
+
+function TSessionInfo.GetHttpVersionCode: HttpVersionCode;
+var
+  ver : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_HTTP_VERSION, @ver);
+    Result := HTTPVersionCode(ver);
+  end;
+end;
 
 function TSessionInfo.IsOpened: Boolean;
 begin
@@ -166,7 +243,6 @@ begin
   begin
     Result := errorBuffer;
   end;
-  Result := '';
 end;
 
 function TSessionInfo.GetEffectiveUrl: string;
@@ -178,7 +254,50 @@ begin
     curl_easy_getinfo(session.handle, CURLINFO_EFFECTIVE_URL, PChar(url));
     Result := url;
   end;
-  Result := '';
+end;
+
+function TSessionInfo.GetRedirectUrl: string;
+var
+  url : string = '';
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_URL, PChar(url));
+    Result := url;
+  end;
+end;
+
+function TSessionInfo.GetContentType: string;
+var
+  content_type : string = '';
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_TYPE, PChar(content_type));
+    Result := content_type;
+  end;
+end;
+
+function TSessionInfo.GetPrimaryIP: string;
+var
+  ip : string = '';
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_IP, PChar(ip));
+    Result := ip;
+  end;
+end;
+
+function TSessionInfo.GetLocalIP: string;
+var
+  ip : string = '';
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_IP, PChar(ip));
+    Result := ip;
+  end;
 end;
 
 function TSessionInfo.GetResponseCode: StatusCode;
@@ -200,6 +319,182 @@ begin
   end;
 end;
 
+function TSessionInfo.GetVerifySSLResult: boolean;
+var
+  verify : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_SSL_VERIFYRESULT, @verify);
+    Result := Boolean(verify);
+  end;
+end;
+
+function TSessionInfo.GetVerifySSLProxyResult: boolean;
+var
+  verify : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_PROXY_SSL_VERIFYRESULT, @verify);
+    Result := Boolean(verify);
+  end;
+end;
+
+function TSessionInfo.GetConnectResponseCode: StatusCode;
+var
+  code : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_HTTP_CONNECTCODE, @code);
+    Result := StatusCode(code);
+  end;
+end;
+
+function TSessionInfo.GetHttpVersion: HTTPVersionCode;
+var
+  ver : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_HTTP_VERSION, @ver);
+    Result := HTTPVersionCode(ver);
+  end;
+end;
+
+function TSessionInfo.GetRedirectCount: Longint;
+var
+  count : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_COUNT, @count);
+    Result := count;
+  end;
+end;
+
+function TSessionInfo.GetUploadedBytes: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_SIZE_UPLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetDownloadedBytes: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_SIZE_DOWNLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetDownloadSpeedBytesPerSecond: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetUploadSpeedBytesPerSecond: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_SPEED_UPLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetHeaderSizeBytes: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_HEADER_SIZE, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetRequestSizeBytes: Longint;
+var
+  bytes : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_REQUEST_SIZE, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetContentLengthDownload: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetContentLengthUpload: LongWord;
+var
+  bytes : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_LENGTH_UPLOAD_T, @bytes);
+    Result := bytes;
+  end;
+end;
+
+function TSessionInfo.GetNumConnects: Longint;
+var
+  num : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_NUM_CONNECTS, @num);
+    Result := num;
+  end;
+end;
+
+function TSessionInfo.GetPrimaryPort: Longint;
+var
+  port : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_PORT, @port);
+    Result := port;
+  end;
+end;
+
+function TSessionInfo.GetLocalPort: Longint;
+var
+  port : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_PORT, @port);
+    Result := port;
+  end;
+end;
+
 constructor TSessionInfo.Create;
 begin
   // Do nothing
@@ -217,25 +512,25 @@ end;
 
 { TSession }
 
-class function TSession.write_function (ptr: PChar; size: Cardinal;
-  nmemb: Cardinal; data: Pointer): Cardinal; cdecl;
+class function TSession.WriteFunction (ptr: PChar; size: LongWord;
+  nmemb: LongWord; data: Pointer): LongWord; cdecl;
 begin
   Result := TSession(data).Write(ptr, size, nmemb);
 end;
 
-class function TSession.read_function (buf: PChar; size: QWord;
-  nitems: QWord; data: Pointer): QWord; cdecl;
+class function TSession.ReadFunction (buf: PChar; size: LongWord;
+  nitems: LongWord; data: Pointer): LongWord; cdecl;
 begin
   Result := TSession(data).Read(buf, size, nitems);
 end;
 
-function TSession.Write(ptr: PChar; size: QWord; nmemb: QWord): QWord;
+function TSession.Write(ptr: PChar; size: LongWord; nmemb: LongWord): LongWord;
 begin
   buffer.WriteString(string(ptr));
   Result := size * nmemb;
 end;
 
-function TSession.Read(buf: PChar; size: QWord; nitems: QWord): QWord;
+function TSession.Read(buf: PChar; size: LongWord; nitems: LongWord): LongWord;
 begin
   Result := 0;
 end;
@@ -261,7 +556,7 @@ end;
 
 function TSession.IsOpened: Boolean;
 begin
-  Result := true;
+  Result := {%H-}LongWord(handle) <> 0;
 end;
 
 procedure TSession.SetUrl(url: string);
@@ -273,6 +568,38 @@ begin
   end;
 end;
 
+procedure TSession.SetProxy(proxy: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXY, PChar(proxy));
+  end;
+end;
+
+procedure TSession.SetUserAgent(agent: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_USERAGENT, PChar(agent));
+  end;
+end;
+
+procedure TSession.SetPort(port: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PORT, port);
+  end;
+end;
+
+procedure TSession.SetProxyPort(port: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXYPORT, port);
+  end;
+end;
+
 procedure TSession.SetFollowRedirect(redirect: boolean);
 begin
   if Opened then
@@ -281,14 +608,61 @@ begin
   end;
 end;
 
+procedure TSession.SetAutoReferer(updateHeaders: boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_AUTOREFERER, Longint(updateHeaders));
+  end;
+end;
+
+procedure TSession.SetIncludeHeader(includeHeader: boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_HEADER, Longint(includeHeader));
+  end;
+end;
+
+procedure TSession.SetIgnoreContentLength(ignoreLength: boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_IGNORE_CONTENT_LENGTH,
+      Longint(ignoreLength));
+  end;
+end;
+
+procedure TSession.SetNoBody(noBody: boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_NOBODY, Longint(noBody));
+  end;
+end;
+
 procedure TSession.SetReceivedData(received: boolean);
 begin
   if Opened and received then
   begin
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @TSession.write_function);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @TSession.WriteFunction);
   end;
 end;
+
+procedure TSession.SetTransferEncoding(encoding: boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TRANSFER_ENCODING, Longint(encoding));
+  end;
+end;
+
+initialization
+  curl_global_init(CURL_GLOBAL_ALL);
+
+finalization
+  curl_global_cleanup;
 
 end.
 

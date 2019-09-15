@@ -54,7 +54,11 @@ begin
     if info.Opened then
     begin
       writeln('Response code: ', info.ResponseCode);
-      writeln('Content: ', info.Content);
+      writeln('Content type: ', info.ContentType);
+      writeln('Content length: ', info.ContentLengthDownload);
+      writeln('Url: ', info.EffectiveUrl);
+      writeln('IP: ', info.PimaryIP);
+      writeln('Header size: ', info.HeaderSizeBytes);
     end;
   end;
 
