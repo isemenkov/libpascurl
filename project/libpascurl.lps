@@ -3,32 +3,32 @@
   <ProjectSession>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="29">
+    <Units Count="30">
       <Unit0>
         <Filename Value="libpascurl.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="pascurl_console"/>
-        <TopLine Value="40"/>
-        <CursorPos X="54" Y="61"/>
-        <UsageCount Value="57"/>
+        <TopLine Value="25"/>
+        <CursorPos X="33" Y="61"/>
+        <UsageCount Value="60"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="../source/pascurl.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="1818"/>
-        <CursorPos X="54" Y="1858"/>
-        <UsageCount Value="57"/>
+        <TopLine Value="1953"/>
+        <CursorPos X="56" Y="1965"/>
+        <UsageCount Value="60"/>
       </Unit1>
       <Unit2>
         <Filename Value="../source/tcurl.pas"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="515"/>
-        <CursorPos X="36" Y="302"/>
-        <UsageCount Value="36"/>
+        <TopLine Value="4"/>
+        <CursorPos X="20" Y="550"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -196,128 +196,95 @@
         <TopLine Value="892"/>
         <UsageCount Value="10"/>
       </Unit28>
+      <Unit29>
+        <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/unix/aliasptp.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="37"/>
+        <CursorPos X="5" Y="56"/>
+        <UsageCount Value="10"/>
+      </Unit29>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="20" HistoryIndex="19">
       <Position1>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="166" Column="49" TopLine="154"/>
+        <Caret Line="252" Column="5" TopLine="241"/>
       </Position1>
       <Position2>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="236"/>
+        <Caret Line="250" TopLine="241"/>
       </Position2>
       <Position3>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="109" Column="33" TopLine="96"/>
+        <Caret Line="252" TopLine="241"/>
       </Position3>
       <Position4>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="123" Column="57" TopLine="96"/>
+        <Caret Line="253" TopLine="241"/>
       </Position4>
       <Position5>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="237"/>
+        <Caret Line="254" TopLine="241"/>
       </Position5>
       <Position6>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="237"/>
+        <Caret Line="250" TopLine="241"/>
       </Position6>
       <Position7>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" TopLine="237"/>
+        <Caret Line="255" Column="15" TopLine="242"/>
       </Position7>
       <Position8>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="255" TopLine="237"/>
+        <Caret Line="250" TopLine="242"/>
       </Position8>
       <Position9>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" Column="45" TopLine="237"/>
+        <Caret Line="252" TopLine="242"/>
       </Position9>
       <Position10>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="237"/>
+        <Caret Line="253" TopLine="242"/>
       </Position10>
       <Position11>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="237"/>
+        <Caret Line="254" TopLine="242"/>
       </Position11>
       <Position12>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" TopLine="240"/>
+        <Filename Value="libpascurl.lpr"/>
+        <Caret Line="61" Column="35" TopLine="46"/>
       </Position12>
       <Position13>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="254" Column="39" TopLine="240"/>
+        <Filename Value="libpascurl.lpr"/>
+        <Caret Line="56" Column="35" TopLine="43"/>
       </Position13>
       <Position14>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="248" Column="15" TopLine="238"/>
+        <Caret Line="181" Column="28" TopLine="169"/>
       </Position14>
       <Position15>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="241"/>
+        <Caret Line="185" Column="9" TopLine="170"/>
       </Position15>
       <Position16>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="241"/>
+        <Caret Line="218" Column="9" TopLine="195"/>
       </Position16>
       <Position17>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" TopLine="244"/>
+        <Caret Line="217" TopLine="197"/>
       </Position17>
       <Position18>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="254" Column="39" TopLine="241"/>
+        <Caret Line="219" Column="21" TopLine="195"/>
       </Position18>
       <Position19>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="241"/>
+        <Caret Line="221" Column="7" TopLine="199"/>
       </Position19>
       <Position20>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" Column="5" TopLine="241"/>
+        <Caret Line="223" Column="57" TopLine="198"/>
       </Position20>
-      <Position21>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="241"/>
-      </Position21>
-      <Position22>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="241"/>
-      </Position22>
-      <Position23>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" TopLine="241"/>
-      </Position23>
-      <Position24>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="254" TopLine="241"/>
-      </Position24>
-      <Position25>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="241"/>
-      </Position25>
-      <Position26>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="255" Column="15" TopLine="242"/>
-      </Position26>
-      <Position27>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="250" TopLine="242"/>
-      </Position27>
-      <Position28>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="242"/>
-      </Position28>
-      <Position29>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="253" TopLine="242"/>
-      </Position29>
-      <Position30>
-        <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="254" TopLine="242"/>
-      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

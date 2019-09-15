@@ -87,9 +87,10 @@ type
     CURLSSLBACKEND_WOLFSSL = 7,
     CURLSSLBACKEND_CYASSL = CURLSSLBACKEND_WOLFSSL,
     CURLSSLBACKEND_SCHANNEL = 8,
-    CURLSSLBACKEND_DARWINSSL = 9,
-    CURLSSLBACKEND_AXTLS = 10,
-    CURLSSLBACKEND_MBEDTLS = 11
+    CURLSSLBACKEND_SECURETRANSPORT = 9,
+    CURLSSLBACKEND_AXTLS = 10, (* never used since 7.63.0 *)
+    CURLSSLBACKEND_MBEDTLS = 11,
+    CURLSSLBACKEND_MESALINK = 12
   );
 
   (* This is the CURLOPT_PROGRESSFUNCTION callback proto. It is now considered
@@ -433,6 +434,10 @@ type
                                      match *)
     CURLE_SSL_INVALIDCERTSTATUS, (* 91 - invalid certificate status *)
     CURLE_HTTP2_STREAM,          (* 92 - stream error in HTTP/2 framing layer *)
+    CURLE_RECURSIVE_API_CALL,    (* 93 - an api function was called from
+                                    inside a callback *)
+    CURLE_AUTH_ERROR,            (* 94 - an authentication function returned an
+                                    error *)
     CURL_LAST                    (* never use! *)
   );
 
@@ -1550,6 +1555,65 @@ type
     (* Post MIME data. *)
     CURLOPT_MIMEPOST = CURLOPTTYPE_OBJECTPOINT + 269,
 
+    (* Time to use with the CURLOPT_TIMECONDITION. Specified in number of
+     seconds since 1 Jan 1970. *)
+    CURLOPT_TIMEVALUE_LARGE = CURLOPTTYPE_OFF_T + 270,
+
+    (* Head start in milliseconds to give happy eyeballs. *)
+    CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS = CURLOPTTYPE_LONG + 271,
+
+    (* Function that will be called before a resolver request is made *)
+    CURLOPT_RESOLVER_START_FUNCTION = CURLOPTTYPE_FUNCTIONPOINT + 272,
+
+    (* User data to pass to the resolver start callback. *)
+    CURLOPT_RESOLVER_START_DATA = CURLOPTTYPE_OBJECTPOINT + 273,
+
+    (* send HAProxy PROXY protocol header? *)
+    CURLOPT_HAPROXYPROTOCOL = CURLOPTTYPE_LONG + 274,
+
+    (* shuffle addresses before use when DNS returns multiple *)
+    CURLOPT_DNS_SHUFFLE_ADDRESSES = CURLOPTTYPE_LONG + 275,
+
+    (* Specify which TLS 1.3 ciphers suites to use *)
+    CURLOPT_TLS13_CIPHERS = CURLOPTTYPE_STRINGPOINT + 276,
+    CURLOPT_PROXY_TLS13_CIPHERS = CURLOPTTYPE_STRINGPOINT + 277,
+
+    (* Disallow specifying username/login in URL. *)
+    CURLOPT_DISALLOW_USERNAME_IN_URL = CURLOPTTYPE_LONG + 278,
+
+    (* DNS-over-HTTPS URL *)
+    CURLOPT_DOH_URL = CURLOPTTYPE_STRINGPOINT + 279,
+
+    (* Preferred buffer size to use for uploads *)
+    CURLOPT_UPLOAD_BUFFERSIZE = CURLOPTTYPE_LONG + 280,
+
+    (* Time in ms between connection upkeep calls for long-lived connections. *)
+    CURLOPT_UPKEEP_INTERVAL_MS = CURLOPTTYPE_LONG + 281,
+
+    (* Specify URL using CURL URL API. *)
+    CURLOPT_CURLU = CURLOPTTYPE_OBJECTPOINT + 282,
+
+    (* add trailing data just after no more data is available *)
+    CURLOPT_TRAILERFUNCTION = CURLOPTTYPE_FUNCTIONPOINT + 283,
+
+    (* pointer to be passed to HTTP_TRAILER_FUNCTION *)
+    CURLOPT_TRAILERDATA = CURLOPTTYPE_OBJECTPOINT + 284,
+
+    (* set this to 1L to allow HTTP/0.9 responses or 0L to disallow *)
+    CURLOPT_HTTP09_ALLOWED = CURLOPTTYPE_LONG + 285,
+
+    (* alt-svc control bitmask *)
+    CURLOPT_ALTSVC_CTRL = CURLOPTTYPE_LONG + 286,
+
+    (* alt-svc cache file name to possibly read from/write to *)
+    CURLOPT_ALTSVC = CURLOPTTYPE_STRINGPOINT + 287,
+
+    (* maximum age of a connection to consider it for reuse (in seconds) *)
+    CURLOPT_MAXAGE_CONN = CURLOPTTYPE_LONG + 288,
+
+    (* SASL authorisation identity *)
+    CURLOPT_SASL_AUTHZID = CURLOPTTYPE_STRINGPOINT + 289,
+
     (* the last unused *)
     CURLOPT_LASTENTRY
   );
@@ -1625,6 +1689,9 @@ type
     CURL_HTTP_VERSION_2TLS, (* use version 2 for HTTPS, version 1.1 for HTTP *)
     CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE, (* please use HTTP 2 without HTTP/1.1
                                            Upgrade *)
+    CURL_HTTP_VERSION_3 = 30, (* Makes use of explicit HTTP/3 without fallback.
+                               Use CURLOPT_ALTSVC to enable HTTP/3 upgrade *)
+
     CURL_HTTP_VERSION_LAST (* *ILLEGAL* http version *)
   );
 
@@ -1850,6 +1917,7 @@ type
     CURLINFO_REQUEST_SIZE     = CURLINFO_LONG   + 12,
     CURLINFO_SSL_VERIFYRESULT = CURLINFO_LONG   + 13,
     CURLINFO_FILETIME         = CURLINFO_LONG   + 14,
+    CURLINFO_FILETIME_T       = CURLINFO_OFF_T  + 14,
     CURLINFO_CONTENT_LENGTH_DOWNLOAD   = CURLINFO_DOUBLE + 15,
     CURLINFO_CONTENT_LENGTH_DOWNLOAD_T = CURLINFO_OFF_T  + 15,
     CURLINFO_CONTENT_LENGTH_UPLOAD     = CURLINFO_DOUBLE + 16,
@@ -1887,9 +1955,16 @@ type
     CURLINFO_PROXY_SSL_VERIFYRESULT = CURLINFO_LONG + 47,
     CURLINFO_PROTOCOL         = CURLINFO_LONG   + 48,
     CURLINFO_SCHEME           = CURLINFO_STRING + 49,
-    (* Fill in new entries below here! *)
+    CURLINFO_TOTAL_TIME_T     = CURLINFO_OFF_T  + 50,
+    CURLINFO_NAMELOOKUP_TIME_T = CURLINFO_OFF_T + 51,
+    CURLINFO_CONNECT_TIME_T   = CURLINFO_OFF_T  + 52,
+    CURLINFO_PRETRANSFER_TIME_T = CURLINFO_OFF_T + 53,
+    CURLINFO_STARTTRANSFER_TIME_T = CURLINFO_OFF_T + 54,
+    CURLINFO_REDIRECT_TIME_T   = CURLINFO_OFF_T + 55,
+    CURLINFO_APPCONNECT_TIME_T = CURLINFO_OFF_T + 56,
+    CURLINFO_RETRY_AFTER       = CURLINFO_OFF_T + 57,
 
-    CURLINFO_LASTONE          = 49
+    CURLINFO_LASTONE          = 57
   );
 
   curl_closepolicy = (

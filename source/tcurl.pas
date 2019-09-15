@@ -5,7 +5,7 @@ unit tcurl;
 interface
 
 uses
-  Classes, SysUtils, pascurl;
+  Classes, SysUtils, pascurl, BaseUnix;
 
 type
   Protocol = (
@@ -89,7 +89,8 @@ type
     HTTP_VERSION_UNKNOWN              = 0,
     HTTP_VERSION_1_0                  = Longint(CURL_HTTP_VERSION_1_0),
     HTTP_VERSION_1_1                  = Longint(CURL_HTTP_VERSION_1_1),
-    HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0)
+    HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0),
+    HTTP_VERSION_3_0                  = Longint(CURL_HTTP_VERSION_3),
   );
 
   { TSession }
@@ -178,6 +179,10 @@ type
     function GetNumConnects : Longint;
     function GetPrimaryPort : Longint;
     function GetLocalPort : Longint;
+    function GetFileTime : time_t;
+    function GetTotalTime : time_t;
+    function GetNameLookup : Double;
+    function GetConnectTime : LongWord;
   public
     constructor Create; overload;
     constructor Create (var sess : TSession); overload;
@@ -210,6 +215,10 @@ type
     property NumConnects : Longint read GetNumConnects;
     property PrimaryPort : Longint read GetPrimaryPort;
     property LocalPort : Longint read GetLocalPort;
+    property FileTime : time_t read GetFileTime;
+    property TotalTime : time_t read GetTotalTime;
+    property NameLookup : Double read GetNameLookup;
+    property ConnectTime : LongWord read GetConnectTime;
   end;
 
 implementation
@@ -495,6 +504,50 @@ begin
   begin
     curl_easy_getinfo(session.handle, CURLINFO_LOCAL_PORT, @port);
     Result := port;
+  end;
+end;
+
+function TSessionInfo.GetFileTime: time_t;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_FILETIME_T, @time);
+    Result := time_t(time);
+  end;
+end;
+
+function TSessionInfo.GetTotalTime: time_t;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_TOTAL_TIME_T, @time);
+    Result := time_t(time);
+  end;
+end;
+
+function TSessionInfo.GetNameLookup: Double;
+var
+  time : Double;
+begin
+  if Opened thne
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_NAMELOOKUP_TIME, @time);
+    Result := time;
+  end;
+end;
+
+function TSessionInfo.GetConnectTime: LongWord;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_CONNECT_TIME_T, @time);
+    Result := time;
   end;
 end;
 

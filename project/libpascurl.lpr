@@ -51,14 +51,17 @@ begin
 
     session.Url := Url;
     info := TSessionInfo.Create(session);
-    if info.Opened then
+    if info.Opened and not info.HasErrors then
     begin
-      writeln('Response code: ', info.ResponseCode);
-      writeln('Content type: ', info.ContentType);
-      writeln('Content length: ', info.ContentLengthDownload);
-      writeln('Url: ', info.EffectiveUrl);
-      writeln('IP: ', info.PimaryIP);
-      writeln('Header size: ', info.HeaderSizeBytes);
+      writeln('Response code: ':20, info.ResponseCode);
+      writeln('Content type: ':20, info.ContentType);
+      writeln('Content length: ':20, info.ContentLengthDownload);
+      writeln('Url: ':20, info.EffectiveUrl);
+      writeln('IP: ':20, info.PimaryIP);
+      writeln('Header size: ':20, info.HeaderSizeBytes);
+    end else
+    begin
+      writeln(info.ErrorMessage);
     end;
   end;
 
