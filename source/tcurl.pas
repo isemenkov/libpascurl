@@ -108,19 +108,19 @@ type
       inline;
     function Read (buf : PChar; size : LongWord; nitems : LongWord) : LongWord;
       inline;
-    function IsOpened : Boolean; inline;
-    procedure SetUrl (url : string); inline;
-    procedure SetProxy (proxy : string); inline;
-    procedure SetUserAgent (agent : string); inline;
-    procedure SetPort (port : Longint); inline;
-    procedure SetProxyPort (port : Longint); inline;
-    procedure SetFollowRedirect (redirect : boolean); inline;
-    procedure SetAutoReferer (updateHeaders : boolean); inline;
-    procedure SetIncludeHeader (includeHeader : boolean); inline;
-    procedure SetIgnoreContentLength (ignoreLength : boolean); inline;
-    procedure SetNoBody (noBody : boolean); inline;
-    procedure SetReceivedData (received : boolean); inline;
-    procedure SetTransferEncoding (encoding : boolean); inline;
+    function IsOpened : Boolean;
+    procedure SetUrl (url : string);
+    procedure SetProxy (proxy : string);
+    procedure SetUserAgent (agent : string);
+    procedure SetPort (port : Longint);
+    procedure SetProxyPort (port : Longint);
+    procedure SetFollowRedirect (redirect : boolean);
+    procedure SetAutoReferer (updateHeaders : boolean);
+    procedure SetIncludeHeader (includeHeader : boolean);
+    procedure SetIgnoreContentLength (ignoreLength : boolean);
+    procedure SetNoBody (noBody : boolean);
+    procedure SetReceivedData (received : boolean);
+    procedure SetTransferEncoding (encoding : boolean);
   public
     constructor Create;
     destructor Destroy; override;
@@ -145,39 +145,39 @@ type
   { TSessionInfo }
 
   TSessionInfo = class
-  private
-    function GetHttpVersionCode: HttpVersionCode;
   protected
     session : TSession;
     hasInfo : Boolean;
     errorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
   protected
-    function IsOpened : Boolean; inline;
-    function CheckErrors : Boolean; inline;
-    function GetErrorMessage : string; inline;
-    function GetEffectiveUrl : string; inline;
-    function GetRedirectUrl : string; inline;
-    function GetContentType : string; inline;
-    function GetPrimaryIP : string; inline;
-    function GetLocalIP : string; inline;
-    function GetResponseCode : StatusCode; inline;
-    function GetContent : string; inline;
-    function GetVerifySSLResult : boolean; inline;
-    function GetVerifySSLProxyResult : boolean; inline;
-    function GetConnectResponseCode : StatusCode; inline;
-    function GetHttpVersion : HTTPVersionCode; inline;
-    function GetRedirectCount : Longint; inline;
-    function GetUploadedBytes : LongWord; inline;
-    function GetDownloadedBytes : LongWord; inline;
-    function GetDownloadSpeedBytesPerSecond : LongWord; inline;
-    function GetUploadSpeedBytesPerSecond : LongWord; inline;
-    function GetHeaderSizeBytes : LongWord; inline;
-    function GetRequestSizeBytes : Longint; inline;
-    function GetContentLengthDownload : LongWord; inline;
-    function GetContentLengthUpload : LongWord; inline;
-    function GetNumConnects : Longint; inline;
-    function GetPrimaryPort : Longint; inline;
-    function GetLocalPort : Longint; inline;
+    function GetStringProperty (const value : PChar) : string;
+
+    function IsOpened : Boolean;
+    function CheckErrors : Boolean;
+    function GetErrorMessage : string;
+    function GetEffectiveUrl : string;
+    function GetRedirectUrl : string;
+    function GetContentType : string;
+    function GetPrimaryIP : string;
+    function GetLocalIP : string;
+    function GetResponseCode : StatusCode;
+    function GetContent : string;
+    function GetVerifySSLResult : boolean;
+    function GetVerifySSLProxyResult : boolean;
+    function GetConnectResponseCode : StatusCode;
+    function GetHttpVersion : HTTPVersionCode;
+    function GetRedirectCount : Longint;
+    function GetUploadedBytes : LongWord;
+    function GetDownloadedBytes : LongWord;
+    function GetDownloadSpeedBytesPerSecond : LongWord;
+    function GetUploadSpeedBytesPerSecond : LongWord;
+    function GetHeaderSizeBytes : LongWord;
+    function GetRequestSizeBytes : Longint;
+    function GetContentLengthDownload : LongWord;
+    function GetContentLengthUpload : LongWord;
+    function GetNumConnects : Longint;
+    function GetPrimaryPort : Longint;
+    function GetLocalPort : Longint;
   public
     constructor Create; overload;
     constructor Create (var sess : TSession); overload;
@@ -195,7 +195,7 @@ type
     property VerifySSLResult : boolean read GetVerifySSLResult;
     property VerifySSLProxyResult : boolean read GetVerifySSLProxyResult;
     property ConnectResponseCode : StatusCode read GetConnectResponseCode;
-    property HttpVersion : HttpVersionCode read GetHttpVersionCode;
+    property HttpVersion : HttpVersionCode read GetHttpVersion;
     property RedirectCount : Longint read GetRedirectCount;
     property UploadedBytes : LongWord read GetUploadedBytes;
     property DownloadedBytes : LongWord read GetDownloadedBytes;
@@ -216,14 +216,12 @@ implementation
 
 { TSessionInfo }
 
-function TSessionInfo.GetHttpVersionCode: HttpVersionCode;
-var
-  ver : Longint;
+function TSessionInfo.GetStringProperty(const value: PChar): string;
 begin
-  if Opened then
+  if value <> nil then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_HTTP_VERSION, @ver);
-    Result := HTTPVersionCode(ver);
+    Result := value;
+    UniqueString(Result);
   end;
 end;
 
@@ -247,56 +245,61 @@ end;
 
 function TSessionInfo.GetEffectiveUrl: string;
 var
-  url : string = '';
+  url : PChar;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_EFFECTIVE_URL, PChar(url));
-    Result := url;
+    New(url);
+    curl_easy_getinfo(session.handle, CURLINFO_EFFECTIVE_URL, @url);
+    Result := GetStringProperty(url);
   end;
 end;
 
 function TSessionInfo.GetRedirectUrl: string;
 var
-  url : string = '';
+  url : PChar;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_URL, PChar(url));
-    Result := url;
+    New(url);
+    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_URL, @url);
+    Result := GetStringProperty(url);
   end;
 end;
 
 function TSessionInfo.GetContentType: string;
 var
-  content_type : string = '';
+  content_type : PChar;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_TYPE, PChar(content_type));
-    Result := content_type;
+    New(content_type);
+    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_TYPE, @content_type);
+    Result := GetStringProperty(content_type);
   end;
 end;
 
 function TSessionInfo.GetPrimaryIP: string;
 var
-  ip : string = '';
+  ip : PChar;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_IP, PChar(ip));
-    Result := ip;
+    New(ip);
+    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_IP, @ip);
+    Result := GetStringProperty(ip);
   end;
 end;
 
 function TSessionInfo.GetLocalIP: string;
 var
-  ip : string = '';
+  ip : PChar;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_IP, PChar(ip));
-    Result := ip;
+    New(ip);
+    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_IP, @ip);
+    Result := GetStringProperty(ip);
   end;
 end;
 

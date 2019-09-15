@@ -3,98 +3,98 @@
   <ProjectSession>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="24">
+    <Units Count="29">
       <Unit0>
         <Filename Value="libpascurl.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="pascurl_console"/>
-        <TopLine Value="46"/>
+        <TopLine Value="40"/>
         <CursorPos X="54" Y="61"/>
-        <UsageCount Value="54"/>
+        <UsageCount Value="57"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="../source/pascurl.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="1824"/>
-        <CursorPos X="5" Y="1834"/>
-        <UsageCount Value="54"/>
+        <TopLine Value="1818"/>
+        <CursorPos X="54" Y="1858"/>
+        <UsageCount Value="57"/>
       </Unit1>
       <Unit2>
+        <Filename Value="../source/tcurl.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="515"/>
+        <CursorPos X="36" Y="302"/>
+        <UsageCount Value="36"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
         <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/inc/systemh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="390"/>
         <CursorPos X="3" Y="406"/>
         <UsageCount Value="6"/>
-      </Unit2>
-      <Unit3>
+      </Unit3>
+      <Unit4>
         <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/linux/ptypes.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="97"/>
         <CursorPos X="5" Y="110"/>
         <UsageCount Value="6"/>
-      </Unit3>
-      <Unit4>
+      </Unit4>
+      <Unit5>
         <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/unix/ctypes.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="32"/>
         <CursorPos X="31" Y="45"/>
         <UsageCount Value="6"/>
-      </Unit4>
-      <Unit5>
+      </Unit5>
+      <Unit6>
         <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/unix/baseunix.pp"/>
         <UnitName Value="BaseUnix"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="49"/>
         <UsageCount Value="7"/>
-      </Unit5>
-      <Unit6>
+      </Unit6>
+      <Unit7>
         <Filename Value="/usr/share/fpcsrc/3.0.4/rtl/unix/bunxovlh.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="59"/>
         <CursorPos X="10" Y="72"/>
         <UsageCount Value="8"/>
-      </Unit6>
-      <Unit7>
+      </Unit7>
+      <Unit8>
         <Filename Value="/usr/share/fpcsrc/3.0.4/packages/fcl-base/src/custapp.pp"/>
         <UnitName Value="CustApp"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="28"/>
         <UsageCount Value="8"/>
-      </Unit7>
-      <Unit8>
+      </Unit8>
+      <Unit9>
         <Filename Value="../../../.cache/.fr-Ogo3cN/curlpas-2005-11-05/src/curl_h.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="531"/>
         <CursorPos X="9" Y="542"/>
         <UsageCount Value="9"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="../../../.cache/.fr-oFNe0s/curlpas-2005-11-05/src/curlpas.pas"/>
-        <EditorIndex Value="-1"/>
-        <UsageCount Value="8"/>
       </Unit9>
       <Unit10>
-        <Filename Value="../../../.cache/.fr-VJ71JG/curlpas-2005-11-05/src/lazcurl.pas"/>
+        <Filename Value="../../../.cache/.fr-oFNe0s/curlpas-2005-11-05/src/curlpas.pas"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="8"/>
       </Unit10>
       <Unit11>
+        <Filename Value="../../../.cache/.fr-VJ71JG/curlpas-2005-11-05/src/lazcurl.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="8"/>
+      </Unit11>
+      <Unit12>
         <Filename Value="../../../.cache/.fr-Scxly7/curlpas-2005-11-05/src/curldbug.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="166"/>
         <UsageCount Value="8"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="../source/tcurl.pas"/>
-        <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="266"/>
-        <CursorPos X="70" Y="298"/>
-        <UsageCount Value="33"/>
-        <Loaded Value="True"/>
       </Unit12>
       <Unit13>
         <Filename Value="../source/pastcurl.pas"/>
@@ -163,115 +163,148 @@
         <CursorPos Y="19"/>
         <UsageCount Value="10"/>
       </Unit23>
+      <Unit24>
+        <Filename Value="../../../.cache/.fr-67Oao7/curlpas-2005-11-05/src/curlobj.pas"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="42"/>
+        <CursorPos X="35" Y="141"/>
+        <UsageCount Value="10"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="../../../Загрузки/curlpas-2005-11-05/src/curlpas.lrs"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="../../../Загрузки/curlpas-2005-11-05/src/lazcurl.pas"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="../../../.cache/.fr-zurvHb/curlpas-2005-11-05/src/curl_h.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="88"/>
+        <CursorPos X="20" Y="18"/>
+        <UsageCount Value="10"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="../../../.cache/.fr-DBSAUB/TidyPas_Delphi2010/tidyobj.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="892"/>
+        <UsageCount Value="10"/>
+      </Unit28>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="203" TopLine="190"/>
+        <Caret Line="166" Column="49" TopLine="154"/>
       </Position1>
       <Position2>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="102" Column="27" TopLine="91"/>
+        <Caret Line="250" TopLine="236"/>
       </Position2>
       <Position3>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="158" Column="42" TopLine="91"/>
+        <Caret Line="109" Column="33" TopLine="96"/>
       </Position3>
       <Position4>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="102" Column="28" TopLine="127"/>
+        <Caret Line="123" Column="57" TopLine="96"/>
       </Position4>
       <Position5>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="138" Column="21" TopLine="127"/>
+        <Caret Line="250" TopLine="237"/>
       </Position5>
       <Position6>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="202" Column="40" TopLine="190"/>
+        <Caret Line="252" TopLine="237"/>
       </Position6>
       <Position7>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="102" Column="5" TopLine="89"/>
+        <Caret Line="253" TopLine="237"/>
       </Position7>
       <Position8>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="202" Column="44" TopLine="193"/>
+        <Caret Line="255" TopLine="237"/>
       </Position8>
       <Position9>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="237" TopLine="227"/>
+        <Caret Line="253" Column="45" TopLine="237"/>
       </Position9>
       <Position10>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="202" Column="40" TopLine="191"/>
+        <Caret Line="250" TopLine="237"/>
       </Position10>
       <Position11>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="190" TopLine="181"/>
+        <Caret Line="252" TopLine="237"/>
       </Position11>
       <Position12>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="192" TopLine="181"/>
+        <Caret Line="253" TopLine="240"/>
       </Position12>
       <Position13>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="193" TopLine="181"/>
+        <Caret Line="254" Column="39" TopLine="240"/>
       </Position13>
       <Position14>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="194" Column="5" TopLine="181"/>
+        <Caret Line="248" Column="15" TopLine="238"/>
       </Position14>
       <Position15>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="262" Column="20" TopLine="239"/>
+        <Caret Line="250" TopLine="241"/>
       </Position15>
       <Position16>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="151" Column="22" TopLine="139"/>
+        <Caret Line="252" TopLine="241"/>
       </Position16>
       <Position17>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="125" Column="40" TopLine="116"/>
+        <Caret Line="253" TopLine="244"/>
       </Position17>
       <Position18>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="166" Column="47" TopLine="160"/>
+        <Caret Line="254" Column="39" TopLine="241"/>
       </Position18>
       <Position19>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="181" Column="38" TopLine="167"/>
+        <Caret Line="250" TopLine="241"/>
       </Position19>
       <Position20>
-        <Filename Value="libpascurl.lpr"/>
-        <Caret Line="59" Column="43" TopLine="46"/>
+        <Filename Value="../source/tcurl.pas"/>
+        <Caret Line="252" Column="5" TopLine="241"/>
       </Position20>
       <Position21>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="141" Column="14" TopLine="130"/>
+        <Caret Line="250" TopLine="241"/>
       </Position21>
       <Position22>
-        <Filename Value="libpascurl.lpr"/>
-        <Caret Line="59" Column="43" TopLine="46"/>
+        <Filename Value="../source/tcurl.pas"/>
+        <Caret Line="252" TopLine="241"/>
       </Position22>
       <Position23>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="190" Column="56" TopLine="178"/>
+        <Caret Line="253" TopLine="241"/>
       </Position23>
       <Position24>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="252" TopLine="239"/>
+        <Caret Line="254" TopLine="241"/>
       </Position24>
       <Position25>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="274" TopLine="261"/>
+        <Caret Line="250" TopLine="241"/>
       </Position25>
       <Position26>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="276" TopLine="264"/>
+        <Caret Line="255" Column="15" TopLine="242"/>
       </Position26>
       <Position27>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="277" TopLine="264"/>
+        <Caret Line="250" TopLine="242"/>
       </Position27>
       <Position28>
         <Filename Value="../source/tcurl.pas"/>
@@ -279,11 +312,11 @@
       </Position28>
       <Position29>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="254" TopLine="242"/>
+        <Caret Line="253" TopLine="242"/>
       </Position29>
       <Position30>
         <Filename Value="../source/tcurl.pas"/>
-        <Caret Line="255" TopLine="242"/>
+        <Caret Line="254" TopLine="242"/>
       </Position30>
     </JumpHistory>
     <RunParams>
