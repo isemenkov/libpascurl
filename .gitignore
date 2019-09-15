@@ -1,4 +1,8 @@
+.gitignore
 /source/backup/
 /source/backup/*
+/project/libpascurl
 /project/backup/
 /project/backup/*
+/project/lib/
+/project/lib/*

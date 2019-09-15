@@ -3,12 +3,13 @@
   <ProjectSession>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="7">
+    <Units Count="12">
       <Unit0>
         <Filename Value="libpascurl.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="13" Y="7"/>
-        <UsageCount Value="37"/>
+        <UnitName Value="pascurl"/>
+        <CursorPos X="24"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -16,9 +17,9 @@
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="2662"/>
-        <CursorPos X="2" Y="2681"/>
-        <UsageCount Value="37"/>
+        <TopLine Value="635"/>
+        <CursorPos X="45" Y="648"/>
+        <UsageCount Value="39"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -54,74 +55,160 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="59"/>
         <CursorPos X="10" Y="72"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="10"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="/usr/share/fpcsrc/3.0.4/packages/fcl-base/src/custapp.pp"/>
+        <UnitName Value="CustApp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="28"/>
+        <UsageCount Value="10"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="../../../.cache/.fr-Ogo3cN/curlpas-2005-11-05/src/curl_h.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="531"/>
+        <CursorPos X="9" Y="542"/>
+        <UsageCount Value="10"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="../../../.cache/.fr-oFNe0s/curlpas-2005-11-05/src/curlpas.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="../../../.cache/.fr-VJ71JG/curlpas-2005-11-05/src/lazcurl.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="../../../.cache/.fr-Scxly7/curlpas-2005-11-05/src/curldbug.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="166"/>
+        <UsageCount Value="10"/>
+      </Unit11>
     </Units>
-    <JumpHistory Count="16" HistoryIndex="15">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="272" Column="50" TopLine="259"/>
+        <Caret Line="1680" Column="59" TopLine="1661"/>
       </Position1>
       <Position2>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="434" Column="3" TopLine="424"/>
+        <Caret Line="1697" Column="22" TopLine="1684"/>
       </Position2>
       <Position3>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="549" Column="5" TopLine="531"/>
+        <Caret Line="1713" Column="5" TopLine="1720"/>
       </Position3>
       <Position4>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="760" Column="45" TopLine="749"/>
+        <Caret Line="88" Column="33" TopLine="69"/>
       </Position4>
       <Position5>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="968" Column="41" TopLine="949"/>
+        <Caret Line="84" Column="52" TopLine="72"/>
       </Position5>
       <Position6>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1688" Column="13" TopLine="1674"/>
+        <Caret Line="76" Column="53" TopLine="63"/>
       </Position6>
       <Position7>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1690" Column="14" TopLine="1674"/>
+        <Caret Line="88" Column="32" TopLine="76"/>
       </Position7>
       <Position8>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1692" Column="14" TopLine="1674"/>
+        <Caret Line="1718" Column="5" TopLine="1704"/>
       </Position8>
       <Position9>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1653" Column="31" TopLine="1635"/>
+        <Caret Line="1757" Column="5" TopLine="1744"/>
       </Position9>
       <Position10>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1663" Column="25" TopLine="1664"/>
+        <Caret Line="76" Column="53" TopLine="63"/>
       </Position10>
       <Position11>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1693" Column="5" TopLine="1682"/>
+        <Caret Line="644" Column="40" TopLine="631"/>
       </Position11>
       <Position12>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1895" Column="27" TopLine="1865"/>
+        <Caret Line="1558" Column="54" TopLine="1545"/>
       </Position12>
       <Position13>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="2111" Column="72" TopLine="2091"/>
+        <Caret Line="1619" Column="48" TopLine="1606"/>
       </Position13>
       <Position14>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="1771" Column="55" TopLine="1778"/>
+        <Caret Line="1757" Column="5" TopLine="1744"/>
       </Position14>
       <Position15>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="2590" Column="68" TopLine="2569"/>
+        <Caret Line="1789" Column="5" TopLine="1776"/>
       </Position15>
       <Position16>
         <Filename Value="../source/pascurl.pas"/>
-        <Caret Line="8" Column="48" TopLine="2569"/>
+        <Caret Line="1983" Column="5" TopLine="1970"/>
       </Position16>
+      <Position17>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="1985" Column="5" TopLine="1978"/>
+      </Position17>
+      <Position18>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="1987" Column="5" TopLine="1977"/>
+      </Position18>
+      <Position19>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="1989" Column="5" TopLine="1976"/>
+      </Position19>
+      <Position20>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2011" Column="5" TopLine="1994"/>
+      </Position20>
+      <Position21>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2099" Column="24" TopLine="2087"/>
+      </Position21>
+      <Position22>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2126" Column="5" TopLine="2112"/>
+      </Position22>
+      <Position23>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2195" TopLine="2190"/>
+      </Position23>
+      <Position24>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2194" TopLine="2223"/>
+      </Position24>
+      <Position25>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2688" Column="75" TopLine="2673"/>
+      </Position25>
+      <Position26>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2701" Column="5" TopLine="2688"/>
+      </Position26>
+      <Position27>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="80" Column="53" TopLine="67"/>
+      </Position27>
+      <Position28>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="2688" TopLine="2675"/>
+      </Position28>
+      <Position29>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="8" Column="29"/>
+      </Position29>
+      <Position30>
+        <Filename Value="../source/pascurl.pas"/>
+        <Caret Line="4"/>
+      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

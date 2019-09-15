@@ -5,7 +5,11 @@ unit pascurl;
 interface
 
 uses
-  Classes, SysUtils, Types, Unixtype, BaseUnix, Sockets;
+  Classes, SysUtils, Types, BaseUnix, Sockets;
+
+{$IFDEF FPC}
+  {$PACKRECORDS C}
+{$ENDIF}
 
 type
   CURL = type Pointer;
@@ -73,27 +77,25 @@ type
   curl_sslbackend = (
     CURLSSLBACKEND_NONE = 0,
     CURLSSLBACKEND_OPENSSL = 1,
+    CURLSSLBACKEND_LIBRESSL = CURLSSLBACKEND_OPENSSL{%H-},
+    CURLSSLBACKEND_BORINGSSL = CURLSSLBACKEND_OPENSSL,
     CURLSSLBACKEND_GNUTLS = 2,
     CURLSSLBACKEND_NSS = 3,
     CURLSSLBACKEND_OBSOLETE4 = 4,
     CURLSSLBACKEND_GSKIT = 5,
     CURLSSLBACKEND_POLARSSL = 6,
     CURLSSLBACKEND_WOLFSSL = 7,
+    CURLSSLBACKEND_CYASSL = CURLSSLBACKEND_WOLFSSL,
     CURLSSLBACKEND_SCHANNEL = 8,
     CURLSSLBACKEND_DARWINSSL = 9,
     CURLSSLBACKEND_AXTLS = 10,
-    CURLSSLBACKEND_MBEDTLS = 11,
-
-    (* aliases for library clones and renames *)
-    CURLSSLBACKEND_LIBRESSL = CURLSSLBACKEND_OPENSSL,
-    CURLSSLBACKEND_BORINGSSL = CURLSSLBACKEND_OPENSSL,
-    CURLSSLBACKEND_CYASSL = CURLSSLBACKEND_WOLFSSL
+    CURLSSLBACKEND_MBEDTLS = 11
   );
 
   (* This is the CURLOPT_PROGRESSFUNCTION callback proto. It is now considered
      deprecated but was the only choice up until 7.31.0 *)
   curl_progress_callback = function (clientp : Pointer; dltotal : Double;
-    dlnow : Double; ultotal : Double; ulnow : Double) : Interger of object;
+    dlnow : Double; ultotal : Double; ulnow : Double) : Integer of object;
 
   (* This is the CURLOPT_XFERINFOFUNCTION callback proto. It was introduced in
      7.32.0, it avoids floating point and provides more detailed information. *)
@@ -209,10 +211,10 @@ type
 const
   (* This is a return code for the read callback that, when returned, will
    signal libcurl to immediately abort the current transfer. *)
-  CURL_READFUNC_ABORT = 0x10000000;
+  CURL_READFUNC_ABORT = $10000000;
   (* This is a return code for the read callback that, when returned, will
    signal libcurl to pause sending data on the current transfer. *)
-  CURL_READFUNC_PAUSE = 0x10000001;
+  CURL_READFUNC_PAUSE = $10000001;
 
 type
   curl_read_callback = function (buffer : PChar; size : LongWord;
@@ -464,7 +466,7 @@ const
   CURLAUTH_GSSAPI = CURLAUTH_NEGOTIATE;
   CURLAUTH_NTLM = Cardinal(1 shl 3);
   CURLAUTH_DIGEST_IE = Cardinal(1 shl 4);
-  CURLAUTH_NTLM_WB = Cadinal(1 shl 5);
+  CURLAUTH_NTLM_WB = Cardinal(1 shl 5);
   CURLAUTH_ONLY = Cardinal(1 shl 31);
   CURLAUTH_ANY = (Not CURLAUTH_DIGEST_IE);
   CURLAUTH_ANYSAFE = (Not (CURLAUTH_BASIC or CURLAUTH_DIGEST_IE));
@@ -643,7 +645,7 @@ type
     CURLOPT_URL = CURLOPTTYPE_STRINGPOINT + 2,
 
     (* Port number to connect to, if other than default. *)
-    CURLOPT_PORT = CURLOPTTYPE_LONG + 3,
+    CURLOPT_PORT = CURLOPTTYPE_LONG + 3{%H-},
 
     (* Name of proxy to use. *)
     CURLOPT_PROXY = CURLOPTTYPE_STRINGPOINT + 4,
@@ -1557,7 +1559,7 @@ type
     CURLMOPT_SOCKETFUNCTION = CURLOPTTYPE_FUNCTIONPOINT + 1,
 
     (* This is the argument passed to the socket callback *)
-    CURLMOPT_SOCKETDATA = CURLOPTTYPE_OBJECTPOINT + 2,
+    CURLMOPT_SOCKETDATA = CURLOPTTYPE_OBJECTPOINT + 2{%H-},
 
     (* set to 1 to enable pipelining for this multi handle *)
     CURLMOPT_PIPELINING = CURLOPTTYPE_LONG + 3,
@@ -1618,7 +1620,7 @@ type
     (* Convenience definition simple because the name of the version is HTTP/2 and
        not 2.0. The 2_0 version of the enum name was set while the version was
        still planned to be 2.0 and we stick to it for compatibility. *)
-    CURL_HTTP_VERSION_2 = CURL_HTTP_VERSION_2_0,
+    CURL_HTTP_VERSION_2 = CURL_HTTP_VERSION_2_0{%H-},
 
     CURL_HTTP_VERSION_2TLS, (* use version 2 for HTTPS, version 1.1 for HTTP *)
     CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE, (* please use HTTP 2 without HTTP/1.1
@@ -1668,18 +1670,18 @@ type
     CURL_SSLVERSION_LAST (* never use, keep last *)
   );
 
-  curl_ssl_version_max = (
-    CURL_SSLVERSION_MAX_NONE = 0,
-    CURL_SSLVERSION_MAX_DEFAULT = CURL_SSLVERSION_TLSv1 shl 16,
-    CURL_SSLVERSION_MAX_TLSv1_0 = CURL_SSLVERSION_TLSv1_0 shl 16,
-    CURL_SSLVERSION_MAX_TLSv1_1 = CURL_SSLVERSION_TLSv1_1 shl 16,
-    CURL_SSLVERSION_MAX_TLSv1_2 = CURL_SSLVERSION_TLSv1_2 shl 16,
-    CURL_SSLVERSION_MAX_TLSv1_3 = CURL_SSLVERSION_TLSv1_3 shl 16,
+const
+  CURL_SSLVERSION_MAX_NONE = 0;
+  CURL_SSLVERSION_MAX_DEFAULT = Longint(CURL_SSLVERSION_TLSv1) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_0 = Longint(CURL_SSLVERSION_TLSv1_0) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_1 = Longint(CURL_SSLVERSION_TLSv1_1) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_2 = Longint(CURL_SSLVERSION_TLSv1_2) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_3 = Longint(CURL_SSLVERSION_TLSv1_3) shl 16;
 
-    (* never use, keep last *)
-    CURL_SSLVERSION_MAX_LAST = CURL_SSLVERSION_LAST shl 16
-  );
+  (* never use, keep last *)
+  CURL_SSLVERSION_MAX_LAST = Longint(CURL_SSLVERSION_LAST) shl 16;
 
+type
   CURL_TLSAUTH = (
     CURL_TLSAUTH_NONE,
     CURL_TLSAUTH_SRP,
@@ -1694,7 +1696,7 @@ const
   CURL_REDIR_GET_ALL = 0;
   CURL_REDIR_POST_301 = 1;
   CURL_REDIR_POST_302 = 2;
-  CURL_REDIR_POST_302 = 4;
+  CURL_REDIR_POST_303 = 4;
   CURL_REDIR_POST_ALL = CURL_REDIR_POST_301 or CURL_REDIR_POST_302 or
     CURL_REDIR_POST_303;
 
@@ -1709,11 +1711,17 @@ type
     CURL_TIMECOND_LAST
   );
 
-  curl_mime_s = record;
+  curl_mime_s = record
+
+  end;
+
   pcurl_mime = ^curl_mime;
   curl_mime = type curl_mime_s;
 
-  curl_mimepart_s = record;
+  curl_mimepart_s = record
+
+  end;
+
   pcurl_mimepart = ^curl_mimepart;
   curl_mimepart = type curl_mimepart_s;
 
@@ -1750,7 +1758,7 @@ type
   (* structure to be used as parameter for CURLFORM_ARRAY *)
   curl_forms = record
     option : CURLformoption;
-    const value : PChar;
+    value : PChar;
   end;
 
   CURLFORMcode = (
@@ -1782,7 +1790,7 @@ type
   pppcurl_ssl_backend = ^ppcurl_ssl_backend;
   curl_ssl_backend = record
     id : curl_sslbackend;
-    const name : PChar;
+    name : PChar;
   end;
 
   CURLsslset = (
@@ -1810,22 +1818,22 @@ type
   end;
 
 const
-  CURLINFO_STRING = 0x100000;
-  CURLINFO_LONG   = 0x200000;
-  CURLINFO_DOUBLE = 0x300000;
-  CURLINFO_SLIST  = 0x400000;
-  CURLINFO_PTR    = 0x400000; (* same as SLIST *)
-  CURLINFO_SOCKET = 0x500000;
-  CURLINFO_OFF_T  = 0x600000;
-  CURLINFO_MASK   = 0x0fffff;
-  CURLINFO_TYPEMASK = 0xf00000;
+  CURLINFO_STRING = $100000;
+  CURLINFO_LONG   = $200000;
+  CURLINFO_DOUBLE = $300000;
+  CURLINFO_SLIST  = $400000;
+  CURLINFO_PTR    = $400000; (* same as SLIST *)
+  CURLINFO_SOCKET = $500000;
+  CURLINFO_OFF_T  = $600000;
+  CURLINFO_MASK   = $0fffff;
+  CURLINFO_TYPEMASK = $f00000;
 
 type
   CURLINFO = (
     CURLINFO_NONE, (* first, never use this *)
     CURLINFO_EFFECTIVE_URL    = CURLINFO_STRING + 1,
     CURLINFO_RESPONSE_CODE    = CURLINFO_LONG   + 2,
-    CURLINFO_HTTP_CODE        = CURLINFO_LONG   + 2,
+    CURLINFO_HTTP_CODE        = CURLINFO_LONG   + 2{%H-},
     CURLINFO_TOTAL_TIME       = CURLINFO_DOUBLE + 3,
     CURLINFO_NAMELOOKUP_TIME  = CURLINFO_DOUBLE + 4,
     CURLINFO_CONNECT_TIME     = CURLINFO_DOUBLE + 5,
@@ -1976,35 +1984,35 @@ type
   pcurl_version_info_data = ^curl_version_info_data;
   curl_version_info_data = record
     age : CURLversion; (* age of the returned struct *)
-    const version : PChar; (* LIBCURL_VERSION *)
+    version : PChar; (* LIBCURL_VERSION *)
     version_num : Cardinal; (* LIBCURL_VERSION_NUM *)
-    const host : PChar; (* OS/host/cpu/machine when configured *)
+    host : PChar; (* OS/host/cpu/machine when configured *)
     features : Integer; (* bitmask, see defines below *)
-    const ssl_version : PChar; (* human readable string *)
+    ssl_version : PChar; (* human readable string *)
     ssl_version_num : Longint; (* not used anymore, always 0 *)
-    const libz_version : PChar; (* human readable string *)
+    libz_version : PChar; (* human readable string *)
 
     (* protocols is terminated by an entry with a NULL protoname *)
-    const protocols : PChar;
+    protocols : PChar;
 
     (* The fields below this were added in CURLVERSION_SECOND *)
-    const ares : PChar;
+    ares : PChar;
     ares_num : Integer;
 
     (* This field was added in CURLVERSION_THIRD *)
-    const libidn : PChar;
+    libidn : PChar;
 
     (* These field were added in CURLVERSION_FOURTH *)
     (* Same as '_libiconv_version' if built with HAVE_ICONV *)
     iconv_ver_num : Integer;
 
     (* human readable string *)
-    const libssh_version : PChar;
+    libssh_version : PChar;
 
     (* These fields were added in CURLVERSION_FIFTH *)
     brotli_ver_num : Cardinal; (* Numeric Brotli version
                                   (MAJOR << 24) | (MINOR << 12) | PATCH *)
-    const brotli_version : PChar; (* human readable string. *)
+    brotli_version : PChar; (* human readable string. *)
   end;
 
 const
@@ -2050,7 +2058,7 @@ type
   CURLMcode = (
     CURLM_CALL_MULTI_PERFORM = -1, (* please call curl_multi_perform() or
                                     curl_multi_socket*() soon *)
-    CURLM_CALL_MULTI_SOCKET = CURLM_CALL_MULTI_PERFORM,
+    CURLM_CALL_MULTI_SOCKET = CURLM_CALL_MULTI_PERFORM{%H-},
 
     CURLM_OK,
     CURLM_BAD_HANDLE,      (* the passed-in handle is not a valid CURLM handle *)
@@ -2090,9 +2098,9 @@ const
   (* Based on poll(2) structure and values.
    * We don't use pollfd and POLL* constants explicitly
    * to cover platforms without poll(). *)
-  CURL_WAIT_POLLIN = 0x0001;
-  CURL_WAIT_POLLPRI = 0x0002;
-  CURL_WAIT_POLLOUT = 0x0004;
+  CURL_WAIT_POLLIN = $0001;
+  CURL_WAIT_POLLPRI = $0002;
+  CURL_WAIT_POLLOUT = $0004;
 
 type
   curl_waitfd = record
@@ -2118,7 +2126,9 @@ type
     userp : Pointer) : Integer of object;
 
   pcurl_pushheaders = ^curl_pushheaders;
-  curl_pushheaders = record;
+  curl_pushheaders = record
+
+  end;
 
   curl_push_callback = function (parent : CURL; easy : CURL; num_header : QWord;
     headers : pcurl_pushheaders; userp : Pointer) : Integer of object;
@@ -2145,7 +2155,7 @@ const
 
   (* This is a magic return code for the write callback that, when returned,
    will signal libcurl to pause receiving on the current transfer. *)
-  CURL_WRITEFUNC_PAUSE = 0x10000001;
+  CURL_WRITEFUNC_PAUSE = $10000001;
 
   CURL_ERROR_SIZE = 256;
 
@@ -2165,9 +2175,9 @@ const
   CURL_POLL_INOUT = 3;
   CURL_POLL_REMOVE = 4;
 
-  CURL_CSELECT_IN = 0x01;
-  CURL_CSELECT_OUT = 0x02;
-  CURL_CSELECT_ERR = 0x04;
+  CURL_CSELECT_IN = $01;
+  CURL_CSELECT_OUT = $02;
+  CURL_CSELECT_ERR = $04;
 
   CURL_PUSH_OK = 0;
   CURL_PUSH_DENY = 1;
@@ -2182,7 +2192,6 @@ const
   CurlLib = 'libcurl.so';
 {$ENDIF}
 
-type
   (* curl_strequal() and curl_strnequal() are subject for removal in a future
      release *)
   function curl_strequal (const s1 : PChar; const s2 : PChar) : Integer; cdecl;
@@ -2676,8 +2685,8 @@ type
   *
   * Returns: CURLMcode type, general multi error code.
   *)
-  function curl_multi_fdset (multi_handle : CURLM; read_fd_set : fpFD_Set;
-    write_fd_set : fpFD_Set; exc_fd_set : fpFD_Set; max_fd : PInteger) :
+  function curl_multi_fdset (multi_handle : CURLM; read_fd_set : TFDSet;
+    write_fd_set : TFDSet; exc_fd_set : TFDSet; max_fd : PInteger) :
     CURLMcode; cdecl; external CurlLib;
 
  (*

@@ -29,6 +29,7 @@
       <Unit0>
         <Filename Value="libpascurl.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="pascurl"/>
       </Unit0>
       <Unit1>
         <Filename Value="../source/pascurl.pas"/>
