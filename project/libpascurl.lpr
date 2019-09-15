@@ -6,11 +6,14 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, pascurl;
+  Classes, SysUtils, CustApp, tcurl;
 
 type
   TApplication = class(TCustomApplication)
   protected
+    session : TSession;
+    info : TSessionInfo;
+
     procedure DoRun; override;
   public
     constructor Create(TheOwner: TComponent); override;
@@ -22,16 +25,19 @@ type
 
 procedure TApplication.DoRun;
 var
-  ErrorMsg: String;
+  //ErrorMsg: String;
+  url : String;
+
 begin
-  // quick check parameters
+
+  (*
   ErrorMsg:=CheckOptions('h', 'help');
   if ErrorMsg<>'' then begin
     ShowException(Exception.Create(ErrorMsg));
     Terminate;
     Exit;
   end;
-
+  *)
   // parse parameters
   if HasOption('h', 'help') then begin
     WriteHelp;
@@ -39,7 +45,18 @@ begin
     Exit;
   end;
 
-  { add your program here }
+  if ParamCount = 1 then
+  begin
+    Url := Params[1];
+
+    session.Url := Url;
+    info := TSessionInfo.Create(session);
+    if info.Opened then
+    begin
+      writeln('Response code: ', info.ResponseCode);
+      writeln('Content: ', info.Content);
+    end;
+  end;
 
   // stop program loop
   Terminate;
@@ -49,10 +66,15 @@ constructor TApplication.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   StopOnException:=True;
+
+  //handle := curl_easy_init();
+  session := TSession.Create;
 end;
 
 destructor TApplication.Destroy;
 begin
+  //curl_easy_cleanup(handle);
+
   inherited Destroy;
 end;
 

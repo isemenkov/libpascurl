@@ -25,16 +25,20 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="libpascurl.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="pascurl"/>
+        <UnitName Value="pascurl_console"/>
       </Unit0>
       <Unit1>
         <Filename Value="../source/pascurl.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="../source/tcurl.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
