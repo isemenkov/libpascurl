@@ -1,3 +1,20 @@
+(******************************************************************************)
+(*                                 libPasCURL                                 *)
+(*                 object pascal wrapper around cURL library                  *)
+(*                        https://github.com/curl/curl                        *)
+(*                                                                            *)
+(* Copyright (c) 2019                                       Ivan Semenkov     *)
+(* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)
+(*                                                          Ukraine           *)
+(******************************************************************************)
+(*                                                                            *)
+(* Module:          Unit 'tcurl'                                              *)
+(* Functionality:   Provides  TSession class  which present  cURL session  to *)
+(*                  assign request params.  And TSessionInfo class to getting *)
+(*                  information from server response.                         *)
+(*                                                                            *)
+(******************************************************************************)
+
 unit tcurl;
 
 {$mode objfpc}{$H+}
@@ -94,19 +111,46 @@ type
   );
 
   { TSession }
+  { Present cURL session to assign request params }
 
   TSession = class
   protected
     handle : CURL;
     buffer : TStringStream;
   protected
+    (**
+     * Callback for writting received data
+     *
+     * This callback function gets called by libcurl as soon as there is data
+     * received that needs to be saved. For most transfers, this callback gets
+     * called many times and each invoke delivers another chunk of data. ptr
+     * points to the delivered data, and the size of that data is nmemb; size is
+     * always 1.
+     *)
     class function WriteFunction (ptr : PChar; size : LongWord;
       nmemb : LongWord; data : Pointer) : LongWord; static; cdecl;
+
+    (**
+     * Callback for data uploads
+     *
+     * This callback function gets called by libcurl as soon as it needs to read
+     * data in order to send it to the peer - like if you ask it to upload or
+     * post data to the server. The data area pointed at by the pointer buffer
+     * should be filled up with at most size multiplied with nitems number of
+     * bytes by your function.
+     *)
     class function ReadFunction (buf : PChar; size : LongWord;
       nitems : LongWord; data : Pointer) : LongWord; static; cdecl;
 
+    (**
+     * Save received data to the inner buffer
+     *)
     function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
       inline;
+
+    (**
+     * Write uploads data to the buf
+     *)
     function Read (buf : PChar; size : LongWord; nitems : LongWord) : LongWord;
       inline;
     function IsOpened : Boolean;
@@ -120,30 +164,172 @@ type
     procedure SetIncludeHeader (includeHeader : boolean);
     procedure SetIgnoreContentLength (ignoreLength : boolean);
     procedure SetNoBody (noBody : boolean);
-    procedure SetReceivedData (received : boolean);
     procedure SetTransferEncoding (encoding : boolean);
   public
     constructor Create;
     destructor Destroy; override;
 
+    (**
+     * Check if session opened and correctly
+     *)
     property Opened : Boolean read IsOpened;
+
+    (**
+     * Set the URL to use in the request
+     *
+     * The parameter should be a string which must be URL-encoded in the
+     * following format: scheme://host:port/path
+     * libcurl doesn't validate the syntax or use this variable until the
+     * transfer is issued.
+     * If the given URL is missing a scheme name (such as "http://" or "ftp://"
+     * etc) then libcurl will make a guess based on the host. If the outermost
+     * sub-domain name matches DICT, FTP, IMAP, LDAP, POP3 or SMTP then that
+     * protocol will be used, otherwise HTTP will be used.
+     * The host part of the URL contains the address of the server that you want
+     * to connect to. This can be the fully qualified domain name of the server,
+     * the local network name of the machine on your network or the IP address
+     * of the server or machine represented by either an IPv4 or IPv6 address.
+     * http://www.example.com/
+     * http://hostname/
+     * http://192.168.0.1/
+     * http://[2001:1890:1112:1::20]/
+     * It is also possible to specify the user name, password and any supported
+     * login options as part of the host, for the following protocols, when
+     * connecting to servers that require authentication:
+     * http://user:password@www.example.com
+     * ftp://user:password@ftp.example.com
+     * smb://domain%2fuser:password@server.example.com
+     * imap://user:password;options@mail.example.com
+     * pop3://user:password;options@mail.example.com
+     * smtp://user:password;options@mail.example.com
+     *)
     property Url : string write SetUrl;
+
+    (**
+     * Set proxy to use
+     *
+     * Set the proxy to use for the upcoming request. The parameter should be a
+     * string holding the host name or dotted numerical IP address. A numerical
+     * IPv6 address must be written within [brackets].
+     * To specify port number in this string, append :[port] to the end of the
+     * host name. If not specified, libcurl will default to using port 1080 for
+     * proxies.
+     * The proxy string may be prefixed with [scheme]:// to specify which kind
+     * of proxy is used.
+     * http://    HTTP Proxy. Default when no scheme or proxy type is specified.
+     * https://   HTTPS Proxy.
+     * socks4://  SOCKS4 Proxy.
+     * socks4a:// SOCKS4a Proxy. Proxy resolves URL hostname.
+     * socks5://  SOCKS5 Proxy.
+     * socks5h:// SOCKS5 Proxy. Proxy resolves URL hostname.
+     * When you tell the library to use an HTTP proxy, libcurl will
+     * transparently convert operations to HTTP even if you specify an FTP URL
+     * etc.
+     * Setting the proxy string to "" (an empty string) will explicitly disable
+     * the use of a proxy, even if there is an environment variable set for it.
+     * A proxy host string can also include protocol scheme (http://) and
+     * embedded user + password.
+     *)
     property Proxy : string write SetProxy;
+
+    (**
+     * Set HTTP user-agent header
+     *
+     * It will be used to set the User-Agent: header in the HTTP request sent to
+     * the remote server. This can be used to fool servers or scripts.
+     *)
     property UserAgent : string write SetUserAgent;
+
+    (**
+     * Set remote port number to work with
+     *
+     * This option sets number to be the remote port number to connect to,
+     * instead of the one specified in the URL or the default port for the used
+     * protocol.
+     * Usually, you just let the URL decide which port to use but this allows
+     * the application to override that.
+     *)
     property Port : Longint write SetPort;
+
+    (**
+     * Port number the proxy listens on
+     *
+     * Set the proxy port to connect to unless it is specified in the proxy
+     * string.
+     *)
     property ProxyPort : Longint write SetProxyPort;
+
+    (**
+     * Follow HTTP 3XXX redirects
+     *
+     * Tells the library to follow any Location: header that the server sends as
+     * part of an HTTP header in a 3xx response. The Location: header can
+     * specify a relative or an absolute URL to follow.
+     * libcurl will issue another request for the new URL and follow new
+     * Location: headers all the way until no more such headers are returned.
+     * libcurl limits what protocols it automatically follows to.
+     * By default libcurl will allow HTTP, HTTPS, FTP and FTPS on redirect.
+     *)
     property FollowRedirect : Boolean write SetFollowRedirect default True;
+
+    (**
+     * Automatically update the referer header
+     *
+     * When enabled, libcurl will automatically set the Referer: header field in
+     * HTTP requests where it follows a Location: redirect.
+     *)
     property AutoReferer : Boolean write SetAutoReferer default True;
+
+    (**
+     * Pass headers to the data stream
+     *
+     * Ask libcurl to include the headers in the data stream.
+     * When asking to get the headers passed to the body, it is not possible to
+     * accurately separate them again without detailed knowledge about the
+     * protocol in use.
+     *)
     property IncludeHeader : Boolean write SetIncludeHeader default False;
+
+    (**
+     * Ignore content length
+     *
+     * Ignore the Content-Length header in the HTTP response and ignore asking
+     * for or relying on it for FTP transfers.
+     * This is useful for HTTP with Apache 1.x (and similar servers) which will
+     * report incorrect content length for files over 2 gigabytes. If this
+     * option is used, curl will not be able to accurately report progress,
+     * and will simply stop the download when the server ends the connection.
+     * It is also useful with FTP when for example the file is growing while the
+     * transfer is in progress which otherwise will unconditionally cause
+     * libcurl to report error.
+     *)
     property IgnoreContentLength : Boolean write SetIgnoreContentLength
       default False;
+
+    (**
+     * Do the download request without getting the body
+     *
+     * Tells libcurl to not include the body-part in the output when doing what
+     * would otherwise be a download. For HTTP(S), this makes libcurl do a HEAD
+     * request. For most other protocols it means just not asking to transfer
+     * the body data.
+     *)
     property NoBody : Boolean write SetNoBody default False;
-    property ReceivedData : Boolean write SetReceivedData default True;
+
+    (**
+     * Ask for HTTP Transfer Encoding
+     *
+     * Add a request for compressed Transfer Encoding in the outgoing HTTP
+     * request. If the server supports this and so desires, it can respond with
+     * the HTTP response sent using a compressed Transfer-Encoding that will be
+     * automatically uncompressed by libcurl on reception.
+     *)
     property TransferEncoding : Boolean write SetTransferEncoding
       default False;
   end;
 
   { TSessionInfo }
+  { Getting information from server response. }
 
   TSessionInfo = class
   protected
@@ -185,39 +371,173 @@ type
     function GetConnectTime : LongWord;
   public
     constructor Create; overload;
-    constructor Create (var sess : TSession); overload;
+    constructor Create (var s : TSession); overload;
 
+    (**
+     * Perform a bloking file transfer
+     *
+     * Will perform the transfer as described in the TSession options.
+     * Performs the entire request in a blocking manner and returns when done,
+     * or if it failed.
+     *)
     property Opened : Boolean read IsOpened;
+
+    (**
+     * Check if has errors on last request
+     *)
     property HasErrors : Boolean read CheckErrors;
+
+    (**
+     * Return last error message or empty string if none
+     *)
     property ErrorMessage : string read GetErrorMessage;
+
+    (**
+     * Get the last used URL
+     *
+     * Get the last used effective URL. In cases when you've asked libcurl to
+     * follow redirects, it may very well not be the same value you set.
+     *)
     property EffectiveUrl : string read GetEffectiveUrl;
+
+    (**
+     * Get the URL a redirect would go to
+     *)
     property RedirectUrl : string read GetRedirectUrl;
+
+    (**
+     * Get Content-Type
+     *
+     * This is the value read from the Content-Type: field. If you get empty,
+     * it means that the server didn't send a valid Content-Type header or that
+     * the protocol used doesn't support this.
+     *)
     property ContentType : string read GetContentType;
+
+    (**
+     * Get IP address of last connection
+     *)
     property PimaryIP : string read GetPrimaryIP;
+
+    (**
+     * Get local IP address of last connection
+     *)
     property LocalIP : string read GetLocalIP;
+
+    (**
+     * Get the last response code
+     *)
     property ResponseCode : StatusCode read GetResponseCode;
+
+    (**
+     * Get the response content
+     *)
     property Content : string read GetContent;
+
+    (**
+     * Get the result of the certificate verification
+     *)
     property VerifySSLResult : boolean read GetVerifySSLResult;
+
+    (**
+     * Get the result of the proxy certificate verification
+     *
+     * This is only used for HTTPS proxies.
+     *)
     property VerifySSLProxyResult : boolean read GetVerifySSLProxyResult;
+
+    (**
+     * Get the CONNECT response code
+     *
+     * Last received HTTP proxy response code to a CONNECT request.
+     *)
     property ConnectResponseCode : StatusCode read GetConnectResponseCode;
+
+    (**
+     * Get the HTTP version used in the connection
+     *)
     property HttpVersion : HttpVersionCode read GetHttpVersion;
+
+    (**
+     * Get the number of redirects
+     *)
     property RedirectCount : Longint read GetRedirectCount;
+
+    (**
+     * Get the number of uploaded bytes
+     *)
     property UploadedBytes : LongWord read GetUploadedBytes;
+
+    (**
+     * Get the number of downloaded bytes
+     *)
     property DownloadedBytes : LongWord read GetDownloadedBytes;
+
+    (**
+     * Get download speed
+     *)
     property DownloadSpeedBytesPerSecond : LongWord
       read GetDownloadSpeedBytesPerSecond;
+
+    (**
+     * Get upload speed
+     *)
     property UploadSpeedBytesPerSecond : LongWord
       read GetUploadSpeedBytesPerSecond;
+
+    (**
+     * Get size of retrieved headers
+     *)
     property HeaderSizeBytes : LongWord read GetHeaderSizeBytes;
+
+    (**
+     * Get size of sent request
+     *)
     property RequestSizeBytes : Longint read GetRequestSizeBytes;
+
+    (**
+     * Get content-length of download
+     *)
     property ContentLengthDownload : LongWord read GetContentLengthDownload;
+
+    (**
+     * Get the specified size of the upload
+     *)
     property ContentLengthUpload : LongWord read GetContentLengthUpload;
+
+    (**
+     * Get number of created connections
+     *)
     property NumConnects : Longint read GetNumConnects;
+
+    (**
+     * Get the latest destination port number
+     *)
     property PrimaryPort : Longint read GetPrimaryPort;
+
+    (**
+     * Get the latest local port number
+     *)
     property LocalPort : Longint read GetLocalPort;
+
+    (**
+     * Get the remote time of the retrieved document
+     *)
     property FileTime : time_t read GetFileTime;
+
+    (**
+     * Get total time of previous transfer
+     *)
     property TotalTime : time_t read GetTotalTime;
+
+    (**
+     * Get the name lookup time
+     *)
     property NameLookup : Double read GetNameLookup;
+
+    (**
+     * Get the time until connect
+     *)
     property ConnectTime : LongWord read GetConnectTime;
   end;
 
@@ -338,7 +658,7 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_SSL_VERIFYRESULT, @verify);
-    Result := Boolean(verify);
+    Result := (verify = 0);
   end;
 end;
 
@@ -556,11 +876,11 @@ begin
   // Do nothing
 end;
 
-constructor TSessionInfo.Create(var sess: TSession);
+constructor TSessionInfo.Create(var s: TSession);
 begin
-  if sess.Opened then
+  if s.Opened then
   begin
-    Self.session := sess;
+    Self.session := s;
     curl_easy_setopt(session.handle, CURLOPT_ERRORBUFFER, PChar(errorBuffer));
     hasInfo := (curl_easy_perform(session.handle) = CURLE_OK);
   end;
@@ -598,8 +918,12 @@ begin
   handle := curl_easy_init;
   buffer := TStringStream.Create('');
 
-  FollowRedirect := True;
-  ReceivedData := True;
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @TSession.WriteFunction);
+    FollowRedirect := True;
+  end;
 end;
 
 destructor TSession.Destroy;
@@ -694,15 +1018,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_NOBODY, Longint(noBody));
-  end;
-end;
-
-procedure TSession.SetReceivedData(received: boolean);
-begin
-  if Opened and received then
-  begin
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @TSession.WriteFunction);
   end;
 end;
 

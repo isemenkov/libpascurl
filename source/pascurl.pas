@@ -1,3 +1,13 @@
+(******************************************************************************)
+(*                                 libPasCURL                                 *)
+(*                 object pascal wrapper around cURL library                  *)
+(*                        https://github.com/curl/curl                        *)
+(*                                                                            *)
+(* Copyright (c) 2019                                       Ivan Semenkov     *)
+(* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)
+(*                                                          Ukraine           *)
+(******************************************************************************)
+
 unit pascurl;
 
 {$mode objfpc}{$H+}
