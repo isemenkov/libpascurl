@@ -168,6 +168,53 @@ type
     PROXY_SOCKS5_HOSTNAME             = CURLPROXY_SOCKS5_HOSTNAME
   );
 
+  TTimeIntervalType = (
+    itSeconds,
+    itMilliseconds,
+    itMicroseconds
+  );
+
+  { TTimeInterval }
+
+  TTimeInterval = class
+  protected
+    FMicroseconds : QWord; (* 1/1 000 000 of second *)
+
+    function  GetSeconds : Double; inline;
+    procedure SetSeconds ( s : Double); inline;
+    function  GetMilliseconds : Double; inline;
+    procedure SetMilliseconds ( ms : Double); inline;
+    function  GetMicroseconds : QWord; inline;
+    procedure SetMicroseconds ( ms : QWord); inline;
+  public
+    (**
+     * Formats time interval using the format specification
+     *
+     * The following format specifiers are supported:
+     *  0  is a digit place holder. If there is a corresponding digit in the
+     *     value being formatted, then it replaces the 0. If not, the 0 is left
+     *     as-is.
+     *  #  is also a digit place holder. If there is a corresponding digit in
+     *     the value being formatted, then it replaces the #. If not, it is
+     *     removed
+     *  .  determines the location of the decimal point. Only the first '.'
+     *     character is taken into account. If the value contains another
+     *     decimal point then they are removed.
+     *)
+    function Format (const Format : string = '0.000###';
+      IntervalType : TTimeIntervalType = itMilliseconds) : string;
+
+    (* 1 s *)
+    property Seconds : Double read GetSeconds write SetSeconds;
+
+    (* 1/1 000 s *)
+    property Milliseconds : Double read GetMilliseconds write SetMilliseconds;
+
+    (* 1/1 000 000 s *)
+    property Microseconds : QWord read GetMicroseconds
+      write SetMicroseconds;
+  end;
+
   { TSession }
   { Present cURL session to assign request params }
 
@@ -737,6 +784,44 @@ type
   end;
 
 implementation
+
+{ TTimeInterval }
+
+function TTimeInterval.GetSeconds: Double;
+begin
+  Result := FMicroseconds / 1000000;
+end;
+
+procedure TTimeInterval.SetSeconds(s: Double);
+begin
+  FMicroseconds := s * 1000000;
+end;
+
+function TTimeInterval.GetMilliseconds: Double;
+begin
+  Result := FMicroseconds / 1000;
+end;
+
+procedure TTimeInterval.SetMilliseconds(ms: Double);
+begin
+  FMicroseconds := ms * 1000;
+end;
+
+function TTimeInterval.GetMicroseconds: QWord;
+begin
+  Result := FMicroseconds;
+end;
+
+procedure TTimeInterval.SetMicroseconds(ms: QWord);
+begin
+  FMicroseconds := ms;
+end;
+
+function TTimeInterval.Format(const Format: string;
+  IntervalType: TTimeIntervalType): string;
+begin
+  //
+end;
 
 { TSessionInfo }
 
