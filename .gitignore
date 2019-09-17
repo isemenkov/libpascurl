@@ -1,6 +1,6 @@
 
 #build file for tests
-/project/libpascurl
+/project/console
 
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
