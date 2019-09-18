@@ -27,8 +27,8 @@ type
 { TApplication }
 
 procedure TApplication.DoRun;
-var
-  ErrorMsg: String;
+//var
+  //ErrorMsg: String;
 begin
   (*
   ErrorMsg:=CheckOptions('h', 'help');
@@ -52,12 +52,13 @@ begin
     session_info := TSessionInfo.Create(session);
     if session_info.Opened and not session_info.HasErrors then
     begin
-      writeln('Url: ':20,            session_info.EffectiveUrl);
-      writeln('Response code: ':20,  session_info.ResponseCode);
-      writeln('Header size: ':20,    session_info.HeaderSizeBytes);
-      writeln('Content type: ':20,   session_info.ContentType);
-      writeln('Content length: ':20, session_info.ContentLengthDownload);
-      writeln('IP: ':20,             session_info.PimaryIP);
+      writeln('Url: ':20,                session_info.EffectiveUrl);
+      writeln('Response code: ':20,      session_info.ResponseCode);
+      writeln('Header size, kB: ':20,    session_info.HeaderSize.Format(dsKiloBytes, '0.00'));
+      writeln('Content type: ':20,       session_info.ContentType);
+      writeln('Content length, kB: ':20, session_info.Downloaded.Format(dsKiloBytes, '0.00'));
+      writeln('IP: ':20,                 session_info.PimaryIP);
+      writeln('Request time, ms: ':20,   session_info.ConnectTime.Format(tiMicroseconds, '0.00'));
       writeln('==== Content ====');
       writeln(session_info.Content);
     end;

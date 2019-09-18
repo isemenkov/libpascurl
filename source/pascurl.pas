@@ -38,7 +38,7 @@ unit pascurl;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, BaseUnix;
+  Classes, SysUtils, libpascurl, BaseUnix, math;
 
 type
   Protocol = (
@@ -133,48 +133,48 @@ type
     (**
      * HTTP Proxy
      *)
-    PROXY_HTTP                        = CURLPROXY_HTTP,
+    PROXY_HTTP                        = Longint(CURLPROXY_HTTP),
 
     (**
      * HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it uses
      * HTTP/1.0 for any CONNECT tunnelling. It does not change the HTTP version
      * of the actual HTTP requests
      *)
-    PROXY_HTTP_1_0                    = CURLPROXY_HTTP_1_0,
+    PROXY_HTTP_1_0                    = Longint(CURLPROXY_HTTP_1_0),
 
     (**
      * HTTPS Proxy
      *)
-    PROXY_HTTPS                       = CURLPROXY_HTTPS,
+    PROXY_HTTPS                       = Longint(CURLPROXY_HTTPS),
 
     (**
      * SOCKS4 Proxy
      *)
-    PROXY_SOCKS4                      = CURLPROXY_SOCKS4,
+    PROXY_SOCKS4                      = Longint(CURLPROXY_SOCKS4),
 
     (**
      * SOCKS5 Proxy
      *)
-    PROXY_SOCKS5                      = CURLPROXY_SOCKS5,
+    PROXY_SOCKS5                      = Longint(CURLPROXY_SOCKS5),
 
     (**
      * SOCKS4a Proxy. Proxy resolves URL hostname
      *)
-    PROXY_SOCKS4A                     = CURLPROXY_SOCKS4A,
+    PROXY_SOCKS4A                     = Longint(CURLPROXY_SOCKS4A),
 
     (**
      * SOCKS5 Proxy. Proxy resolves URL hostname.
      *)
-    PROXY_SOCKS5_HOSTNAME             = CURLPROXY_SOCKS5_HOSTNAME
-  );
-
-  TTimeIntervalType = (
-    itSeconds,
-    itMilliseconds,
-    itMicroseconds
+    PROXY_SOCKS5_HOSTNAME             = Longint(CURLPROXY_SOCKS5_HOSTNAME)
   );
 
   { TTimeInterval }
+
+  TTimeIntervalType = (
+    tiSeconds,
+    tiMilliseconds,
+    tiMicroseconds
+  );
 
   TTimeInterval = class
   protected
@@ -187,6 +187,10 @@ type
     function  GetMicroseconds : QWord; inline;
     procedure SetMicroseconds ( ms : QWord); inline;
   public
+    constructor Create;
+    constructor Create (Microseconds : QWord);
+    constructor Create (Interval : Double; IntervalType : TTimeIntervalType);
+
     (**
      * Formats time interval using the format specification
      *
@@ -198,11 +202,12 @@ type
      *     the value being formatted, then it replaces the #. If not, it is
      *     removed
      *  .  determines the location of the decimal point. Only the first '.'
-     *     character is taken into account. If the value contains another
-     *     decimal point then they are removed.
+     *     character is taken into account.
+     *  ,  determines the use of the thousand separator character in the output
+     *     string.
      *)
-    function Format (const Format : string = '0.000###';
-      IntervalType : TTimeIntervalType = itMilliseconds) : string;
+    function Format (IntervalType : TTimeIntervalType = tiMilliseconds;
+      const FormatType : string = '0.000###') : string;
 
     (* 1 s *)
     property Seconds : Double read GetSeconds write SetSeconds;
@@ -215,13 +220,95 @@ type
       write SetMicroseconds;
   end;
 
+  { TDataSize }
+
+  TDataSizeType = (
+    dsBytes,
+    dsKiloBytes,
+    dsMegaBytes,
+    dsGigaBytes,
+    dsTeraBytes
+  );
+
+  TDataSize = class
+  protected
+    FBytes : QWord;
+
+    function  GetBytes : QWord;
+    procedure SetBytes (bytes : QWord);
+    function  GetKiloBytes : Double;
+    procedure SetKiloBytes (Kb : Double);
+    function  GetMegaBytes : Double;
+    procedure SetMegaBytes (Mb : Double);
+    function  GetGigaBytes : Double;
+    procedure SetGigaBytes (Gb : Double);
+    function  GetTeraBytes : Double;
+    procedure SetTeraBytes (Tb : Double);
+  public
+    constructor Create;
+    constructor Create (Bytes : QWord);
+    constructor Create (Size : Double; SizeType : TDataSizeType);
+    (**
+     * Formats data size using the format specification
+     *
+     * The following format specifiers are supported:
+     *  0  is a digit place holder. If there is a corresponding digit in the
+     *     value being formatted, then it replaces the 0. If not, the 0 is left
+     *     as-is.
+     *  #  is also a digit place holder. If there is a corresponding digit in
+     *     the value being formatted, then it replaces the #. If not, it is
+     *     removed
+     *  .  determines the location of the decimal point. Only the first '.'
+     *     character is taken into account.
+     *  ,  determines the use of the thousand separator character in the output
+     *     string.
+     *)
+    function Format (SizeType : TDataSizeType = dsMegaBytes;
+      const FormatType : string = '0.000###') : string;
+
+    (* 1024 Gb *)
+    property TeraBytes : Double read GetTeraBytes write SetTeraBytes;
+    property TB : Double read GetTeraBytes write SetTeraBytes;
+
+    (* 1024 Mb *)
+    property GigaBytes : Double read GetGigaBytes write SetGigaBytes;
+    property GB : Double read GetGigaBytes write SetGigaBytes;
+
+    (* 1024 KB *)
+    property MegaBytes : Double read GetMegaBytes write SetMegaBytes;
+    property MB : Double read GetMegaBytes write SetMegaBytes;
+
+    (* 1024 b *)
+    property KiloBytes : Double read GetKiloBytes write SetKiloBytes;
+    property KB : Double read GetKiloBytes write SetKiloBytes;
+
+    (* b *)
+    property Bytes : QWord read GetBytes write SetBytes;
+    property B : QWord read GetBytes write SetBytes;
+  end;
+
   { TSession }
   { Present cURL session to assign request params }
+
+  (**
+   * Callback for writting received data
+   *)
+  TWriteFunction = function (buffer : PChar; size : LongWord) : LongWord
+    of object;
+
+  (**
+   * Callback for data uploads
+   *)
+  TReadFunction = function (buffer : PChar; size : LongWord) : LongWord
+    of object;
 
   TSession = class
   protected
     handle : CURL;
     buffer : TStringStream;
+
+    FWriteFunction : TWriteFunction;
+    FReadFunction : TReadFunction;
   protected
     (**
      * Callback for writting received data
@@ -232,7 +319,7 @@ type
      * points to the delivered data, and the size of that data is nmemb; size is
      * always 1.
      *)
-    class function WriteFunction (ptr : PChar; size : LongWord;
+    class function WriteFunctionCallback (ptr : PChar; size : LongWord;
       nmemb : LongWord; data : Pointer) : LongWord; static; cdecl;
 
     (**
@@ -244,7 +331,7 @@ type
      * should be filled up with at most size multiplied with nitems number of
      * bytes by your function.
      *)
-    class function ReadFunction (buf : PChar; size : LongWord;
+    class function ReadFunctionCallback (buf : PChar; size : LongWord;
       nitems : LongWord; data : Pointer) : LongWord; static; cdecl;
 
     (**
@@ -279,6 +366,13 @@ type
     procedure SetPathAsIs (pathAsIs : boolean);
     procedure SetProxyType (proxy : ProxyType);
     procedure SetNoProxyHosts (hosts : string);
+    procedure SetHttpProxyTunnel (proxyTunnel : Boolean);
+    procedure SetLocalPort (port : Longint);
+    procedure SetLocalPortRange (range : Longint);
+    procedure SetDNSCacheTimeout (timeout : TTimeInterval);
+    procedure SetDNSGlobalCache (enable : Boolean);
+    procedure SetDNSoverHTTPS (url : string);
+    procedure SetBufferSize (size : TDataSize);
   public
     constructor Create;
     destructor Destroy; override;
@@ -570,6 +664,101 @@ type
      * enclosing brackets: "example.com,::1,localhost"
      *)
     property NoProxyHosts : string write SetNoProxyHosts;
+
+    (**
+     * Tunnel through HTTP proxy
+     *
+     * Make libcurl tunnel all operations through the HTTP proxy (set with
+     * Proxy property). There is a big difference between using a proxy and to
+     * tunnel through it.
+     * Tunneling means that an HTTP CONNECT request is sent to the proxy, asking
+     * it to connect to a remote host on a specific port number and then the
+     * traffic is just passed through the proxy. Proxies tend to white-list
+     * specific port numbers it allows CONNECT requests to and often only port
+     * 80 and 443 are allowed.
+     *)
+    property HttpProxyTunnel : Boolean write SetHttpProxyTunnel;
+
+    (**
+     * Set local port number to use for socket
+     *
+     * This sets the local port number of the socket used for the connection.
+     * 0, disabled - use whatever the system thinks is fine
+     *)
+    property LocalPort : Longint write SetLocalPort default 0;
+
+    (**
+     * Number of additional local ports to try
+     *
+     * Pass a long. The range argument is the number of attempts libcurl will
+     * make to find a working local port number. It starts with the given
+     * LocalPort and adds one to the number for each retry. Setting this option
+     * to 1 or below will make libcurl do only one try for the exact port
+     * number. Port numbers by nature are scarce resources that will be busy at
+     * times so setting this value to something too low might cause unnecessary
+     * connection setup failures.
+     *)
+    property LocalPortRange : Longint write SetLocalPortRange default 1;
+
+    (**
+     * Set life-time for DNS cache entries
+     *
+     * Name resolves will be kept in memory and used for this time interval.
+     * Set to zero to completely disable caching.
+     *)
+    property DNSCacheTimeout : TTimeInterval write SetDNSCacheTimeout;
+
+    (**
+     * Enable/disable global DNS cache
+     *
+     * Tells curl to use a global DNS cache that will survive between easy
+     * handle creations and deletions. This is not thread-safe and this will use
+     * a global variable.
+     *
+     * WARNING: this option is considered obsolete. Stop using it. Switch over
+     * to using the share interface instead!
+     *)
+    property DNSGlobalCache : Boolean write SetDNSGlobalCache;
+
+    (**
+     * Provide the DNS-over-HTTPS URL
+     *
+     * Pass in a string to a URL for the DOH server to use for name resolving.
+     * The parameter should be a string which must be URL-encoded in the
+     * following format: "https://host:port/path". It MUST specify a HTTPS URL.
+     * Disable DOH use again by setting this option to '' (empty string).
+     *)
+    property DNSoverHTTPS : string write SetDNSoverHTTPS;
+
+    (**
+     * Set preffered receive buffer size
+     *
+     * Specifying your preferred size for the receive buffer in libcurl. The
+     * main point of this would be that the write callback gets called more
+     * often and with smaller chunks. Secondly, for some protocols, there's a
+     * benefit of having a larger buffer for performance.
+     * The minimum buffer size allowed to be set is 1024 bytes.
+     *)
+    property BufferSize : TDataSize write SetBufferSize;
+  public
+    (**
+     * Callback for writing received data
+     *
+     * This callback function gets called by libcurl as soon as there is data
+     * received that needs to be saved.
+     *)
+    property WriteFunction : TWriteFunction read FWriteFunction
+      write FWriteFunction;
+
+    (**
+     * Callback for data uploads
+     *
+     * This callback function gets called by libcurl as soon as it needs to read
+     * data in order to send it to the peer - like if you ask it to upload or
+     * post data to the server.
+     *)
+    property ReadFunction : TReadFunction read FReadFunction
+      write FReadFunction;
   end;
 
   { TSessionInfo }
@@ -596,12 +785,12 @@ type
     function GetConnectResponseCode : StatusCode;
     function GetHttpVersion : HTTPVersionCode;
     function GetRedirectCount : Longint;
-    function GetUploadedBytes : LongWord;
-    function GetDownloadedBytes : LongWord;
+    function GetUploaded : TDataSize;
+    function GetDownloaded : TDataSize;
     function GetDownloadSpeedBytesPerSecond : LongWord;
     function GetUploadSpeedBytesPerSecond : LongWord;
-    function GetHeaderSizeBytes : LongWord;
-    function GetRequestSizeBytes : Longint;
+    function GetHeaderSize : TDataSize;
+    function GetRequestSize : TDataSize;
     function GetContentLengthDownload : LongWord;
     function GetContentLengthUpload : LongWord;
     function GetNumConnects : Longint;
@@ -610,7 +799,7 @@ type
     function GetFileTime : time_t;
     function GetTotalTime : time_t;
     function GetNameLookup : Double;
-    function GetConnectTime : LongWord;
+    function GetConnectTime : TTimeInterval;
   public
     constructor Create; overload;
     constructor Create (var s : TSession); overload;
@@ -708,12 +897,12 @@ type
     (**
      * Get the number of uploaded bytes
      *)
-    property UploadedBytes : LongWord read GetUploadedBytes;
+    property Uploaded : TDataSize read GetUploaded;
 
     (**
      * Get the number of downloaded bytes
      *)
-    property DownloadedBytes : LongWord read GetDownloadedBytes;
+    property Downloaded : TDataSize read GetDownloaded;
 
     (**
      * Get download speed
@@ -730,12 +919,12 @@ type
     (**
      * Get size of retrieved headers
      *)
-    property HeaderSizeBytes : LongWord read GetHeaderSizeBytes;
+    property HeaderSize : TDataSize read GetHeaderSize;
 
     (**
      * Get size of sent request
      *)
-    property RequestSizeBytes : Longint read GetRequestSizeBytes;
+    property RequestSize : TDataSize read GetRequestSize;
 
     (**
      * Get content-length of download
@@ -780,10 +969,95 @@ type
     (**
      * Get the time until connect
      *)
-    property ConnectTime : LongWord read GetConnectTime;
+    property ConnectTime : TTimeInterval read GetConnectTime;
   end;
 
 implementation
+
+{ TDataSize }
+
+function TDataSize.GetBytes: QWord;
+begin
+  Result := FBytes;
+end;
+
+procedure TDataSize.SetBytes(bytes: QWord);
+begin
+  FBytes := bytes;
+end;
+
+function TDataSize.GetKiloBytes: Double;
+begin
+  Result := FBytes / 1024;
+end;
+
+procedure TDataSize.SetKiloBytes(Kb: Double);
+begin
+  FBytes := QWord(Kb * 1024);
+end;
+
+function TDataSize.GetMegaBytes: Double;
+begin
+  Result := FBytes / (1024 * 1024);
+end;
+
+procedure TDataSize.SetMegaBytes(Mb: Double);
+begin
+  FBytes := QWord(Mb * (1024 * 1024));
+end;
+
+function TDataSize.GetGigaBytes: Double;
+begin
+  Result := FBytes / (1024 * 1024 * 1024);
+end;
+
+procedure TDataSize.SetGigaBytes(Gb: Double);
+begin
+  FBytes := QWord(Gb * (1024 * 1024 * 1024));
+end;
+
+function TDataSize.GetTeraBytes: Double;
+begin
+  Result := FBytes / (1024 * 1024 * 1024 * 1024);
+end;
+
+procedure TDataSize.SetTeraBytes(Tb: Double);
+begin
+  FBytes := QWord(Tb * (1024 * 1024 * 1024 * 1024));
+end;
+
+constructor TDataSize.Create;
+begin
+  // do nothing!
+end;
+
+constructor TDataSize.Create(Bytes: QWord);
+begin
+  FBytes := Bytes;
+end;
+
+constructor TDataSize.Create(Size: Double; SizeType: TDataSizeType);
+begin
+  case SizeType of
+    dsBytes : Bytes := QWord(Ceil(Size));
+    dsKiloBytes : KiloBytes := Size;
+    dsMegaBytes : MegaBytes := Size;
+    dsGigaBytes : GigaBytes := Size;
+    dsTeraBytes : TeraBytes := Size;
+  end;
+end;
+
+function TDataSize.Format(SizeType: TDataSizeType;
+  const FormatType: string): string;
+begin
+  case SizeType of
+    dsBytes : Result := FormatFloat(FormatType, Double(Bytes));
+    dsKiloBytes : Result := FormatFloat(FormatType, KiloBytes);
+    dsMegaBytes : Result := FormatFloat(FormatType, MegaBytes);
+    dsGigaBytes : Result := FormatFloat(FormatType, GigaBytes);
+    dsTeraBytes : Result := FormatFloat(FormatType, TeraBytes);
+  end;
+end;
 
 { TTimeInterval }
 
@@ -794,7 +1068,7 @@ end;
 
 procedure TTimeInterval.SetSeconds(s: Double);
 begin
-  FMicroseconds := s * 1000000;
+  FMicroseconds := QWord(s * 1000000);
 end;
 
 function TTimeInterval.GetMilliseconds: Double;
@@ -804,7 +1078,7 @@ end;
 
 procedure TTimeInterval.SetMilliseconds(ms: Double);
 begin
-  FMicroseconds := ms * 1000;
+  FMicroseconds := QWord(ms * 1000);
 end;
 
 function TTimeInterval.GetMicroseconds: QWord;
@@ -817,10 +1091,34 @@ begin
   FMicroseconds := ms;
 end;
 
-function TTimeInterval.Format(const Format: string;
-  IntervalType: TTimeIntervalType): string;
+constructor TTimeInterval.Create;
 begin
-  //
+  // do nothing!
+end;
+
+constructor TTimeInterval.Create(Microseconds: QWord);
+begin
+  FMicroseconds := Microseconds;
+end;
+
+constructor TTimeInterval.Create(Interval: Double;
+  IntervalType: TTimeIntervalType);
+begin
+  case IntervalType of
+    tiMicroseconds : Microseconds := QWord(Ceil(Interval));
+    tiMilliseconds : Milliseconds := Interval;
+    tiSeconds : Seconds := Interval;
+  end;
+end;
+
+function TTimeInterval.Format(IntervalType: TTimeIntervalType;
+  const FormatType: string): string;
+begin
+  case IntervalType of
+    tiSeconds : Result := FormatFloat(FormatType, Seconds);
+    tiMilliseconds : Result := FormatFloat(FormatType, Milliseconds);
+    tiMicroseconds : Result := FormatFloat(FormatType, Double(Microseconds));
+  end;
 end;
 
 { TSessionInfo }
@@ -977,25 +1275,25 @@ begin
   end;
 end;
 
-function TSessionInfo.GetUploadedBytes: LongWord;
+function TSessionInfo.GetUploaded: TDataSize;
 var
   bytes : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_SIZE_UPLOAD_T, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
-function TSessionInfo.GetDownloadedBytes: LongWord;
+function TSessionInfo.GetDownloaded: TDataSize;
 var
   bytes : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_SIZE_DOWNLOAD_T, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
@@ -1021,25 +1319,25 @@ begin
   end;
 end;
 
-function TSessionInfo.GetHeaderSizeBytes: LongWord;
+function TSessionInfo.GetHeaderSize: TDataSize;
 var
   bytes : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_HEADER_SIZE, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
-function TSessionInfo.GetRequestSizeBytes: Longint;
+function TSessionInfo.GetRequestSize: TDataSize;
 var
   bytes : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_REQUEST_SIZE, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
@@ -1131,14 +1429,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConnectTime: LongWord;
+function TSessionInfo.GetConnectTime: TTimeInterval;
 var
   time : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_CONNECT_TIME_T, @time);
-    Result := time;
+    Result := TTimeInterval.Create(time);
   end;
 end;
 
@@ -1159,16 +1457,28 @@ end;
 
 { TSession }
 
-class function TSession.WriteFunction (ptr: PChar; size: LongWord;
+class function TSession.WriteFunctionCallback (ptr: PChar; size: LongWord;
   nmemb: LongWord; data: Pointer): LongWord; cdecl;
 begin
-  Result := TSession(data).Write(ptr, size, nmemb);
+  if Assigned(TSession(data).FWriteFunction) then
+  begin
+    Result := TSession(data).FWriteFunction(ptr, size);
+  end else
+  begin
+    Result := TSession(data).Write(ptr, size, nmemb);
+  end;
 end;
 
-class function TSession.ReadFunction (buf: PChar; size: LongWord;
+class function TSession.ReadFunctionCallback (buf: PChar; size: LongWord;
   nitems: LongWord; data: Pointer): LongWord; cdecl;
 begin
-  Result := TSession(data).Read(buf, size, nitems);
+  if Assigned(TSession(data).FReadFunction) then
+  begin
+    Result := TSession(data).FReadFunction(buf, size);
+  end else
+  begin
+    Result := TSession(data).Read(buf, size, nitems);
+  end;
 end;
 
 function TSession.Write(ptr: PChar; size: LongWord; nmemb: LongWord): LongWord;
@@ -1192,7 +1502,8 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @TSession.WriteFunction);
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION,
+      @TSession.WriteFunctionCallback);
     FollowRedirect := True;
   end;
 end;
@@ -1353,7 +1664,7 @@ procedure TSession.SetProxyType(proxy: ProxyType);
 begin
   if Opened then
   begin
-    curl_easy_setopt(handle, CURLOPT_PROXY_TYPE, Longint(proxy));
+    curl_easy_setopt(handle, CURLOPT_PROXYTYPE, Longint(proxy));
   end;
 end;
 
@@ -1362,6 +1673,69 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_NOPROXY, PChar(hosts));
+  end;
+end;
+
+procedure TSession.SetHttpProxyTunnel(proxyTunnel: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_HTTPPROXYTUNNEL, Longint(proxyTunnel));
+  end;
+end;
+
+procedure TSession.SetLocalPort(port: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_LOCALPORT, port);
+  end;
+end;
+
+procedure TSession.SetLocalPortRange(range: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, range);
+  end;
+end;
+
+procedure TSession.SetDNSCacheTimeout(timeout: TTimeInterval);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_DNS_CACHE_TIMEOUT,
+      Longint(ceil(timeout.Seconds)));
+  end;
+end;
+
+procedure TSession.SetDNSGlobalCache(enable: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_DNS_USE_GLOBAL_CACHE, Longint(enable));
+  end;
+end;
+
+procedure TSession.SetDNSoverHTTPS(url: string);
+begin
+  if Opened then
+  begin
+    if url = '' then
+    begin
+      curl_easy_setopt(handle, CURLOPT_DOH_URL, 0);
+    end else
+    begin
+      curl_easy_setopt(handle, CURLOPT_DOH_URL, PChar(url));
+    end;
+  end;
+end;
+
+procedure TSession.SetBufferSize(size: TDataSize);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, Longint(size.Bytes));
   end;
 end;
 
