@@ -373,6 +373,14 @@ type
     procedure SetDNSGlobalCache (enable : Boolean);
     procedure SetDNSoverHTTPS (url : string);
     procedure SetBufferSize (size : TDataSize);
+    procedure SetTCPFastOpen (fastOpen : Boolean);
+    procedure SetTCPNoDelay (noDelay : Boolean);
+    procedure SetAddressScope (scope : Longint);
+    procedure SetTCPKeepalive (probe : Boolean);
+    procedure SetTCPKeepIdle (time : TTimeInterval);
+    procedure SetTCPKeepInterval (time : TTimeInterval);
+    procedure SetUnixSocketPath (path : string);
+    procedure SetAbstractUnixSocketPath (path : string);
   public
     constructor Create;
     destructor Destroy; override;
@@ -740,12 +748,98 @@ type
      * The minimum buffer size allowed to be set is 1024 bytes.
      *)
     property BufferSize : TDataSize write SetBufferSize;
+
+    (**
+     * Enable/disable TCP Fast Open
+     *
+     * TCP Fast Open (RFC7413) is a mechanism that allows data to be carried in
+     * the SYN and SYN-ACK packets and consumed by the receiving end during the
+     * initial connection handshake, saving up to one full round-trip time
+     * (RTT).
+     *)
+    property TCPFastOpen : Boolean write SetTCPFastOpen default False;
+
+    (**
+     * Disable TCP's Nagle algorithm on this connection
+     *
+     * The purpose of this algorithm is to try to minimize the number of small
+     * packets on the network (where "small packets" means TCP segments less
+     * than the Maximum Segment Size (MSS) for the network).
+     * Maximizing the amount of data sent per TCP segment is good because it
+     * amortizes the overhead of the send. However, in some cases small segments
+     * may need to be sent without delay. This is less efficient than sending
+     * larger amounts of data at a time, and can contribute to congestion on the
+     * network if overdone.
+     *)
+    property TCPNoDelay : Boolean write SetTCPNoDelay default True;
+
+    (**
+     * Set scope id for IPv6 addresses
+     *
+     * Pass a long specifying the scope id value to use when connecting to IPv6
+     * addresses.
+     *)
+    property AddressScope : Longint write SetAddressScope default 0;
+
+    (**
+     * Enable/disable TCP keep-alive probing
+     *
+     * If set, TCP keepalive probes will be sent. The delay and frequency of
+     * these probes can be controlled by the TCPKeepIdle and TCPKeepInterval
+     * options, provided the operating system supports them. Set to False
+     * (default behavior) to disable keepalive probes
+     *)
+    property TCPKeepalive : Boolean write SetTCPKeepalive default False;
+
+    (**
+     * Set TCP keep-alive idle time wait
+     *
+     * Sets the delay, that the operating system will wait while the connection
+     * is idle before sending keepalive probes. Not all operating systems
+     * support this option.
+     *)
+    property TCPKeepIdle : TTimeInterval write SetTCPKeepIdle;
+
+    (**
+     * Set TCP keep-alive interval
+     *
+     * Sets the interval, that the operating system will wait between sending
+     * keepalive probes. Not all operating systems support this option.
+     *)
+    property TCPKeepInterval : TTimeInterval write SetTCPKeepInterval;
+
+    (**
+     * Set UNIX domain socket
+     *
+     * Enables the use of Unix domain sockets as connection endpoint and sets
+     * the path to path. If path is '' (empty string), then Unix domain sockets
+     * are disabled.
+     * When enabled, curl will connect to the Unix domain socket instead of
+     * establishing a TCP connection to a host. Since no TCP connection is
+     * created, curl does not need to resolve the DNS hostname in the URL.
+     * The maximum path length on Cygwin, Linux and Solaris is 107. On other
+     * platforms it might be even less.
+     *)
+    property UnixSocketPath : string write SetUnixSocketPath;
+
+    (**
+     * Set an abstract Unix domain socket
+     *
+     * Enables the use of an abstract Unix domain socket instead of establishing
+     * a TCP connection to a host.
+     *)
+    property AbstractUnixSocketPath : string write SetAbstractUnixSocketPath;
   public
+
     (**
      * Callback for writing received data
      *
      * This callback function gets called by libcurl as soon as there is data
      * received that needs to be saved.
+     * This option shares the same semantics as UnixSocketPath in which
+     * documentation more details can be found. Internally, these two options
+     * share the same storage and therefore only one of them can be set per
+     * handle.
      *)
     property WriteFunction : TWriteFunction read FWriteFunction
       write FWriteFunction;
@@ -1736,6 +1830,82 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, Longint(size.Bytes));
+  end;
+end;
+
+procedure TSession.SetTCPFastOpen(fastOpen: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TCP_FASTOPEN, Longint(fastOpen));
+  end;
+end;
+
+procedure TSession.SetTCPNoDelay(noDelay: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TCP_NODELAY, Longint(noDelay));
+  end;
+end;
+
+procedure TSession.SetAddressScope(scope: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_ADDRESS_SCOPE, scope);
+  end;
+end;
+
+procedure TSession.SetTCPKeepalive(probe: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, Longint(probe));
+  end;
+end;
+
+procedure TSession.SetTCPKeepIdle(time: TTimeInterval);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TCP_KEEPIDLE, Longint(Ceil(time.Seconds)));
+  end;
+end;
+
+procedure TSession.SetTCPKeepInterval(time: TTimeInterval);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TCP_KEEPINTVL, Longint(Ceil(time.Seconds)));
+  end;
+end;
+
+procedure TSession.SetUnixSocketPath(path: string);
+begin
+  if Opened then
+  begin
+    if path = '' then
+    begin
+      curl_easy_setopt(handle, CURLOPT_UNIX_SOCKET_PATH, 0);
+    end else
+    begin
+      curl_easy_setopt(handle, CURLOPT_UNIX_SOCKET_PATH, PChar(path));
+    end;
+  end;
+end;
+
+procedure TSession.SetAbstractUnixSocketPath(path: string);
+begin
+  if Opened then
+  begin
+    if path = '' then
+    begin
+      curl_easy_setopt(handle, CURLOPT_ABSTRACT_UNIX_SOCKET, 0);
+    end else
+    begin
+      curl_easy_setopt(handle, CURLOPT_ABSTRACT_UNIX_SOCKET, PChar(path));
+    end;
   end;
 end;
 
