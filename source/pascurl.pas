@@ -881,8 +881,8 @@ type
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
     function GetDownloaded : TDataSize;
-    function GetDownloadSpeedBytesPerSecond : LongWord;
-    function GetUploadSpeedBytesPerSecond : LongWord;
+    function GetDownloadSpeed : TDataSize;
+    function GetUploadSpeed : TDataSize;
     function GetHeaderSize : TDataSize;
     function GetRequestSize : TDataSize;
     function GetContentLengthDownload : LongWord;
@@ -891,12 +891,26 @@ type
     function GetPrimaryPort : Longint;
     function GetLocalPort : Longint;
     function GetFileTime : time_t;
-    function GetTotalTime : time_t;
-    function GetNameLookup : Double;
+    function GetTotalTime : TTimeInterval;
+    function GetNameLookup : TTimeInterval;
     function GetConnectTime : TTimeInterval;
+    function GetAppConnectTime : TTimeInterval;
+    function GetPretransferTime : TTimeInterval;
+    function GetStartTransferTime : TTimeInterval;
+    function GetRedirectTime : TTimeInterval;
+    function GetRetryAfterDelay : TTimeInterval;
+    function GetOsErrno : Longint;
+    function GetLastSocket : Longint;
+    function GetActiveSocket : curl_socket_t;
+    function GetFTPEntryPath : string;
+    function GetConditionUnmet : Boolean;
+    function GetRTSPSessionID : string;
+    function GetRTSPClientCSeq : Longint;
+    function GetRTSPServerCSeq : Longint;
+    function GetRTSPReceivedCSeq : Longint;
+    function GetScheme : string;
   public
-    constructor Create; overload;
-    constructor Create (var s : TSession); overload;
+    constructor Create (var s : TSession);
 
     (**
      * Perform a bloking file transfer
@@ -999,16 +1013,14 @@ type
     property Downloaded : TDataSize read GetDownloaded;
 
     (**
-     * Get download speed
+     * Get download speed per second
      *)
-    property DownloadSpeedBytesPerSecond : LongWord
-      read GetDownloadSpeedBytesPerSecond;
+    property DownloadSpeed : TDataSize read GetDownloadSpeed;
 
     (**
-     * Get upload speed
+     * Get upload speed per second
      *)
-    property UploadSpeedBytesPerSecond : LongWord
-      read GetUploadSpeedBytesPerSecond;
+    property UploadSpeed : TDataSize read GetUploadSpeed;
 
     (**
      * Get size of retrieved headers
@@ -1053,17 +1065,117 @@ type
     (**
      * Get total time of previous transfer
      *)
-    property TotalTime : time_t read GetTotalTime;
+    property TotalTime : TTimeInterval read GetTotalTime;
 
     (**
      * Get the name lookup time
      *)
-    property NameLookup : Double read GetNameLookup;
+    property NameLookup : TTimeInterval read GetNameLookup;
 
     (**
      * Get the time until connect
      *)
     property ConnectTime : TTimeInterval read GetConnectTime;
+
+    (**
+     * Get the time until the SSL/SSH handshake is completed
+     *
+     * When a redirect is followed, the time from each request is added together.
+     *)
+    property AppConnectTime : TTimeInterval read GetAppConnectTime;
+
+    (**
+     * Get the time until the file transfer start
+     *
+     * When a redirect is followed, the time from each request is added together.
+     *)
+    property PretransferTime : TTimeInterval read GetPretransferTime;
+
+    (**
+     * Get time until the first byte is received
+     *
+     * When a redirect is followed, the time from each request is added together.
+     *)
+    property StartTransferTime : TTimeInterval read GetStartTransferTime;
+
+    (**
+     * Get the time for all redirection steps
+     *
+     * When a redirect is followed, the time from each request is added together.
+     *)
+    property RedirectTime : TTimeInterval read GetRedirectTime;
+
+    (**
+     * Returns the Retry-After retry delay
+     *
+     * The information from the "Retry-After:" header. Returns zero delay if
+     * there was no header.
+     *)
+    property RetryAfterDelay : TTimeInterval read GetRetryAfterDelay;
+
+    (**
+     * Get errno number from last connect failure
+     *)
+    property OsErrno : Longint read GetOsErrno;
+
+    (**
+     * Get the last socket used
+     *
+     * If the socket is no longer valid, -1 is returned. When you finish working
+     * with the socket, you must call curl_easy_cleanup() as usual and let
+     * libcurl close the socket and cleanup other resources associated with the
+     * handle.
+     *)
+    property LastSocket : Longint read GetLastSocket;
+
+    (**
+     * Get the active socket
+     *)
+    property ActiveSocket : curl_socket_t read GetActiveSocket;
+
+    (**
+     * Get entry path in FTP server
+     *)
+    property FTPEntryPath : string read GetFTPEntryPath;
+
+    (**
+     * Get info on unmet time conditional
+     *
+     * Receive the TRUE if the condition provided in the previous request didn't
+     * match. Alas, if this returns a TRUE you know that the reason you didn't
+     * get data in return is because it didn't fulfill the condition.
+     *)
+    property ConditionUnmet : Boolean read GetConditionUnmet;
+
+    (**
+     * Get RTSP session ID
+     *
+     * Applications wishing to resume an RTSP session on another connection
+     * should retrieve this info before closing the active connection.
+     *)
+    property RTSPSessionId : string read GetRTSPSessionId;
+
+    (**
+     * Get the next RTSP client CSeq
+     *
+     * Receive the next CSeq that will be used by the application.
+     *)
+    property RTSPClientCSeq : Longint read GetRTSPClientCSeq;
+
+    (**
+     * Get the next RTSP server CSeq
+     *)
+    property RTSPServerCSeq : Longint read GetRTSPServerCSeq;
+
+    (**
+     * Get the recently received CSeq
+     *)
+    property RTSPReceivedCSeq : Longint read GetRTSPReceivedCSeq;
+
+    (**
+     * Get the URL scheme (sometimes called protocol) used in the connection
+     *)
+    property Scheme : string read GetScheme;
   end;
 
 implementation
@@ -1391,25 +1503,25 @@ begin
   end;
 end;
 
-function TSessionInfo.GetDownloadSpeedBytesPerSecond: LongWord;
+function TSessionInfo.GetDownloadSpeed: TDataSize;
 var
   bytes : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
-function TSessionInfo.GetUploadSpeedBytesPerSecond: LongWord;
+function TSessionInfo.GetUploadSpeed: TDataSize;
 var
   bytes : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_SPEED_UPLOAD_T, @bytes);
-    Result := bytes;
+    Result := TDataSize.Create(bytes);
   end;
 end;
 
@@ -1501,25 +1613,25 @@ begin
   end;
 end;
 
-function TSessionInfo.GetTotalTime: time_t;
+function TSessionInfo.GetTotalTime: TTimeInterval;
 var
   time : LongWord;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_TOTAL_TIME_T, @time);
-    Result := time_t(time);
+    Result := TTimeInterval.Create(time);
   end;
 end;
 
-function TSessionInfo.GetNameLookup: Double;
+function TSessionInfo.GetNameLookup: TTimeInterval;
 var
-  time : Double;
+  time : Longword;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_NAMELOOKUP_TIME, @time);
-    Result := time;
+    curl_easy_getinfo(session.handle, CURLINFO_NAMELOOKUP_TIME_T, @time);
+    Result := TTimeInterval.Create(time);
   end;
 end;
 
@@ -1534,9 +1646,154 @@ begin
   end;
 end;
 
-constructor TSessionInfo.Create;
+function TSessionInfo.GetAppConnectTime: TTimeInterval;
+var
+  time : LongWord;
 begin
-  // Do nothing
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_APPCONNECT_TIME_T, @time);
+    Result := TTimeInterval.Create(time);
+  end;
+end;
+
+function TSessionInfo.GetPretransferTime: TTimeInterval;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_PRETRANSFER_TIME_T, @time);
+    Result := TTimeInterval.Create(time);
+  end;
+end;
+
+function TSessionInfo.GetStartTransferTime: TTimeInterval;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_STARTTRANSFER_TIME_T, @time);
+    Result := TTimeInterval.Create(time);
+  end;
+end;
+
+function TSessionInfo.GetRedirectTime: TTimeInterval;
+var
+  time : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_TIME_T, @time);
+    Result := TTimeInterval.Create(time);
+  end;
+end;
+
+function TSessionInfo.GetRetryAfterDelay: TTimeInterval;
+var
+  delay : LongWord;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_RETRY_AFTER, @delay);
+    Result := TTimeInterval.Create(Double(delay), tiSeconds);
+  end;
+end;
+
+function TSessionInfo.GetOsErrno: Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_OS_ERRNO, @Result);
+  end;
+end;
+
+function TSessionInfo.GetLastSocket: Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_LASTSOCKET, @Result);
+  end;
+end;
+
+function TSessionInfo.GetActiveSocket: curl_socket_t;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_ACTIVESOCKET, @Result);
+  end;
+end;
+
+function TSessionInfo.GetFTPEntryPath: string;
+var
+  path : PChar;
+begin
+  if Opened then
+  begin
+    New(path);
+    curl_easy_getinfo(session.handle, CURLINFO_FTP_ENTRY_PATH, @path);
+    Result := path;
+  end;
+end;
+
+function TSessionInfo.GetConditionUnmet: Boolean;
+var
+  unmet : Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_CONDITION_UNMET, @unmet);
+    Result := Boolean(unmet);
+  end;
+end;
+
+function TSessionInfo.GetRTSPSessionID: string;
+var
+  id : PChar;
+begin
+  if Opened then
+  begin
+    New(id);
+    curl_easy_getinfo(session.handle, CURLINFO_RTSP_SESSION_ID, @id);
+    Result := id;
+  end;
+end;
+
+function TSessionInfo.GetRTSPClientCSeq: Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_RTSP_CLIENT_CSEQ, @Result);
+  end;
+end;
+
+function TSessionInfo.GetRTSPServerCSeq: Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_RTSP_SERVER_CSEQ, @Result);
+  end;
+end;
+
+function TSessionInfo.GetRTSPReceivedCSeq: Longint;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.handle, CURLINFO_RTSP_CSEQ_RECV, @Result);
+  end;
+end;
+
+function TSessionInfo.GetScheme: string;
+var
+  sc : PChar;
+begin
+  if Opened then
+  begin
+    New(sc);
+    curl_easy_getinfo(session.handle, CURLINFO_SCHEME, @sc);
+    Result := sc;
+  end;
 end;
 
 constructor TSessionInfo.Create(var s: TSession);
