@@ -168,6 +168,73 @@ type
     PROXY_SOCKS5_HOSTNAME             = Longint(CURLPROXY_SOCKS5_HOSTNAME)
   );
 
+  HTTPAuthMethod = (
+    (**
+     * HTTP Basic authentication. This is the default choice, and the only
+     * method that is in wide-spread use and supported virtually everywhere.
+     * This sends the user name and password over the network in plain text,
+     * easily captured by others.
+     *)
+    AUTH_BASIC                        = CURLAUTH_BASIC,
+
+    (**
+     * HTTP Digest authentication. Digest authentication is defined in RFC 2617
+     * and is a more secure way to do authentication over public networks than
+     * the regular old-fashioned Basic method.
+     *)
+    AUTH_DIGEST                       = CURLAUTH_DIGEST,
+
+    (**
+     * HTTP Digest authentication with an IE flavor. Digest authentication is
+     * defined in RFC 2617 and is a more secure way to do authentication over
+     * public networks than the regular old-fashioned Basic method. The IE
+     * flavor is simply that libcurl will use a special "quirk" that IE is known
+     * to have used before version 7 and that some servers require the client to
+     * use.
+     *)
+    AUTH_DIGEST_IE                    = CURLAUTH_DIGEST_IE,
+
+    (**
+     * HTTP Bearer token authentication, used primarily in OAuth 2.0 protocol.
+     *)
+    AUTH_BEARER                       = CURLAUTH_BEARER,
+
+    (**
+     * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
+     * defined in RFC 4559 and is the most secure way to perform authentication
+     * over HTTP.
+     *)
+    AUTH_NEGOTIATE                    = CURLAUTH_NEGOTIATE{%H-},
+
+    (**
+     * HTTP NTLM authentication. A proprietary protocol invented and used by
+     * Microsoft. It uses a challenge-response and hash concept similar to
+     * Digest, to prevent the password from being eavesdropped.
+     *)
+    AUTH_NTLM                         = CURLAUTH_NTLM,
+
+    (**
+     * NTLM delegating to winbind helper. Authentication is performed by a
+     * separate binary application that is executed when needed. The name of the
+     * application is specified at compile time but is typically
+     * /usr/bin/ntlm_auth
+     *)
+    AUTH_NTLM_WB                      = CURLAUTH_NTLM_WB,
+
+    (**
+     * This is sets all bits and thus makes libcurl pick any it finds suitable.
+     * libcurl will automatically select the one it finds most secure.
+     *)
+    AUTH_ANY                          = CURLAUTH_ANY,
+
+    (**
+     * This is sets all bits except Basic and thus makes libcurl pick any it
+     * finds suitable. libcurl will automatically select the one it finds most
+     * secure.
+     *)
+    AUTH_ANYSAFE                      = CURLAUTH_ANYSAFE
+  );
+
   { TTimeInterval }
 
   TTimeIntervalType = (
@@ -381,6 +448,14 @@ type
     procedure SetTCPKeepInterval (time : TTimeInterval);
     procedure SetUnixSocketPath (path : string);
     procedure SetAbstractUnixSocketPath (path : string);
+    procedure SetUserPassword (userpwd : string);
+    procedure SetProxyUserPassword (userpwd : string);
+    procedure SetUsername (name : string);
+    procedure SetPassword (pass : string);
+    procedure SetLoginOptions (options : string);
+    procedure SetProxyUsername (name : string);
+    procedure SetProxyPassword (pass : string);
+    procedure SetHTTPAuth (method : Longint);
   public
     constructor Create;
     destructor Destroy; override;
@@ -829,6 +904,98 @@ type
      * a TCP connection to a host.
      *)
     property AbstractUnixSocketPath : string write SetAbstractUnixSocketPath;
+
+    (**
+     * User name and password to use in authentification
+     *
+     * Login details string for the connection. The format of which is:
+     * [user name]:[password].
+     * When using Kerberos V5 authentication with a Windows based server, you
+     * should specify the user name part with the domain name in order for the
+     * server to successfully obtain a Kerberos Ticket. If you don't then the
+     * initial part of the authentication handshake may fail.
+     * When using NTLM, the user name can be specified simply as the user name
+     * without the domain name should the server be part of a single domain and
+     * forest.
+     * To specify the domain name use either Down-Level Logon Name or UPN (User
+     * Principal Name) formats. For example, EXAMPLE\user and user@example.com
+     * respectively.
+     * When using HTTP and FollowLocation, libcurl might perform several
+     * requests to possibly different hosts. libcurl will only send this user
+     * and password information to hosts using the initial host name, so if
+     * libcurl follows locations to other hosts it will not send the user and
+     * password to those. This is enforced to prevent accidental information
+     * leakage.
+     *)
+    property UserPassword : string write SetUserPassword;
+
+    (**
+     * User name and password to use for proxy authentification
+     *
+     * Pass a parameter, which should be [user name]:[password] to use for the
+     * connection to the HTTP proxy. Both the name and the password will be URL
+     * decoded before use, so to include for example a colon in the user name
+     * you should encode it as %3A. (This is different to how UserPassword is
+     * used - beware.)
+     *)
+    property ProxyUserPasswod : string write SetProxyUserPassword;
+
+    (**
+     * User name to use in authentication
+     *
+     * Sets the user name to be used in protocol authentication. You should not
+     * use this option together with the (older) UserPassword option.
+     * When using Kerberos V5 authentication with a Windows based server, you
+     * should include the domain name in order for the server to successfully
+     * obtain a Kerberos Ticket. If you don't then the initial part of the
+     * authentication handshake may fail.
+     * When using NTLM, the user name can be specified simply as the user name
+     * without the domain name should the server be part of a single domain and
+     * forest.
+     * To include the domain name use either Down-Level Logon Name or UPN (User
+     * Principal Name) formats. For example, EXAMPLE\user and user@example.com
+     * respectively.
+     *)
+    property Username : string write SetUsername;
+
+    (**
+     * Password to use in authentication
+     *
+     * The Password option should be used in conjunction with the Username
+     * option.
+     *)
+    property Password : string write SetPassword;
+
+    (**
+     * Set login options
+     *
+     * For more information about the login options please see RFC 2384, RFC
+     * 5092 and IETF draft draft-earhart-url-smtp-00.txt
+     * LoginOptions can be used to set protocol specific login options, such as
+     * the preferred authentication mechanism via "AUTH=NTLM" or "AUTH=*", and
+     * should be used in conjunction with the Username option.
+     *)
+    property LoginOptions : string write SetLoginOptions;
+
+    (**
+     * User name to use for proxy authentication
+     *
+     * Sets the user name to be used in protocol authentication with the proxy.
+     *)
+    property ProxyUsername : string write SetProxyUsername;
+
+    (**
+     * Password to use with proxy authentication
+     *
+     * The option should be used in conjunction with the ProxyUsername option.
+     *)
+    property ProxyPassword : string write SetProxyPassword;
+
+    (**
+     * Tell libcurl which authentication method(s) you want it to use speaking
+     * to the remote server.
+     *)
+    property HTTPAuth : Longint write SetHTTPAuth;
   public
 
     (**
@@ -2163,6 +2330,70 @@ begin
     begin
       curl_easy_setopt(handle, CURLOPT_ABSTRACT_UNIX_SOCKET, PChar(path));
     end;
+  end;
+end;
+
+procedure TSession.SetUserPassword(userpwd: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_USERPWD, PChar(userpwd));
+  end;
+end;
+
+procedure TSession.SetProxyUserPassword(userpwd: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXYUSERPWD, PChar(userpwd));
+  end;
+end;
+
+procedure TSession.SetUsername(name: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_USERNAME, PChar(name));
+  end;
+end;
+
+procedure TSession.SetPassword(pass: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PASSWORD, PChar(pass));
+  end;
+end;
+
+procedure TSession.SetLoginOptions(options: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_LOGIN_OPTIONS, PChar(options));
+  end;
+end;
+
+procedure TSession.SetProxyUsername(name: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXYUSERNAME, PChar(name));
+  end;
+end;
+
+procedure TSession.SetProxyPassword(pass: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXYPASSWORD, PChar(pass));
+  end;
+end;
+
+procedure TSession.SetHTTPAuth(method: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, method);
   end;
 end;
 

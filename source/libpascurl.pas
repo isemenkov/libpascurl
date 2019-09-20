@@ -498,6 +498,7 @@ const
   CURLAUTH_NTLM = Cardinal(1 shl 3);
   CURLAUTH_DIGEST_IE = Cardinal(1 shl 4);
   CURLAUTH_NTLM_WB = Cardinal(1 shl 5);
+  CURLAUTH_BEARER = Cardinal(1 shl 6);
   CURLAUTH_ONLY = Cardinal(1 shl 31);
   CURLAUTH_ANY = (Not CURLAUTH_DIGEST_IE);
   CURLAUTH_ANYSAFE = (Not (CURLAUTH_BASIC or CURLAUTH_DIGEST_IE));
