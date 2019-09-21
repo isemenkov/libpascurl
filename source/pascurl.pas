@@ -501,6 +501,11 @@ type
     procedure SetUnrestrictedAuth (send : Boolean);
     procedure SetMaxRedirects (amount : Longint);
     procedure SetPostRedirect (redir : Longint);
+    procedure SetPutMethod (put : Boolean);
+    procedure SetPostMethod (post : Boolean);
+    procedure SetPostFields (data : string);
+    procedure SetPostFieldsSize (size : Longint);
+    procedure SetPostFieldsSizeLarge (size : LongWord);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1150,6 +1155,52 @@ type
      * How to act on an HTTP POST redirect
      *)
     property PostRedirect : Longint write SetPostRedirect;
+
+    (**
+     * Make an HTTP PUT request
+     *
+     * This option is deprecated since version 7.12.1. Use Upload!
+     *)
+    property Put : Boolean write SetPutMethod;
+
+    (**
+     * Request an HTTP POST
+     *)
+    property Post : Boolean write SetPostMethod default False;
+
+    (**
+     * Specify data to POST to server
+     *
+     * Pass the full data to send in an HTTP POST operation. You must make sure
+     * that the data is formatted the way you want the server to receive it.
+     * libcurl will not convert or encode it for you in any way. For example,
+     * the web server may assume that this data is url-encoded.
+     *)
+    property PostFields : string write SetPostFields;
+
+    (**
+     * Size of POST data
+     *
+     * If you want to post data to the server without having libcurl do a
+     * strlen() to measure the data size, this option must be used. When this
+     * option is used you can post fully binary data, which otherwise is likely
+     * to fail. If this size is set to -1, the library will use strlen() to get
+     * the size.
+     * If you post more than 2GB, use PostFieldsSizeLarge.
+     *)
+    property PostFieldsSize : Longint write SetPostFieldsSize default -1;
+
+    (**
+     * Size of POST data
+     *
+     * If you want to post data to the server without having libcurl do a
+     * strlen() to measure the data size, this option must be used. When this
+     * option is used you can post fully binary data, which otherwise is likely
+     * to fail. If this size is set to -1, the library will use strlen() to get
+     * the size.
+     *)
+    property PostFieldsSizeLarge : LongWord write SetPostFieldsSizeLarge
+      default -1;
   public
 
     (**
@@ -2663,6 +2714,46 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_POSTREDIR, redir);
+  end;
+end;
+
+procedure TSession.SetPutMethod(put: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PUT, Longint(put));
+  end;
+end;
+
+procedure TSession.SetPostMethod(post: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_POST, Longint(post));
+  end;
+end;
+
+procedure TSession.SetPostFields(data: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_POSTFIELDS, PChar(data));
+  end;
+end;
+
+procedure TSession.SetPostFieldsSize(size: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, size);
+  end;
+end;
+
+procedure TSession.SetPostFieldsSizeLarge(size: LongWord);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE_LARGE, size);
   end;
 end;
 
