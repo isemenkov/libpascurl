@@ -38,7 +38,7 @@ unit pascurl;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, BaseUnix, math;
+  Classes, SysUtils, libpascurl, BaseUnix, math, typinfo;
 
 type
   Protocol = (
@@ -185,6 +185,20 @@ type
     AUTH_DIGEST                       = CURLAUTH_DIGEST,
 
     (**
+     * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
+     * defined in RFC 4559 and is the most secure way to perform authentication
+     * over HTTP.
+     *)
+    AUTH_NEGOTIATE                    = CURLAUTH_NEGOTIATE,
+
+    (**
+     * HTTP NTLM authentication. A proprietary protocol invented and used by
+     * Microsoft. It uses a challenge-response and hash concept similar to
+     * Digest, to prevent the password from being eavesdropped.
+     *)
+    AUTH_NTLM                         = CURLAUTH_NTLM,
+
+    (**
      * HTTP Digest authentication with an IE flavor. Digest authentication is
      * defined in RFC 2617 and is a more secure way to do authentication over
      * public networks than the regular old-fashioned Basic method. The IE
@@ -195,25 +209,6 @@ type
     AUTH_DIGEST_IE                    = CURLAUTH_DIGEST_IE,
 
     (**
-     * HTTP Bearer token authentication, used primarily in OAuth 2.0 protocol.
-     *)
-    AUTH_BEARER                       = CURLAUTH_BEARER,
-
-    (**
-     * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
-     * defined in RFC 4559 and is the most secure way to perform authentication
-     * over HTTP.
-     *)
-    AUTH_NEGOTIATE                    = CURLAUTH_NEGOTIATE{%H-},
-
-    (**
-     * HTTP NTLM authentication. A proprietary protocol invented and used by
-     * Microsoft. It uses a challenge-response and hash concept similar to
-     * Digest, to prevent the password from being eavesdropped.
-     *)
-    AUTH_NTLM                         = CURLAUTH_NTLM,
-
-    (**
      * NTLM delegating to winbind helper. Authentication is performed by a
      * separate binary application that is executed when needed. The name of the
      * application is specified at compile time but is typically
@@ -222,10 +217,15 @@ type
     AUTH_NTLM_WB                      = CURLAUTH_NTLM_WB,
 
     (**
+     * HTTP Bearer token authentication, used primarily in OAuth 2.0 protocol.
+     *)
+    AUTH_BEARER                       = CURLAUTH_BEARER,
+
+    (**
      * This is sets all bits and thus makes libcurl pick any it finds suitable.
      * libcurl will automatically select the one it finds most secure.
      *)
-    AUTH_ANY                          = CURLAUTH_ANY,
+    AUTH_ANY                          = CURLAUTH_ANY{%H-},
 
     (**
      * This is sets all bits except Basic and thus makes libcurl pick any it
@@ -233,6 +233,37 @@ type
      * secure.
      *)
     AUTH_ANYSAFE                      = CURLAUTH_ANYSAFE
+  );
+
+  TTLSAuthMethod = (
+    (**
+     * TLS-SRP authentication. Secure Remote Password authentication for TLS is
+     * defined in RFC 5054 and provides mutual authentication if both sides have
+     * a shared secret.
+     *)
+    SRP
+  );
+
+  TPostRedirects = (
+    REDIRECT_POST_NONE                = 0,
+
+    (**
+     * Tells the library to respect RFC 7231 (section 6.4.2 to 6.4.4) and not
+     * convert POST requests into GET requests when following a 301 redirection
+     *)
+    REDIRECT_POST_301                 = CURL_REDIR_POST_301,
+
+    (**
+     * Makes libcurl maintain the request method after a 302 redirect
+     *)
+    REDIRECT_POST_302                 = CURL_REDIR_POST_302,
+
+    (**
+     * Makes libcurl maintain the request method after a 303 redirect
+     *)
+    REDIRECT_POST_303                 = CURL_REDIR_POST_303,
+
+    REDIRECT_POST_ALL                 = CURL_REDIR_POST_ALL
   );
 
   { TTimeInterval }
@@ -341,7 +372,7 @@ type
     property GigaBytes : Double read GetGigaBytes write SetGigaBytes;
     property GB : Double read GetGigaBytes write SetGigaBytes;
 
-    (* 1024 KB *)
+    (* 1024 Kb *)
     property MegaBytes : Double read GetMegaBytes write SetMegaBytes;
     property MB : Double read GetMegaBytes write SetMegaBytes;
 
@@ -360,13 +391,13 @@ type
   (**
    * Callback for writting received data
    *)
-  TWriteFunction = function (buffer : PChar; size : LongWord) : LongWord
+  TDownloadFunction = function (buffer : PChar; size : LongWord) : LongWord
     of object;
 
   (**
    * Callback for data uploads
    *)
-  TReadFunction = function (buffer : PChar; size : LongWord) : LongWord
+  TUploadFunction = function (buffer : PChar; size : LongWord) : LongWord
     of object;
 
   TSession = class
@@ -374,8 +405,8 @@ type
     handle : CURL;
     buffer : TStringStream;
 
-    FWriteFunction : TWriteFunction;
-    FReadFunction : TReadFunction;
+    FDownloadFunction : TDownloadFunction;
+    FUploadFunction : TUploadFunction;
   protected
     (**
      * Callback for writting received data
@@ -456,6 +487,20 @@ type
     procedure SetProxyUsername (name : string);
     procedure SetProxyPassword (pass : string);
     procedure SetHTTPAuth (method : Longint);
+    procedure SetTLSUsername (name : string);
+    procedure SetProxyTLSUsername (name : string);
+    procedure SetTLSPassword (pass : string);
+    procedure SetProxyTLSPassword (pass : string);
+    procedure SetTLSAuth (method : TTLSAuthMethod);
+    procedure SetProxyTLSAuth (method : TTLSAuthMethod);
+    procedure SetProxyHTTPAuth (method : Longint);
+    procedure SetSASLAuthzid (authzid : string);
+    procedure SetSASLIR (send : Boolean);
+    procedure SetXOAuth2Bearer (token : string);
+    procedure SetAllowUsernameInURL (allow : Boolean);
+    procedure SetUnrestrictedAuth (send : Boolean);
+    procedure SetMaxRedirects (amount : Longint);
+    procedure SetPostRedirect (redir : Longint);
   public
     constructor Create;
     destructor Destroy; override;
@@ -996,6 +1041,115 @@ type
      * to the remote server.
      *)
     property HTTPAuth : Longint write SetHTTPAuth;
+
+    (**
+     * User name to use for TLS authentication
+     *)
+    property TLSUsername : string write SetTLSUsername;
+
+    (**
+     * User name to use for proxy TLS authentication
+     *)
+    property ProxyTLSUsername : string write SetProxyTLSUsername;
+
+    (**
+     * Password to use for TLS authentication
+     *
+     * Requires that the TLSUsername option also be set.
+     *)
+    property TLSPassword : string write SetTLSPassword;
+
+    (**
+     * Password to use for proxy TLS
+     *
+     * Requires that the ProxyTLSUsername option also be set.
+     *)
+    property ProxyTLSPassword : string write SetProxyTLSPassword;
+
+    (**
+     * Set TLS authentication methods
+     *)
+    property TLSAuth : TTLSAuthMethod write SetTLSAuth;
+
+    (**
+     * Set proxy TLS authentication methods
+     *)
+    property ProxyTLSAuth : TTLSAuthMethod write SetProxyTLSAuth;
+
+    (**
+     * Set HTTP proxy authentication methods to try
+     *
+     * Tell libcurl which HTTP authentication method(s) you want it to use for
+     * your proxy authentication. If more than one bit is set, libcurl will
+     * first query the site to see what authentication methods it supports and
+     * then pick the best one you allow it to use. For some methods, this will
+     * induce an extra network round-trip.
+     *)
+    property ProxyHTTPAuth : Longint write SetProxyHTTPAuth;
+
+    (**
+     * Authorisation identity (identity to act as)
+     *
+     * Authorisation identity (authzid) for the transfer. Only applicable to the
+     * PLAIN SASL authentication mechanism where it is optional.
+     * When not specified only the authentication identity (authcid) as
+     * specified by the username will be sent to the server, along with the
+     * password. The server will derive a authzid from the authcid when not
+     * provided, which it will then uses internally.
+     * When the authzid is specified, the use of which is server dependent, it
+     * can be used to access another user's inbox, that the user has been
+     * granted access to, or a shared mailbox for example.
+     *)
+    property SASLAuthzid : string write SetSASLAuthzid;
+
+    (**
+     * Enable/disable sending initial response in first packet
+     *
+     * curl will send the initial response to the server in the first
+     * authentication packet in order to reduce the number of ping pong
+     * requests. Only applicable to the following supporting SASL authentication
+     * mechanisms:
+     * Login * Plain * GSSAPI * NTLM * OAuth 2.0
+     *)
+    property SASLInitialResponse : Boolean write SetSASLIR default False;
+
+    (**
+     * Specify OAuth 2.0 access token
+     *
+     * OAuth 2.0 Bearer Access Token for use with HTTP, IMAP, POP3 and SMTP
+     * servers that support the OAuth 2.0 Authorization Framework.
+     *)
+    property XOAuth2BearerToken : string write SetXOAuth2Bearer;
+
+    (**
+     * Allow/disallow specifying user name in the url
+     *)
+    property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
+      default True;
+
+    (**
+     * Send credentials to other hosts too
+     *
+     * Make libcurl continue to send authentication (user+password) credentials
+     * when following locations, even when hostname changed.
+     * By default, libcurl will only send given credentials to the initial host
+     * name as given in the original URL, to avoid leaking username + password
+     * to other sites.
+     *)
+    property UnrestrictedAuth : Boolean write SetUnrestrictedAuth;
+
+    (**
+     * Meximum numbers of redirects allowed
+     *
+     * Setting the limit to 0 will make libcurl refuse any redirect.
+     * Set it to -1 for an infinite number of redirects.
+     *)
+    property MaxRedirects : Longint write SetMaxRedirects default -1;
+
+    (**
+     * How to act on an HTTP POST redirect
+     *)
+    property PostRedirect : Longint write SetPostRedirect;
   public
 
     (**
@@ -1008,8 +1162,8 @@ type
      * share the same storage and therefore only one of them can be set per
      * handle.
      *)
-    property WriteFunction : TWriteFunction read FWriteFunction
-      write FWriteFunction;
+    property OnDownload : TDownloadFunction read FDownloadFunction
+      write FDownloadFunction;
 
     (**
      * Callback for data uploads
@@ -1018,8 +1172,8 @@ type
      * data in order to send it to the peer - like if you ask it to upload or
      * post data to the server.
      *)
-    property ReadFunction : TReadFunction read FReadFunction
-      write FReadFunction;
+    property OnUpload : TUploadFunction read FUploadFunction
+      write FUploadFunction;
   end;
 
   { TSessionInfo }
@@ -1978,9 +2132,9 @@ end;
 class function TSession.WriteFunctionCallback (ptr: PChar; size: LongWord;
   nmemb: LongWord; data: Pointer): LongWord; cdecl;
 begin
-  if Assigned(TSession(data).FWriteFunction) then
+  if Assigned(TSession(data).FDownloadFunction) then
   begin
-    Result := TSession(data).FWriteFunction(ptr, size);
+    Result := TSession(data).FDownloadFunction(ptr, size);
   end else
   begin
     Result := TSession(data).Write(ptr, size, nmemb);
@@ -1990,9 +2144,9 @@ end;
 class function TSession.ReadFunctionCallback (buf: PChar; size: LongWord;
   nitems: LongWord; data: Pointer): LongWord; cdecl;
 begin
-  if Assigned(TSession(data).FReadFunction) then
+  if Assigned(TSession(data).FUploadFunction) then
   begin
-    Result := TSession(data).FReadFunction(buf, size);
+    Result := TSession(data).FUploadFunction(buf, size);
   end else
   begin
     Result := TSession(data).Read(buf, size, nitems);
@@ -2394,6 +2548,121 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_HTTPAUTH, method);
+  end;
+end;
+
+procedure TSession.SetTLSUsername(name: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TLSAUTH_USERNAME, PChar(name));
+  end;
+end;
+
+procedure TSession.SetProxyTLSUsername(name: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_USERNAME, PChar(name));
+  end;
+end;
+
+procedure TSession.SetTLSPassword(pass: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TLSAUTH_PASSWORD, PChar(pass));
+  end;
+end;
+
+procedure TSession.SetProxyTLSPassword(pass: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(pass));
+  end;
+end;
+
+procedure TSession.SetTLSAuth(method: TTLSAuthMethod);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_TLSAUTH_TYPE,
+      PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
+  end;
+end;
+
+procedure TSession.SetProxyTLSAuth(method: TTLSAuthMethod);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_TYPE,
+      PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
+  end;
+end;
+
+procedure TSession.SetProxyHTTPAuth(method: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXYAUTH, method);
+  end;
+end;
+
+procedure TSession.SetSASLAuthzid(authzid: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_SASL_AUTHZID, PChar(authzid));
+  end;
+end;
+
+procedure TSession.SetSASLIR(send: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_SASL_IR, Longint(send));
+  end;
+end;
+
+procedure TSession.SetXOAuth2Bearer(token: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_XOAUTH2_BEARER, PChar(token));
+  end;
+end;
+
+procedure TSession.SetAllowUsernameInURL(allow: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_DISALLOW_USERNAME_IN_URL,
+      Longint(Boolean(not allow)));
+  end;
+end;
+
+procedure TSession.SetUnrestrictedAuth(send: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_UNRESTRICTED_AUTH, Longint(send));
+  end;
+end;
+
+procedure TSession.SetMaxRedirects(amount: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_MAXREDIRS, amount);
+  end;
+end;
+
+procedure TSession.SetPostRedirect(redir: Longint);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_POSTREDIR, redir);
   end;
 end;
 
