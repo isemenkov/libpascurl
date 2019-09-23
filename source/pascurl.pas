@@ -219,7 +219,7 @@ type
 
   TProtocols = set of TProtocol;
 
-  StatusCode = (
+  TStatusCode = (
     HTTP_CONTINUE                     = 100,
     HTTP_SWITCHING_PROTOCOL           = 101,
 
@@ -276,7 +276,7 @@ type
   (**
    * Proxy protocol type
    *)
-  ProxyType = (
+  TProxyType = (
     (**
      * HTTP Proxy
      *)
@@ -315,35 +315,42 @@ type
     PROXY_SOCKS5_HOSTNAME             = Longint(CURLPROXY_SOCKS5_HOSTNAME)
   );
 
-  HTTPAuthMethod = (
+  TAuthMethod = (
+    AUTH_NONE,
+
     (**
      * HTTP Basic authentication. This is the default choice, and the only
      * method that is in wide-spread use and supported virtually everywhere.
      * This sends the user name and password over the network in plain text,
      * easily captured by others.
      *)
-    AUTH_BASIC                        = CURLAUTH_BASIC,
+    AUTH_BASIC,
 
     (**
      * HTTP Digest authentication. Digest authentication is defined in RFC 2617
      * and is a more secure way to do authentication over public networks than
      * the regular old-fashioned Basic method.
      *)
-    AUTH_DIGEST                       = CURLAUTH_DIGEST,
+    AUTH_DIGEST,
 
     (**
      * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
      * defined in RFC 4559 and is the most secure way to perform authentication
      * over HTTP.
      *)
-    AUTH_NEGOTIATE                    = CURLAUTH_NEGOTIATE,
+    AUTH_NEGOTIATE,
+
+    (**
+     * Same as AUTH_NEGOTIATE
+     *)
+    AUTH_GSSAPI,
 
     (**
      * HTTP NTLM authentication. A proprietary protocol invented and used by
      * Microsoft. It uses a challenge-response and hash concept similar to
      * Digest, to prevent the password from being eavesdropped.
      *)
-    AUTH_NTLM                         = CURLAUTH_NTLM,
+    AUTH_NTLM,
 
     (**
      * HTTP Digest authentication with an IE flavor. Digest authentication is
@@ -353,7 +360,7 @@ type
      * to have used before version 7 and that some servers require the client to
      * use.
      *)
-    AUTH_DIGEST_IE                    = CURLAUTH_DIGEST_IE,
+    AUTH_DIGEST_IE,
 
     (**
      * NTLM delegating to winbind helper. Authentication is performed by a
@@ -361,26 +368,28 @@ type
      * application is specified at compile time but is typically
      * /usr/bin/ntlm_auth
      *)
-    AUTH_NTLM_WB                      = CURLAUTH_NTLM_WB,
+    AUTH_NTLM_WB,
 
     (**
      * HTTP Bearer token authentication, used primarily in OAuth 2.0 protocol.
      *)
-    AUTH_BEARER                       = CURLAUTH_BEARER,
+    AUTH_BEARER,
 
     (**
      * This is sets all bits and thus makes libcurl pick any it finds suitable.
      * libcurl will automatically select the one it finds most secure.
      *)
-    AUTH_ANY                          = CURLAUTH_ANY{%H-},
+    AUTH_ANY,
 
     (**
      * This is sets all bits except Basic and thus makes libcurl pick any it
      * finds suitable. libcurl will automatically select the one it finds most
      * secure.
      *)
-    AUTH_ANYSAFE                      = CURLAUTH_ANYSAFE
+    AUTH_ANYSAFE
   );
+
+  TAuthMethods = set of TAuthMethod;
 
   TTLSAuthMethod = (
     (**
@@ -593,11 +602,26 @@ type
 
     function IsOpened : Boolean;
     procedure SetUrl (url : string);
+
+    { Proxy settings }
     procedure SetPreProxy (preProxy : string);
     procedure SetProxy (proxy : string);
+    procedure SetProxyPort (port : Longint);
+    procedure SetProxyType (proxy : TProxyType);
+    procedure SetNoProxyHosts (hosts : string);
+    procedure SetHttpProxyTunnel (proxyTunnel : Boolean);
+    procedure SetProxyUserPassword (userpwd : string);
+    procedure SetProxyUsername (name : string);
+    procedure SetProxyPassword (pass : string);
+    procedure SetProxyTLSUsername (name : string);
+    procedure SetProxyTLSPassword (pass : string);
+    procedure SetProxyTLSAuth (method : TTLSAuthMethod);
+    procedure SetProxyHTTPAuth (method : Longint);
+    procedure SetSOCKS5Auth (AMethod : TAuthMethods);
+
+
     procedure SetUserAgent (agent : string);
     procedure SetPort (port : Longint);
-    procedure SetProxyPort (port : Longint);
     procedure SetFollowRedirect (redirect : boolean);
     procedure SetAutoReferer (updateHeaders : boolean);
     procedure SetIncludeHeader (includeHeader : boolean);
@@ -609,9 +633,6 @@ type
     procedure SetFailOnError (failOnError : boolean);
     procedure SetKeepSendingOnError (keepSending : boolean);
     procedure SetPathAsIs (pathAsIs : boolean);
-    procedure SetProxyType (proxy : ProxyType);
-    procedure SetNoProxyHosts (hosts : string);
-    procedure SetHttpProxyTunnel (proxyTunnel : Boolean);
     procedure SetLocalPort (port : Longint);
     procedure SetLocalPortRange (range : Longint);
     procedure SetDNSCacheTimeout (timeout : TTimeInterval);
@@ -627,20 +648,13 @@ type
     procedure SetUnixSocketPath (path : string);
     procedure SetAbstractUnixSocketPath (path : string);
     procedure SetUserPassword (userpwd : string);
-    procedure SetProxyUserPassword (userpwd : string);
     procedure SetUsername (name : string);
     procedure SetPassword (pass : string);
     procedure SetLoginOptions (options : string);
-    procedure SetProxyUsername (name : string);
-    procedure SetProxyPassword (pass : string);
-    procedure SetHTTPAuth (method : Longint);
+    procedure SetHTTPAuth (AMethod : TAuthMethods);
     procedure SetTLSUsername (name : string);
-    procedure SetProxyTLSUsername (name : string);
     procedure SetTLSPassword (pass : string);
-    procedure SetProxyTLSPassword (pass : string);
     procedure SetTLSAuth (method : TTLSAuthMethod);
-    procedure SetProxyTLSAuth (method : TTLSAuthMethod);
-    procedure SetProxyHTTPAuth (method : Longint);
     procedure SetSASLAuthzid (authzid : string);
     procedure SetSASLIR (send : Boolean);
     procedure SetXOAuth2Bearer (token : string);
@@ -654,6 +668,8 @@ type
     procedure SetPostFieldsSize (size : Longint);
     procedure SetPostFieldsSizeLarge (size : LongWord);
     procedure SetAllowedProtocols (AProtocols : TProtocols);
+    procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
+    procedure SetDefaultProtocol (AProtocol : TProtocol);
   public
     constructor Create;
     destructor Destroy; override;
@@ -922,7 +938,7 @@ type
     (**
      * Proxy protocol type
      *)
-    property ProxyProtocol : ProxyType write SetProxyType default PROXY_HTTP;
+    property ProxyProtocol : TProxyType write SetProxyType default PROXY_HTTP;
 
     (**
      * Disable proxy use for specific hosts
@@ -1193,7 +1209,7 @@ type
      * Tell libcurl which authentication method(s) you want it to use speaking
      * to the remote server.
      *)
-    property HTTPAuth : Longint write SetHTTPAuth;
+    property HTTPAuth : TAuthMethods write SetHTTPAuth default [AUTH_BASIC];
 
     (**
      * User name to use for TLS authentication
@@ -1366,6 +1382,36 @@ type
       PROTOCOL_RTMPT, PROTOCOL_RTMPTE, PROTOCOL_RTMPTS, PROTOCOL_RTSP,
       PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS, PROTOCOL_SMTP,
       PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
+
+    (**
+     * Set protocols allowed to redirect to
+     *
+     * Limits what protocols libcurl may use in a transfer that it follows to in
+     * a redirect when FollowRedirect is enabled. This allows you to limit
+     * specific transfers to only be allowed to use a subset of protocols in
+     * redirections.
+     *)
+    property RedirectProtocols : TProtocols write SetAllowedRedirectProtocols
+      default [PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_FTP, PROTOCOL_FTPS];
+
+    (**
+     * Default protocol to use if the URL is missing a scheme name
+     *
+     * This option does not change the default proxy protocol (http).
+     * Without this option libcurl would make a guess based on the host.
+     *)
+    property DefaultProtocol : TProtocol write SetDefaultProtocol;
+
+    (**
+     * Set allowed methods for SOCKS5 proxy authentication
+     *
+     * Tell libcurl which authentication method(s) are allowed for SOCKS5 proxy
+     * authentication. The only supported flags are AUTH_BASIC, which allows
+     * username/password authentication, AUTH_GSSAPI, which allows GSS-API
+     * authentication, and AUTH_NONE, which allows no authentication.
+     *)
+    property SOCKS5Auth : TAuthMethods write SetSOCKS5Auth
+      default [AUTH_BASIC, AUTH_GSSAPI];
   public
 
     (**
@@ -1409,11 +1455,11 @@ type
     function GetContentType : string;
     function GetPrimaryIP : string;
     function GetLocalIP : string;
-    function GetResponseCode : StatusCode;
+    function GetResponseCode : TStatusCode;
     function GetContent : string;
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
-    function GetConnectResponseCode : StatusCode;
+    function GetConnectResponseCode : TStatusCode;
     function GetHttpVersion : HTTPVersionCode;
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
@@ -1503,7 +1549,7 @@ type
     (**
      * Get the last response code
      *)
-    property ResponseCode : StatusCode read GetResponseCode;
+    property ResponseCode : TStatusCode read GetResponseCode;
 
     (**
      * Get the response content
@@ -1527,7 +1573,7 @@ type
      *
      * Last received HTTP proxy response code to a CONNECT request.
      *)
-    property ConnectResponseCode : StatusCode read GetConnectResponseCode;
+    property ConnectResponseCode : TStatusCode read GetConnectResponseCode;
 
     (**
      * Get the HTTP version used in the connection
@@ -1944,14 +1990,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetResponseCode: StatusCode;
+function TSessionInfo.GetResponseCode: TStatusCode;
 var
   code : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_RESPONSE_CODE, @code);
-    Result := StatusCode(code);
+    Result := TStatusCode(code);
   end;
 end;
 
@@ -1985,14 +2031,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConnectResponseCode: StatusCode;
+function TSessionInfo.GetConnectResponseCode: TStatusCode;
 var
   code : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.handle, CURLINFO_HTTP_CONNECTCODE, @code);
-    Result := StatusCode(code);
+    Result := TStatusCode(code);
   end;
 end;
 
@@ -2548,7 +2594,7 @@ begin
   end;
 end;
 
-procedure TSession.SetProxyType(proxy: ProxyType);
+procedure TSession.SetProxyType(proxy: TProxyType);
 begin
   if Opened then
   begin
@@ -2759,11 +2805,38 @@ begin
   end;
 end;
 
-procedure TSession.SetHTTPAuth(method: Longint);
+procedure TSession.SetHTTPAuth(AMethod: TAuthMethods);
+var
+  bitmask : Longint;
 begin
   if Opened then
   begin
-    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, method);
+    bitmask := 0;
+    if AUTH_BASIC in AMethod then
+      bitmask := bitmask or CURLAUTH_BASIC;
+    if AUTH_DIGEST in AMethod then
+      bitmask := bitmask or CURLAUTH_DIGEST;
+    if AUTH_NEGOTIATE in AMethod then
+      bitmask := bitmask or CURLAUTH_NEGOTIATE;
+    if AUTH_GSSAPI in AMethod then
+      bitmask := bitmask or CURLAUTH_GSSAPI;
+    if AUTH_NTLM in AMethod then
+      bitmask := bitmask or CURLAUTH_NTLM;
+    if AUTH_DIGEST_IE in AMethod then
+      bitmask := bitmask or CURLAUTH_DIGEST_IE;
+    if AUTH_NTLM_WB in AMethod then
+      bitmask := bitmask or CURLAUTH_NTLM_WB;
+    if AUTH_BEARER in AMethod then
+      bitmask := bitmask or CURLAUTH_BEARER;
+    if AUTH_ANY in AMethod then
+      bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+        CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
+        CURLAUTH_BEARER;
+    if AUTH_ANYSAFE in AMethod then
+      bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+        CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
+
+    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, bitmask);
   end;
 end;
 
@@ -2822,6 +2895,22 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_PROXYAUTH, method);
+  end;
+end;
+
+procedure TSession.SetSOCKS5Auth(AMethod: TAuthMethods);
+var
+  bitmask : Longint;
+begin
+  if Opened then
+  begin
+    bitmask := 0;
+    if AUTH_BASIC in AMethod then
+      bitmask := bitmask or CURLAUTH_BASIC;
+    if AUTH_GSSAPI in AMethod then
+      bitmask := bitmask or CURLAUTH_GSSAPI;
+
+    curl_easy_setopt(handle, CURLOPT_SOCKS5_AUTH, bitmask);
   end;
 end;
 
@@ -2930,63 +3019,144 @@ begin
   begin
     bitmask := 0;
     if PROTOCOL_DICT in AProtocols then
-      bitmask := bitmask and CURLPROTO_DICT;
+      bitmask := bitmask or CURLPROTO_DICT;
     if PROTOCOL_FILE in AProtocols then
-      bitmask := bitmask and CURLPROTO_FILE;
+      bitmask := bitmask or CURLPROTO_FILE;
     if PROTOCOL_FTP in AProtocols then
-      bitmask := bitmask and CURLPROTO_FTP;
+      bitmask := bitmask or CURLPROTO_FTP;
     if PROTOCOL_FTPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_FTPS;
+      bitmask := bitmask or CURLPROTO_FTPS;
     if PROTOCOL_GOPHER in AProtocols then
-      bitmask := bitmask and CURLPROTO_GOPHER;
+      bitmask := bitmask or CURLPROTO_GOPHER;
     if PROTOCOL_HTTP in AProtocols then
-      bitmask := bitmask and CURLPROTO_HTTP;
+      bitmask := bitmask or CURLPROTO_HTTP;
     if PROTOCOL_HTTPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_HTTPS;
+      bitmask := bitmask or CURLPROTO_HTTPS;
     if PROTOCOL_IMAP in AProtocols then
-      bitmask := bitmask and CURLPROTO_IMAP;
+      bitmask := bitmask or CURLPROTO_IMAP;
     if PROTOCOL_IMAPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_IMAPS;
+      bitmask := bitmask or CURLPROTO_IMAPS;
     if PROTOCOL_LDAP in AProtocols then
-      bitmask := bitmask and CURLPROTO_LDAP;
+      bitmask := bitmask or CURLPROTO_LDAP;
     if PROTOCOL_LDAPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_LDAPS;
+      bitmask := bitmask or CURLPROTO_LDAPS;
     if PROTOCOL_POP3 in AProtocols then
-      bitmask := bitmask and CURLPROTO_POP3;
+      bitmask := bitmask or CURLPROTO_POP3;
     if PROTOCOL_POP3S in AProtocols then
-      bitmask := bitmask and CURLPROTO_POP3S;
+      bitmask := bitmask or CURLPROTO_POP3S;
     if PROTOCOL_RTMP in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMP;
+      bitmask := bitmask or CURLPROTO_RTMP;
     if PROTOCOL_RTMPE in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMPE;
+      bitmask := bitmask or CURLPROTO_RTMPE;
     if PROTOCOL_RTMPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMPS;
+      bitmask := bitmask or CURLPROTO_RTMPS;
     if PROTOCOL_RTMPT in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMPT;
+      bitmask := bitmask or CURLPROTO_RTMPT;
     if PROTOCOL_RTMPTE in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMPTE;
+      bitmask := bitmask or CURLPROTO_RTMPTE;
     if PROTOCOL_RTMPTS in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTMPTS;
+      bitmask := bitmask or CURLPROTO_RTMPTS;
     if PROTOCOL_RTSP in AProtocols then
-      bitmask := bitmask and CURLPROTO_RTSP;
+      bitmask := bitmask or CURLPROTO_RTSP;
     if PROTOCOL_SCP in AProtocols then
-      bitmask := bitmask and CURLPROTO_SCP;
+      bitmask := bitmask or CURLPROTO_SCP;
     if PROTOCOL_SFTP in AProtocols then
-      bitmask := bitmask and CURLPROTO_SFTP;
+      bitmask := bitmask or CURLPROTO_SFTP;
     if PROTOCOL_SMB in AProtocols then
-      bitmask := bitmask and CURLPROTO_SMB;
+      bitmask := bitmask or CURLPROTO_SMB;
     if PROTOCOL_SMBS in AProtocols then
-      bitmask := bitmask and CURLPROTO_SMBS;
+      bitmask := bitmask or CURLPROTO_SMBS;
     if PROTOCOL_SMTP in AProtocols then
-      bitmask := bitmask and CURLPROTO_SMTP;
+      bitmask := bitmask or CURLPROTO_SMTP;
     if PROTOCOL_SMTPS in AProtocols then
-      bitmask := bitmask and CURLPROTO_SMTPS;
+      bitmask := bitmask or CURLPROTO_SMTPS;
     if PROTOCOL_TELNET in AProtocols then
-      bitmask := bitmask and CURLPROTO_TELNET;
+      bitmask := bitmask or CURLPROTO_TELNET;
     if PROTOCOL_TFTP in AProtocols then
-      bitmask := bitmask and CURLPROTO_TFTP;
+      bitmask := bitmask or CURLPROTO_TFTP;
 
     curl_easy_setopt(handle, CURLOPT_PROTOCOLS, bitmask);
+  end;
+end;
+
+procedure TSession.SetAllowedRedirectProtocols(AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  if Opened then
+  begin
+    bitmask := 0;
+    if PROTOCOL_DICT in AProtocols then
+      bitmask := bitmask or CURLPROTO_DICT;
+    if PROTOCOL_FILE in AProtocols then
+      bitmask := bitmask or CURLPROTO_FILE;
+    if PROTOCOL_FTP in AProtocols then
+      bitmask := bitmask or CURLPROTO_FTP;
+    if PROTOCOL_FTPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_FTPS;
+    if PROTOCOL_GOPHER in AProtocols then
+      bitmask := bitmask or CURLPROTO_GOPHER;
+    if PROTOCOL_HTTP in AProtocols then
+      bitmask := bitmask or CURLPROTO_HTTP;
+    if PROTOCOL_HTTPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_HTTPS;
+    if PROTOCOL_IMAP in AProtocols then
+      bitmask := bitmask or CURLPROTO_IMAP;
+    if PROTOCOL_IMAPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_IMAPS;
+    if PROTOCOL_LDAP in AProtocols then
+      bitmask := bitmask or CURLPROTO_LDAP;
+    if PROTOCOL_LDAPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_LDAPS;
+    if PROTOCOL_POP3 in AProtocols then
+      bitmask := bitmask or CURLPROTO_POP3;
+    if PROTOCOL_POP3S in AProtocols then
+      bitmask := bitmask or CURLPROTO_POP3S;
+    if PROTOCOL_RTMP in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMP;
+    if PROTOCOL_RTMPE in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMPE;
+    if PROTOCOL_RTMPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMPS;
+    if PROTOCOL_RTMPT in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMPT;
+    if PROTOCOL_RTMPTE in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMPTE;
+    if PROTOCOL_RTMPTS in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTMPTS;
+    if PROTOCOL_RTSP in AProtocols then
+      bitmask := bitmask or CURLPROTO_RTSP;
+    if PROTOCOL_SCP in AProtocols then
+      bitmask := bitmask or CURLPROTO_SCP;
+    if PROTOCOL_SFTP in AProtocols then
+      bitmask := bitmask or CURLPROTO_SFTP;
+    if PROTOCOL_SMB in AProtocols then
+      bitmask := bitmask or CURLPROTO_SMB;
+    if PROTOCOL_SMBS in AProtocols then
+      bitmask := bitmask or CURLPROTO_SMBS;
+    if PROTOCOL_SMTP in AProtocols then
+      bitmask := bitmask or CURLPROTO_SMTP;
+    if PROTOCOL_SMTPS in AProtocols then
+      bitmask := bitmask or CURLPROTO_SMTPS;
+    if PROTOCOL_TELNET in AProtocols then
+      bitmask := bitmask or CURLPROTO_TELNET;
+    if PROTOCOL_TFTP in AProtocols then
+      bitmask := bitmask or CURLPROTO_TFTP;
+
+    curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS, bitmask);
+  end;
+end;
+
+procedure TSession.SetDefaultProtocol(AProtocol: TProtocol);
+var
+  protocol : string;
+begin
+  if Opened then
+  begin
+    protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
+    protocol := LowerCase(Copy(protocol, Length('PROTOCOL_'), Length(protocol) -
+      Length('PROTOCOL_')));
+    curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
   end;
 end;
 
