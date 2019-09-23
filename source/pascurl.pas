@@ -41,36 +41,183 @@ uses
   Classes, SysUtils, libpascurl, BaseUnix, math, typinfo;
 
 type
-  Protocol = (
-    PROTOCOL_DICT                     = CURLPROTO_DICT,
-    PROTOCOL_FILE                     = CURLPROTO_FILE,
-    PROTOCOL_FTP                      = CURLPROTO_FTP{%H-},
-    PROTOCOL_FTPS                     = CURLPROTO_FTPS,
-    PROTOCOL_GOPHER                   = CURLPROTO_GOPHER,
-    PROTOCOL_HTTP                     = CURLPROTO_HTTP,
-    PROTOCOL_HTTPS                    = CURLPROTO_HTTPS,
-    PROTOCOL_IMAP                     = CURLPROTO_IMAP,
-    PROTOCOL_IMAPS                    = CURLPROTO_IMAPS,
-    PROTOCOL_LDAP                     = CURLPROTO_LDAP,
-    PROTOCOL_LDAPS                    = CURLPROTO_LDAPS,
-    PROTOCOL_POP3                     = CURLPROTO_POP3,
-    PROTOCOL_POP3S                    = CURLPROTO_POP3S,
-    PROTOCOL_RTMP                     = CURLPROTO_RTMP,
-    PROTOCOL_RTMPE                    = CURLPROTO_RTMPE,
-    PROTOCOL_RTMPS                    = CURLPROTO_RTMPS,
-    PROTOCOL_RTMPT                    = CURLPROTO_RTMPT,
-    PROTOCOL_RTMPTE                   = CURLPROTO_RTMPTE,
-    PROTOCOL_RTMPTS                   = CURLPROTO_RTMPTS,
-    PROTOCOL_RTSP                     = CURLPROTO_RTSP,
-    PROTOCOL_SCP                      = CURLPROTO_SCP,
-    PROTOCOL_SFTP                     = CURLPROTO_SFTP,
-    PROTOCOL_SMB                      = CURLPROTO_SMB,
-    PROTOCOL_SMBS                     = CURLPROTO_SMBS,
-    PROTOCOL_SMTP                     = CURLPROTO_SMTP,
-    PROTOCOL_SMTPS                    = CURLPROTO_SMTPS,
-    PROTOCOL_TELNET                   = CURLPROTO_TELNET,
-    PROTOCOL_TFTP                     = CURLPROTO_TFTP
+  TProtocol = (
+    (**
+     * DICT is a dictionary network protocol, it allows clients to ask
+     * dictionary servers about a meaning or explanation for words. See RFC
+     * 2229. Dict servers and clients use TCP port 2628.
+     *)
+    PROTOCOL_DICT,
+
+    (**
+     * FILE is not actually a "network" protocol. It is a URL scheme that allows
+     * you to tell curl to get a file from the local file system instead of
+     * getting it over the network from a remote server. See RFC 1738.
+     *)
+    PROTOCOL_FILE,
+
+    (**
+     * FTP stands for File Transfer Protocol and is an old (originates in the
+     * early 1970s) way to transfer files back and forth between a client and a
+     * server. See RFC 959. It has been extended greatly over the years. FTP
+     * servers and clients use TCP port 21 plus one more port, though the second
+     * one is usually dynamically established during communication.
+     *)
+    PROTOCOL_FTP,
+
+    (**
+     * FTPS stands for Secure File Transfer Protocol. It follows the tradition
+     * of appending an 'S' to the protocol name to signify that the protocol is
+     * done like normal FTP but with an added SSL/TLS security layer. See RFC
+     * 4217.
+     * This protocol is problematic to use through firewalls and other network
+     * equipment.
+     *)
+    PROTOCOL_FTPS,
+
+    (**
+     * Designed for "distributing, searching, and retrieving documents over the
+     * Internet", Gopher is somewhat of the grand father to HTTP as HTTP has
+     * mostly taken over completely for the same use cases. See RFC 1436. Gopher
+     * servers and clients use TCP port 70.
+     *)
+    PROTOCOL_GOPHER,
+
+    (**
+     * The Hypertext Transfer Protocol, HTTP, is the most widely used protocol
+     * for transferring data on the web and over the Internet. See RFC 7230 for
+     * HTTP/1.1 and RFC 7540 for HTTP/2. HTTP servers and clients use TCP port
+     * 80.
+     *)
+    PROTOCOL_HTTP,
+
+    (**
+     * Secure HTTP is HTTP done over an SSL/TLS connection. See RFC 2818. HTTPS
+     * servers and clients use TCP port 443, unless they speak HTTP/3 which then
+     * uses QUIC and is done over UDP...
+     *)
+    PROTOCOL_HTTPS,
+
+    (**
+     * The Internet Message Access Protocol, IMAP, is a protocol for accessing,
+     * controlling and "reading" email. See RFC 3501. IMAP servers and clients
+     * use TCP port 143. Whilst connections to the server start out as
+     * cleartext, SSL/TLS communication may be supported by the client
+     * explicitly requesting to upgrade the connection using the STARTTLS
+     * command. See RFC 2595.
+     *)
+    PROTOCOL_IMAP,
+
+    (**
+     * Secure IMAP is IMAP done over an SSL/TLS connection. Such connections
+     * implicitly start out using SSL/TLS and as such servers and clients use
+     * TCP port 993 to communicate with each other. See RFC 8314.
+     *)
+    PROTOCOL_IMAPS,
+
+    (**
+     * The Lightweight Directory Access Protocol, LDAP, is a protocol for
+     * accessing and maintaining distributed directory information. Basically a
+     * database lookup. See RFC 4511. LDAP servers and clients use TCP port 389.
+     *)
+    PROTOCOL_LDAP,
+
+    (**
+     * Secure LDAP is LDAP done over an SSL/TLS connection.
+     *)
+    PROTOCOL_LDAPS,
+
+    (**
+     * The Post Office Protocol version 3 (POP3) is a protocol for retrieving
+     * email from a server. See RFC 1939. POP3 servers and clients use TCP port
+     * 110. Whilst connections to the server start out as cleartext, SSL/TLS
+     * communication may be supported by the client explicitly requesting to
+     * upgrade the connection using the STLS command. See RFC 2595.
+     *)
+    PROTOCOL_POP3,
+
+    (**
+     * Secure POP3 is POP3 done over an SSL/TLS connection. Such connections
+     * implicitly start out using SSL/TLS and as such servers and clients use
+     * TCP port 995 to communicate with each other. See RFC 8314.
+     *)
+    PROTOCOL_POP3S,
+
+    (**
+     * The Real-Time Messaging Protocol (RTMP) is a protocol for streaming
+     * audio, video and data. RTMP servers and clients use TCP port 1935.
+     *)
+    PROTOCOL_RTMP,
+    PROTOCOL_RTMPE,
+    PROTOCOL_RTMPS,
+    PROTOCOL_RTMPT,
+    PROTOCOL_RTMPTE,
+    PROTOCOL_RTMPTS,
+
+    (**
+     * The Real Time Streaming Protocol (RTSP) is a network control protocol to
+     * control streaming media servers. See RFC 2326. RTSP servers and clients
+     * use TCP and UDP port 554.
+     *)
+    PROTOCOL_RTSP,
+
+    (**
+     * The Secure Copy (SCP) protocol is designed to copy files to and from a
+     * remote SSH server. SCP servers and clients use TCP port 22.
+     *)
+    PROTOCOL_SCP,
+
+    (**
+     * The SSH File Transfer Protocol (SFTP) that provides file access, file
+     * transfer, and file management over a reliable data stream. SFTP servers
+     * and clients use TCP port 22.
+     *)
+    PROTOCOL_SFTP,
+
+    (**
+     * The Server Message Block (SMB) protocol is also known as CIFS. It is an
+     * application-layer network protocol mainly used for providing shared
+     * access to files, printers, and serial ports and miscellaneous
+     * communications between nodes on a network. SMB servers and clients use
+     * TCP port 445.
+     *)
+    PROTOCOL_SMB,
+    PROTOCOL_SMBS,
+
+    (**
+     * The Simple Mail Transfer Protocol (SMTP) is a protocol for email
+     * transmission. See RFC 5321. SMTP servers and clients use TCP port 25.
+     * Whilst connections to the server start out as cleartext, SSL/TLS
+     * communication may be supported by the client explicitly requesting to
+     * upgrade the connection using the STARTTLS command. See RFC 3207.
+     *)
+    PROTOCOL_SMTP,
+
+    (**
+     * Secure SMTP, sometimes called SSMTP, is SMTP done over an SSL/TLS
+     * connection. Such connections implicitly start out using SSL/TLS and as
+     * such servers and clients use TCP port 465 to communicate with each other.
+     * See RFC 8314.
+     *)
+    PROTOCOL_SMTPS,
+
+    (**
+     * TELNET is an application layer protocol used over networks to provide a
+     * bidirectional interactive text-oriented communication facility using a
+     * virtual terminal connection. See RFC 854. TELNET servers and clients use
+     * TCP port 23.
+     *)
+    PROTOCOL_TELNET,
+
+    (**
+     * The Trivial File Transfer Protocol (TFTP) is a protocol for doing simple
+     * file transfers over UDP to get a file from or put a file onto a remote
+     * host. TFTP servers and clients use UDP port 69.
+     *)
+    PROTOCOL_TFTP
   );
+
+  TProtocols = set of TProtocol;
 
   StatusCode = (
     HTTP_CONTINUE                     = 100,
@@ -506,6 +653,7 @@ type
     procedure SetPostFields (data : string);
     procedure SetPostFieldsSize (size : Longint);
     procedure SetPostFieldsSizeLarge (size : LongWord);
+    procedure SetAllowedProtocols (AProtocols : TProtocols);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1201,6 +1349,23 @@ type
      *)
     property PostFieldsSizeLarge : LongWord write SetPostFieldsSizeLarge
       default -1;
+
+    (**
+     * Set allowed protocols
+     *
+     * Limits what protocols libcurl may use in the transfer. This allows you to
+     * have a libcurl built to support a wide range of protocols but still limit
+     * specific transfers to only be allowed to use a subset of them. By default
+     * libcurl will accept all protocols it supports
+     *)
+    property Protocols : TProtocols write SetAllowedProtocols
+      default [PROTOCOL_DICT, PROTOCOL_FILE, PROTOCOL_FTP, PROTOCOL_FTPS,
+      PROTOCOL_GOPHER, PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_IMAP,
+      PROTOCOL_IMAPS, PROTOCOL_LDAP, PROTOCOL_LDAPS, PROTOCOL_POP3,
+      PROTOCOL_POP3S, PROTOCOL_RTMP, PROTOCOL_RTMPE, PROTOCOL_RTMPS,
+      PROTOCOL_RTMPT, PROTOCOL_RTMPTE, PROTOCOL_RTMPTS, PROTOCOL_RTSP,
+      PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS, PROTOCOL_SMTP,
+      PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
   public
 
     (**
@@ -2754,6 +2919,74 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE_LARGE, size);
+  end;
+end;
+
+procedure TSession.SetAllowedProtocols(AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  if Opened then
+  begin
+    bitmask := 0;
+    if PROTOCOL_DICT in AProtocols then
+      bitmask := bitmask and CURLPROTO_DICT;
+    if PROTOCOL_FILE in AProtocols then
+      bitmask := bitmask and CURLPROTO_FILE;
+    if PROTOCOL_FTP in AProtocols then
+      bitmask := bitmask and CURLPROTO_FTP;
+    if PROTOCOL_FTPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_FTPS;
+    if PROTOCOL_GOPHER in AProtocols then
+      bitmask := bitmask and CURLPROTO_GOPHER;
+    if PROTOCOL_HTTP in AProtocols then
+      bitmask := bitmask and CURLPROTO_HTTP;
+    if PROTOCOL_HTTPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_HTTPS;
+    if PROTOCOL_IMAP in AProtocols then
+      bitmask := bitmask and CURLPROTO_IMAP;
+    if PROTOCOL_IMAPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_IMAPS;
+    if PROTOCOL_LDAP in AProtocols then
+      bitmask := bitmask and CURLPROTO_LDAP;
+    if PROTOCOL_LDAPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_LDAPS;
+    if PROTOCOL_POP3 in AProtocols then
+      bitmask := bitmask and CURLPROTO_POP3;
+    if PROTOCOL_POP3S in AProtocols then
+      bitmask := bitmask and CURLPROTO_POP3S;
+    if PROTOCOL_RTMP in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMP;
+    if PROTOCOL_RTMPE in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMPE;
+    if PROTOCOL_RTMPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMPS;
+    if PROTOCOL_RTMPT in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMPT;
+    if PROTOCOL_RTMPTE in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMPTE;
+    if PROTOCOL_RTMPTS in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTMPTS;
+    if PROTOCOL_RTSP in AProtocols then
+      bitmask := bitmask and CURLPROTO_RTSP;
+    if PROTOCOL_SCP in AProtocols then
+      bitmask := bitmask and CURLPROTO_SCP;
+    if PROTOCOL_SFTP in AProtocols then
+      bitmask := bitmask and CURLPROTO_SFTP;
+    if PROTOCOL_SMB in AProtocols then
+      bitmask := bitmask and CURLPROTO_SMB;
+    if PROTOCOL_SMBS in AProtocols then
+      bitmask := bitmask and CURLPROTO_SMBS;
+    if PROTOCOL_SMTP in AProtocols then
+      bitmask := bitmask and CURLPROTO_SMTP;
+    if PROTOCOL_SMTPS in AProtocols then
+      bitmask := bitmask and CURLPROTO_SMTPS;
+    if PROTOCOL_TELNET in AProtocols then
+      bitmask := bitmask and CURLPROTO_TELNET;
+    if PROTOCOL_TFTP in AProtocols then
+      bitmask := bitmask and CURLPROTO_TFTP;
+
+    curl_easy_setopt(handle, CURLOPT_PROTOCOLS, bitmask);
   end;
 end;
 
