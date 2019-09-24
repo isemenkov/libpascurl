@@ -580,9 +580,109 @@ type
     of object;
 
   TSession = class
+  public
+    type
+
+      { TOptionsProperty }
+
+      TOptionsProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetPort (APort : Longint);
+        procedure SetPortRange (ARange : Longint);
+        procedure SetAddressScope (AScope : Longint);
+        procedure SetInterface (AInterface : string);
+        procedure SetUnixSocketPath (APath : string);
+        procedure SetAbstractUnixSocketPath (APath : string);
+        procedure SetBufferSize (ASize : TDataSize);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set local port number to use for socket
+         *
+         * This sets the local port number of the socket used for the connection.
+         * 0, disabled - use whatever the system thinks is fine
+         *)
+         property Port : Longint write SetPort default 0;
+
+         (**
+         * Number of additional local ports to try
+         *
+         * Pass a long. The range argument is the number of attempts libcurl will
+         * make to find a working local port number. It starts with the given
+         * LocalPort and adds one to the number for each retry. Setting this option
+         * to 1 or below will make libcurl do only one try for the exact port
+         * number. Port numbers by nature are scarce resources that will be busy at
+         * times so setting this value to something too low might cause unnecessary
+         * connection setup failures.
+         *)
+         property PortRange : Longint write SetPortRange default 1;
+
+         (**
+         * Set scope id for IPv6 addresses
+         *
+         * Pass a long specifying the scope id value to use when connecting to
+         * IPv6 addresses.
+         *)
+         property AddressScope : Longint write SetAddressScope default 0;
+
+         (**
+         * Source interface for outgoing trafic
+         *
+         * This sets the interface name to use as outgoing network interface.
+         * The name can be an interface name, an IP address, or a host name.
+         * If the parameter starts with "if!" then it is treated as only as
+         * interface name and no attempt will ever be named to do treat it as an
+         * IP address or to do name resolution on it. If the parameter starts
+         * with "host!" it is treated as either an IP address or a hostname.
+         * Hostnames are resolved synchronously. Using the if! format is highly
+         * recommended when using the multi interfaces to avoid allowing the
+         * code to block.
+         *)
+         property InterfaceName : string write SetInterface;
+
+        (**
+         * Set UNIX domain socket
+         *
+         * Enables the use of Unix domain sockets as connection endpoint and
+         * sets the path to path. If path is '' (empty string), then Unix domain
+         * sockets are disabled.
+         * When enabled, curl will connect to the Unix domain socket instead of
+         * establishing a TCP connection to a host. Since no TCP connection is
+         * created, curl does not need to resolve the DNS hostname in the URL.
+         * The maximum path length on Cygwin, Linux and Solaris is 107. On other
+         * platforms it might be even less.
+         *)
+         property UnixSocketPath : string write SetUnixSocketPath;
+
+        (**
+         * Set an abstract Unix domain socket
+         *
+         * Enables the use of an abstract Unix domain socket instead of
+         * establishing a TCP connection to a host.
+         *)
+         property AbstractUnixSocketPath : string
+           write SetAbstractUnixSocketPath;
+
+        (**
+         * Set preffered receive buffer size
+         *
+         * Specifying your preferred size for the receive buffer in libcurl. The
+         * main point of this would be that the write callback gets called more
+         * often and with smaller chunks. Secondly, for some protocols, there's a
+         * benefit of having a larger buffer for performance.
+         * The minimum buffer size allowed to be set is 1024 bytes.
+         *)
+         property BufferSize : TDataSize write SetBufferSize;
+      end;
+
   protected
     handle : CURL;
     buffer : TStringStream;
+    FOptions : TOptionsProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -647,7 +747,7 @@ type
     procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
 
     procedure SetUserAgent (agent : string);
-    procedure SetPort (port : Longint);
+
     procedure SetFollowRedirect (redirect : boolean);
     procedure SetAutoReferer (updateHeaders : boolean);
     procedure SetIncludeHeader (includeHeader : boolean);
@@ -664,15 +764,15 @@ type
     procedure SetDNSCacheTimeout (timeout : TTimeInterval);
     procedure SetDNSGlobalCache (enable : Boolean);
     procedure SetDNSoverHTTPS (url : string);
-    procedure SetBufferSize (size : TDataSize);
+
     procedure SetTCPFastOpen (fastOpen : Boolean);
     procedure SetTCPNoDelay (noDelay : Boolean);
-    procedure SetAddressScope (scope : Longint);
+
     procedure SetTCPKeepalive (probe : Boolean);
     procedure SetTCPKeepIdle (time : TTimeInterval);
     procedure SetTCPKeepInterval (time : TTimeInterval);
-    procedure SetUnixSocketPath (path : string);
-    procedure SetAbstractUnixSocketPath (path : string);
+
+
     procedure SetUserPassword (userpwd : string);
     procedure SetUsername (name : string);
     procedure SetPassword (pass : string);
@@ -697,12 +797,14 @@ type
     procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
     procedure SetDefaultProtocol (AProtocol : TProtocol);
     procedure SetAuthServiceName (AName : string);
-    procedure SetInterface (AInterface : string);
+
     procedure SetNetrc (AOption : TNETRCOption);
     procedure SetNetrcFile (AFile : string);
   public
     constructor Create;
     destructor Destroy; override;
+
+    property Options : TOptionsProperty read FOptions write FOptions;
 
     (**
      * Check if session opened and correctly
@@ -798,16 +900,7 @@ type
      *)
     property UserAgent : string write SetUserAgent;
 
-    (**
-     * Set remote port number to work with
-     *
-     * This option sets number to be the remote port number to connect to,
-     * instead of the one specified in the URL or the default port for the used
-     * protocol.
-     * Usually, you just let the URL decide which port to use but this allows
-     * the application to override that.
-     *)
-    property Port : Longint write SetPort;
+
 
     (**
      * Port number the proxy listens on
@@ -1007,25 +1100,18 @@ type
     property HttpProxyTunnel : Boolean write SetHttpProxyTunnel;
 
     (**
-     * Set local port number to use for socket
+     * Set remote port number to work with
      *
-     * This sets the local port number of the socket used for the connection.
-     * 0, disabled - use whatever the system thinks is fine
+     * This option sets number to be the remote port number to connect to,
+     * instead of the one specified in the URL or the default port for the
+     * used protocol.
+     * Usually, you just let the URL decide which port to use but this
+     * allows the application to override that.
      *)
-    property LocalPort : Longint write SetLocalPort default 0;
+    property Port : Longint write SetPort;
 
-    (**
-     * Number of additional local ports to try
-     *
-     * Pass a long. The range argument is the number of attempts libcurl will
-     * make to find a working local port number. It starts with the given
-     * LocalPort and adds one to the number for each retry. Setting this option
-     * to 1 or below will make libcurl do only one try for the exact port
-     * number. Port numbers by nature are scarce resources that will be busy at
-     * times so setting this value to something too low might cause unnecessary
-     * connection setup failures.
-     *)
-    property LocalPortRange : Longint write SetLocalPortRange default 1;
+
+
 
     (**
      * Set life-time for DNS cache entries
@@ -1057,16 +1143,7 @@ type
      *)
     property DNSoverHTTPS : string write SetDNSoverHTTPS;
 
-    (**
-     * Set preffered receive buffer size
-     *
-     * Specifying your preferred size for the receive buffer in libcurl. The
-     * main point of this would be that the write callback gets called more
-     * often and with smaller chunks. Secondly, for some protocols, there's a
-     * benefit of having a larger buffer for performance.
-     * The minimum buffer size allowed to be set is 1024 bytes.
-     *)
-    property BufferSize : TDataSize write SetBufferSize;
+
 
     (**
      * Enable/disable TCP Fast Open
@@ -1092,13 +1169,7 @@ type
      *)
     property TCPNoDelay : Boolean write SetTCPNoDelay default True;
 
-    (**
-     * Set scope id for IPv6 addresses
-     *
-     * Pass a long specifying the scope id value to use when connecting to IPv6
-     * addresses.
-     *)
-    property AddressScope : Longint write SetAddressScope default 0;
+
 
     (**
      * Enable/disable TCP keep-alive probing
@@ -1127,27 +1198,9 @@ type
      *)
     property TCPKeepInterval : TTimeInterval write SetTCPKeepInterval;
 
-    (**
-     * Set UNIX domain socket
-     *
-     * Enables the use of Unix domain sockets as connection endpoint and sets
-     * the path to path. If path is '' (empty string), then Unix domain sockets
-     * are disabled.
-     * When enabled, curl will connect to the Unix domain socket instead of
-     * establishing a TCP connection to a host. Since no TCP connection is
-     * created, curl does not need to resolve the DNS hostname in the URL.
-     * The maximum path length on Cygwin, Linux and Solaris is 107. On other
-     * platforms it might be even less.
-     *)
-    property UnixSocketPath : string write SetUnixSocketPath;
 
-    (**
-     * Set an abstract Unix domain socket
-     *
-     * Enables the use of an abstract Unix domain socket instead of establishing
-     * a TCP connection to a host.
-     *)
-    property AbstractUnixSocketPath : string write SetAbstractUnixSocketPath;
+
+
 
     (**
      * User name and password to use in authentification
@@ -1491,19 +1544,7 @@ type
      *)
     property AuthServiceName : string write SetAuthServiceName;
 
-    (**
-     * Source interface for outgoing trafic
-     *
-     * This sets the interface name to use as outgoing network interface. The
-     * name can be an interface name, an IP address, or a host name.
-     * If the parameter starts with "if!" then it is treated as only as
-     * interface name and no attempt will ever be named to do treat it as an IP
-     * address or to do name resolution on it. If the parameter starts with
-     * "host!" it is treated as either an IP address or a hostname. Hostnames
-     * are resolved synchronously. Using the if! format is highly recommended
-     * when using the multi interfaces to avoid allowing the code to block.
-     *)
-    property InterfaceName : string write SetInterface;
+
 
     (**
      * Request then .netrc is used
@@ -1874,6 +1915,65 @@ type
   end;
 
 implementation
+
+{ TSession.TOptionsProperty }
+
+procedure TSession.TOptionsProperty.SetPort(APort: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOCALPORT, APort);
+end;
+
+procedure TSession.TOptionsProperty.SetPortRange(ARange: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
+end;
+
+procedure TSession.TOptionsProperty.SetAddressScope(AScope: Longint);
+begin
+  curl_easy_setopt(handle, CURLOPT_ADDRESS_SCOPE, AScope);
+end;
+
+procedure TSession.TOptionsProperty.SetInterface(AInterface: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_INTERFACE, PChar(AInterface));
+end;
+
+procedure TSession.TOptionsProperty.SetUnixSocketPath(APath: string);
+begin
+  if path = '' then
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, 0);
+  end else
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, PChar(APath));
+  end;
+end;
+
+procedure TSession.TOptionsProperty.SetAbstractUnixSocketPath(APath: string);
+begin
+  if path = '' then
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET, 0);
+  end else
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET, PChar(APath));
+  end;
+end;
+
+procedure TSession.TOptionsProperty.SetBufferSize(ASize: TDataSize);
+begin
+  curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, Longint(ASize.Bytes));
+end;
+
+constructor TSession.TOptionsProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TOptionsProperty.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TDataSize }
 
@@ -2600,14 +2700,6 @@ begin
   end;
 end;
 
-procedure TSession.SetPort(port: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PORT, port);
-  end;
-end;
-
 procedure TSession.SetProxyPort(port: Longint);
 begin
   if Opened then
@@ -2785,14 +2877,6 @@ begin
   end;
 end;
 
-procedure TSession.SetBufferSize(size: TDataSize);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, Longint(size.Bytes));
-  end;
-end;
-
 procedure TSession.SetTCPFastOpen(fastOpen: Boolean);
 begin
   if Opened then
@@ -2806,14 +2890,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TCP_NODELAY, Longint(noDelay));
-  end;
-end;
-
-procedure TSession.SetAddressScope(scope: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_ADDRESS_SCOPE, scope);
   end;
 end;
 
@@ -2838,34 +2914,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TCP_KEEPINTVL, Longint(Ceil(time.Seconds)));
-  end;
-end;
-
-procedure TSession.SetUnixSocketPath(path: string);
-begin
-  if Opened then
-  begin
-    if path = '' then
-    begin
-      curl_easy_setopt(handle, CURLOPT_UNIX_SOCKET_PATH, 0);
-    end else
-    begin
-      curl_easy_setopt(handle, CURLOPT_UNIX_SOCKET_PATH, PChar(path));
-    end;
-  end;
-end;
-
-procedure TSession.SetAbstractUnixSocketPath(path: string);
-begin
-  if Opened then
-  begin
-    if path = '' then
-    begin
-      curl_easy_setopt(handle, CURLOPT_ABSTRACT_UNIX_SOCKET, 0);
-    end else
-    begin
-      curl_easy_setopt(handle, CURLOPT_ABSTRACT_UNIX_SOCKET, PChar(path));
-    end;
   end;
 end;
 
@@ -3309,14 +3357,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_SERVICE_NAME, PChar(AName));
-  end;
-end;
-
-procedure TSession.SetInterface(AInterface: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_INTERFACE, PChar(AInterface));
   end;
 end;
 
