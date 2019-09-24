@@ -429,12 +429,12 @@ type
     * the password only) or for the host only, to find the first user name and
     * password after that machine, which ever information is not specified.
     *)
-    NETRC_OPTIONAL                    = CURL_NETRC_OPTIONAL,
+    NETRC_OPTIONAL                    = Longint(CURL_NETRC_OPTIONAL),
 
    (**
     * The library will ignore the ~/.netrc file.
     *)
-    NETRC_IGNORED                     = CURL_NETRC_IGNORED,
+    NETRC_IGNORED                     = Longint(CURL_NETRC_IGNORED),
 
    (**
     * The use of the ~/.netrc file is required, and information in the URL is to
@@ -442,7 +442,7 @@ type
     * the password only) or for the host only, to find the first user name and
     * password after that machine, which ever information is not specified.
     *)
-    NETRC_REQUIRED                    = CURL_NETRC_REQUIRED
+    NETRC_REQUIRED                    = Longint(CURL_NETRC_REQUIRED)
   );
 
   { TTimeInterval }
@@ -596,6 +596,11 @@ type
         procedure SetUnixSocketPath (APath : string);
         procedure SetAbstractUnixSocketPath (APath : string);
         procedure SetBufferSize (ASize : TDataSize);
+        procedure SetFailOnError (AFailOnError : Boolean);
+        procedure SetPathAsIs (ALeaveIt : Boolean);
+        procedure SetAllowedProtocols (AProtocols : TProtocols);
+        procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
+        procedure SetDefaultProtocol (AProtocol : TProtocol);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -672,17 +677,350 @@ type
          *
          * Specifying your preferred size for the receive buffer in libcurl. The
          * main point of this would be that the write callback gets called more
-         * often and with smaller chunks. Secondly, for some protocols, there's a
-         * benefit of having a larger buffer for performance.
+         * often and with smaller chunks. Secondly, for some protocols, there's
+         * a benefit of having a larger buffer for performance.
          * The minimum buffer size allowed to be set is 1024 bytes.
          *)
          property BufferSize : TDataSize write SetBufferSize;
+
+        (**
+         * Request failure on HTTP response >= 400
+         *
+         * Tells the library to fail the request if the HTTP code returned is
+         * equal to or larger than 400. The default action would be to return
+         * the page normally, ignoring that code.
+         *)
+        property FailOnError : Boolean write SetFailOnError default False;
+
+        (**
+         * Do not handle dot dot sequences
+         *
+         * Tell libcurl to not alter the given path before passing it on to the
+         * server.
+         * This instructs libcurl to NOT squash sequences of "/../" or "/./" that
+         * may exist in the URL's path part and that is supposed to be removed
+         * according to RFC 3986 section 5.2.4.
+         * Some server implementations are known to (erroneously) require the dot
+         * dot sequences to remain in the path and some clients want to pass these
+         * on in order to try out server implementations.
+         * By default libcurl will merge such sequences before using the path.
+         *)
+        property PathAsIs : Boolean write SetPathAsIs default False;
+
+        (**
+         * Set allowed protocols
+         *
+         * Limits what protocols libcurl may use in the transfer. This allows you to
+         * have a libcurl built to support a wide range of protocols but still limit
+         * specific transfers to only be allowed to use a subset of them. By default
+         * libcurl will accept all protocols it supports
+         *)
+        property Protocols : TProtocols write SetAllowedProtocols
+          default [PROTOCOL_DICT, PROTOCOL_FILE, PROTOCOL_FTP, PROTOCOL_FTPS,
+          PROTOCOL_GOPHER, PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_IMAP,
+          PROTOCOL_IMAPS, PROTOCOL_LDAP, PROTOCOL_LDAPS, PROTOCOL_POP3,
+          PROTOCOL_POP3S, PROTOCOL_RTMP, PROTOCOL_RTMPE, PROTOCOL_RTMPS,
+          PROTOCOL_RTMPT, PROTOCOL_RTMPTE, PROTOCOL_RTMPTS, PROTOCOL_RTSP,
+          PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS, PROTOCOL_SMTP,
+          PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
+
+        (**
+         * Set protocols allowed to redirect to
+         *
+         * Limits what protocols libcurl may use in a transfer that it follows to in
+         * a redirect when FollowRedirect is enabled. This allows you to limit
+         * specific transfers to only be allowed to use a subset of protocols in
+         * redirections.
+         *)
+        property RedirectProtocols : TProtocols write SetAllowedRedirectProtocols
+          default [PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_FTP, PROTOCOL_FTPS];
+
+        (**
+         * Default protocol to use if the URL is missing a scheme name
+         *
+         * This option does not change the default proxy protocol (http).
+         * Without this option libcurl would make a guess based on the host.
+         *)
+        property DefaultProtocol : TProtocol write SetDefaultProtocol;
+
+      end;
+
+      { TTCPProperty }
+
+      TTCPProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetTCPFastOpen (AEnable : Boolean);
+        procedure SetTCPNoDelay (AEnable : Boolean);
+        procedure SetTCPKeepalive (ASendProbe : Boolean);
+        procedure SetTCPKeepIdle (ATime : TTimeInterval);
+        procedure SetTCPKeepInterval (ATime : TTimeInterval);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Enable/disable TCP Fast Open
+         *
+         * TCP Fast Open (RFC7413) is a mechanism that allows data to be carried
+         * in the SYN and SYN-ACK packets and consumed by the receiving end
+         * during the initial connection handshake, saving up to one full
+         * round-trip time (RTT).
+         *)
+        property FastOpen : Boolean write SetTCPFastOpen default False;
+
+        (**
+         * Disable TCP's Nagle algorithm on this connection
+         *
+         * The purpose of this algorithm is to try to minimize the number of
+         * small packets on the network (where "small packets" means TCP
+         * segments less than the Maximum Segment Size (MSS) for the network).
+         * Maximizing the amount of data sent per TCP segment is good because it
+         * amortizes the overhead of the send. However, in some cases small
+         * segments may need to be sent without delay. This is less efficient
+         * than sending larger amounts of data at a time, and can contribute to
+         * congestion on the network if overdone.
+         *)
+        property NoDelay : Boolean write SetTCPNoDelay default True;
+
+        (**
+         * Enable/disable TCP keep-alive probing
+         *
+         * If set, TCP keepalive probes will be sent. The delay and frequency of
+         * these probes can be controlled by the TCPKeepIdle and TCPKeepInterval
+         * options, provided the operating system supports them. Set to False
+         * (default behavior) to disable keepalive probes
+         *)
+        property Keepalive : Boolean write SetTCPKeepalive default False;
+
+        (**
+         * Set TCP keep-alive idle time wait
+         *
+         * Sets the delay, that the operating system will wait while the
+         * connection is idle before sending keepalive probes. Not all operating
+         * systems support this option.
+         *)
+        property KeepIdle : TTimeInterval write SetTCPKeepIdle;
+
+        (**
+         * Set TCP keep-alive interval
+         *
+         * Sets the interval, that the operating system will wait between
+         * sending keepalive probes. Not all operating systems support this
+         * option.
+         *)
+         property KeepInterval : TTimeInterval write SetTCPKeepInterval;
+      end;
+
+      { TProxyProperty }
+
+      TProxyProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetPreProxy (APreProxy : string);
+        procedure SetProxy (AProxy : string);
+        procedure SetPort (APort : Longint);
+        procedure SetProxyType (AType : TProxyType);
+        procedure SetProxyServiceName (AName : string);
+        procedure SetNoProxyHosts (AHosts : string);
+        procedure SetHttpProxyTunnel (AEnable : Boolean);
+        procedure SetProxyUserPassword (AUserpwd : string);
+        procedure SetProxyUsername (AName : string);
+        procedure SetProxyPassword (APassword : string);
+        procedure SetProxyTLSUsername (AName : string);
+        procedure SetProxyTLSPassword (APassword : string);
+        procedure SetProxyTLSAuth (AMethod : TTLSAuthMethod);
+        procedure SetProxyHTTPAuth (AMethod : TAuthMethods);
+        procedure SetHAProxyHeader (ASend : Boolean);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set pre-proxy to use
+         *
+         * Set the preproxy to use for the upcoming request. The parameter
+         * should be a string holding the host name or dotted numerical IP
+         * address. A numerical IPv6 address must be written within [brackets].
+         * To specify port number in this string, append :[port] to the end of
+         * the host name. The proxy's port number may optionally be specified
+         * with the separate option Proxy. If not specified, libcurl will
+         * default to using port 1080 for proxies.
+         * A pre proxy is a SOCKS proxy that curl connects to before it connects
+         * to the HTTP(S) proxy specified in the CURLOPT_PROXY option. The pre
+         * proxy can only be a SOCKS proxy.
+         * The pre proxy string should be prefixed with [scheme]:// to specify
+         * which kind of socks is used. Use socks4://, socks4a://, socks5:// or
+         * socks5h:// (the last one to enable socks5 and asking the proxy to do
+         * the resolving, also known as CURLPROXY_SOCKS5_HOSTNAME type) to
+         * request the specific SOCKS version to be used. Otherwise SOCKS4 is
+         * used as default. Setting the pre proxy string to "" (an empty string)
+         * will explicitly disable the use of a pre proxy.
+         *)
+        property PreProxy : string write SetPreProxy;
+
+        (**
+         * Set proxy to use
+         *
+         * Set the proxy to use for the upcoming request. The parameter should
+         * be a string holding the host name or dotted numerical IP address. A
+         * numerical IPv6 address must be written within [brackets].
+         * To specify port number in this string, append :[port] to the end of
+         * the host name. If not specified, libcurl will default to using port
+         * 1080 for proxies.
+         * The proxy string may be prefixed with [scheme]:// to specify which
+         * kind of proxy is used.
+         * http://    HTTP Proxy. Default when no scheme or proxy type is
+         *            specified.
+         * https://   HTTPS Proxy.
+         * socks4://  SOCKS4 Proxy.
+         * socks4a:// SOCKS4a Proxy. Proxy resolves URL hostname.
+         * socks5://  SOCKS5 Proxy.
+         * socks5h:// SOCKS5 Proxy. Proxy resolves URL hostname.
+         * When you tell the library to use an HTTP proxy, libcurl will
+         * transparently convert operations to HTTP even if you specify an FTP
+         * URL etc.
+         * Setting the proxy string to "" (an empty string) will explicitly
+         * disable the use of a proxy, even if there is an environment variable
+         * set for it. A proxy host string can also include protocol scheme
+         * (http://) and embedded user + password.
+         *)
+        property Proxy : string write SetProxy;
+
+        (**
+         * Port number the proxy listens on
+         *
+         * Set the proxy port to connect to unless it is specified in the proxy
+         * string.
+         *)
+        property Port : Longint write SetPort;
+
+        (**
+         * Proxy protocol type
+         *)
+        property Protocol : TProxyType write SetProxyType default PROXY_HTTP;
+
+        (**
+         * Proxy authentication service name
+         *
+         * String holding the name of the service. The default service name is
+         * "HTTP" for HTTP based proxies and "rcmd" for SOCKS5. This option
+         * allows you to change it.
+         *)
+        property ServiceName : string write SetProxyServiceName;
+
+        (**
+         * Disable proxy use for specific hosts
+         *
+         * The string consists of a comma separated list of host names that do
+         * not require a proxy to get reached, even if one is specified. The
+         * only wildcard available is a single * character, which matches all
+         * hosts, and effectively disables the proxy. Each name in this list is
+         * matched as either a domain which contains the hostname, or the
+         * hostname itself. For example, example.com would match example.com,
+         * example.com:80, and www.example.com, but not www.notanexample.com or
+         * example.com.othertld. If the name in the noproxy list has a leading
+         * period, it is a domain match against the provided host name. This way
+         * ".example.com" will switch off proxy use for both "www.example.com"
+         * as well as for "foo.example.com".
+         * Setting the noproxy string to "" (an empty string) will explicitly
+         * enable the proxy for all host names, even if there is an environment
+         * variable set for it.
+         * Enter IPv6 numerical addresses in the list of host names without
+         * enclosing brackets: "example.com,::1,localhost"
+         *)
+        property NoProxyHosts : string write SetNoProxyHosts;
+
+        (**
+         * Tunnel through HTTP proxy
+         *
+         * Make libcurl tunnel all operations through the HTTP proxy (set with
+         * Proxy property). There is a big difference between using a proxy and
+         * to tunnel through it.
+         * Tunneling means that an HTTP CONNECT request is sent to the proxy,
+         * asking it to connect to a remote host on a specific port number and
+         * then the traffic is just passed through the proxy. Proxies tend to
+         * white-list specific port numbers it allows CONNECT requests to and
+         * often only port 80 and 443 are allowed.
+         *)
+        property HttpTunnel : Boolean write SetHttpProxyTunnel;
+
+        (**
+         * User name and password to use for proxy authentification
+         *
+         * Pass a parameter, which should be [user name]:[password] to use for
+         * the connection to the HTTP proxy. Both the name and the password will
+         * be URL decoded before use, so to include for example a colon in the
+         * user name you should encode it as %3A. (This is different to how
+         * UserPassword is used - beware.)
+         *)
+        property UserPassword : string write SetProxyUserPassword;
+
+        (**
+         * User name to use for proxy authentication
+         *
+         * Sets the user name to be used in protocol authentication with the
+         * proxy.
+         *)
+        property Username : string write SetProxyUsername;
+
+        (**
+         * Password to use with proxy authentication
+         *
+         * The option should be used in conjunction with the ProxyUsername
+         * option.
+         *)
+        property Password : string write SetProxyPassword;
+
+        (**
+         * User name to use for proxy TLS authentication
+         *)
+        property TLSUsername : string write SetProxyTLSUsername;
+
+        (**
+         * Password to use for proxy TLS
+         *
+         * Requires that the ProxyTLSUsername option also be set.
+         *)
+        property TLSPassword : string write SetProxyTLSPassword;
+
+        (**
+         * Set proxy TLS authentication methods
+         *)
+        property TLSAuth : TTLSAuthMethod write SetProxyTLSAuth;
+
+        (**
+         * Set HTTP proxy authentication methods to try
+         *
+         * Tell libcurl which HTTP authentication method(s) you want it to use
+         * for your proxy authentication. If more than one bit is set, libcurl
+         * will first query the site to see what authentication methods it
+         * supports and then pick the best one you allow it to use. For some
+         * methods, this will induce an extra network round-trip.
+         *)
+        property HTTPAuth : TAuthMethods write SetProxyHTTPAuth
+          default [AUTH_BASIC];
+
+        (**
+         * Send HAProxy PROXY protocol v.1 header
+         *
+         * Tells the library to send an HAProxy PROXY protocol v1 header at
+         * beginning of the connection. The default action is not to send this
+         * header.
+         * This option is primarily useful when sending test requests to a
+         * service that expects this header.
+         *)
+        property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
       end;
 
   protected
     handle : CURL;
     buffer : TStringStream;
     FOptions : TOptionsProperty;
+    FTCP : TTCPProperty;
+    FProxy : TProxyProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -727,21 +1065,6 @@ type
     procedure SetUrl (url : string);
 
     { Proxy settings }
-    procedure SetPreProxy (preProxy : string);
-    procedure SetProxy (proxy : string);
-    procedure SetProxyPort (port : Longint);
-    procedure SetProxyType (proxy : TProxyType);
-    procedure SetProxyServiceName (AName : string);
-    procedure SetNoProxyHosts (hosts : string);
-    procedure SetHttpProxyTunnel (proxyTunnel : Boolean);
-    procedure SetProxyUserPassword (userpwd : string);
-    procedure SetProxyUsername (name : string);
-    procedure SetProxyPassword (pass : string);
-    procedure SetProxyTLSUsername (name : string);
-    procedure SetProxyTLSPassword (pass : string);
-    procedure SetProxyTLSAuth (method : TTLSAuthMethod);
-    procedure SetProxyHTTPAuth (method : Longint);
-    procedure SetHAProxyHeader (ASend : Boolean);
     procedure SetSOCKS5Auth (AMethod : TAuthMethods);
     procedure SetSOCKS5GSSAPIServiceName (AName : string);
     procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
@@ -756,22 +1079,14 @@ type
     procedure SetTransferEncoding (encoding : boolean);
     procedure SetVerbose (verbose : boolean);
     procedure SetWildcardMatch (match : boolean);
-    procedure SetFailOnError (failOnError : boolean);
+
     procedure SetKeepSendingOnError (keepSending : boolean);
-    procedure SetPathAsIs (pathAsIs : boolean);
+
     procedure SetLocalPort (port : Longint);
     procedure SetLocalPortRange (range : Longint);
     procedure SetDNSCacheTimeout (timeout : TTimeInterval);
     procedure SetDNSGlobalCache (enable : Boolean);
     procedure SetDNSoverHTTPS (url : string);
-
-    procedure SetTCPFastOpen (fastOpen : Boolean);
-    procedure SetTCPNoDelay (noDelay : Boolean);
-
-    procedure SetTCPKeepalive (probe : Boolean);
-    procedure SetTCPKeepIdle (time : TTimeInterval);
-    procedure SetTCPKeepInterval (time : TTimeInterval);
-
 
     procedure SetUserPassword (userpwd : string);
     procedure SetUsername (name : string);
@@ -793,9 +1108,7 @@ type
     procedure SetPostFields (data : string);
     procedure SetPostFieldsSize (size : Longint);
     procedure SetPostFieldsSizeLarge (size : LongWord);
-    procedure SetAllowedProtocols (AProtocols : TProtocols);
-    procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
-    procedure SetDefaultProtocol (AProtocol : TProtocol);
+
     procedure SetAuthServiceName (AName : string);
 
     procedure SetNetrc (AOption : TNETRCOption);
@@ -805,6 +1118,8 @@ type
     destructor Destroy; override;
 
     property Options : TOptionsProperty read FOptions write FOptions;
+    property TCP : TTCPProperty read FTCP write FTCP;
+    property Proxy : TProxyProperty read FProxy write FProxy;
 
     (**
      * Check if session opened and correctly
@@ -843,72 +1158,12 @@ type
     property Url : string write SetUrl;
 
     (**
-     * Set pre-proxy to use
-     *
-     * Set the preproxy to use for the upcoming request. The parameter should be
-     * a string holding the host name or dotted numerical IP address. A
-     * numerical IPv6 address must be written within [brackets].
-     * To specify port number in this string, append :[port] to the end of the
-     * host name. The proxy's port number may optionally be specified with the
-     * separate option Proxy. If not specified, libcurl will default to using
-     * port 1080 for proxies.
-     * A pre proxy is a SOCKS proxy that curl connects to before it connects to
-     * the HTTP(S) proxy specified in the CURLOPT_PROXY option. The pre proxy
-     * can only be a SOCKS proxy.
-     * The pre proxy string should be prefixed with [scheme]:// to specify which
-     * kind of socks is used. Use socks4://, socks4a://, socks5:// or socks5h://
-     * (the last one to enable socks5 and asking the proxy to do the resolving,
-     * also known as CURLPROXY_SOCKS5_HOSTNAME type) to request the specific
-     * SOCKS version to be used. Otherwise SOCKS4 is used as default.
-     * Setting the pre proxy string to "" (an empty string) will explicitly
-     * disable the use of a pre proxy.
-     *)
-    property PreProxy : string write SetPreProxy;
-
-    (**
-     * Set proxy to use
-     *
-     * Set the proxy to use for the upcoming request. The parameter should be a
-     * string holding the host name or dotted numerical IP address. A numerical
-     * IPv6 address must be written within [brackets].
-     * To specify port number in this string, append :[port] to the end of the
-     * host name. If not specified, libcurl will default to using port 1080 for
-     * proxies.
-     * The proxy string may be prefixed with [scheme]:// to specify which kind
-     * of proxy is used.
-     * http://    HTTP Proxy. Default when no scheme or proxy type is specified.
-     * https://   HTTPS Proxy.
-     * socks4://  SOCKS4 Proxy.
-     * socks4a:// SOCKS4a Proxy. Proxy resolves URL hostname.
-     * socks5://  SOCKS5 Proxy.
-     * socks5h:// SOCKS5 Proxy. Proxy resolves URL hostname.
-     * When you tell the library to use an HTTP proxy, libcurl will
-     * transparently convert operations to HTTP even if you specify an FTP URL
-     * etc.
-     * Setting the proxy string to "" (an empty string) will explicitly disable
-     * the use of a proxy, even if there is an environment variable set for it.
-     * A proxy host string can also include protocol scheme (http://) and
-     * embedded user + password.
-     *)
-    property Proxy : string write SetProxy;
-
-    (**
      * Set HTTP user-agent header
      *
      * It will be used to set the User-Agent: header in the HTTP request sent to
      * the remote server. This can be used to fool servers or scripts.
      *)
     property UserAgent : string write SetUserAgent;
-
-
-
-    (**
-     * Port number the proxy listens on
-     *
-     * Set the proxy port to connect to unless it is specified in the proxy
-     * string.
-     *)
-    property ProxyPort : Longint write SetProxyPort;
 
     (**
      * Follow HTTP 3XXX redirects
@@ -1024,14 +1279,7 @@ type
      *)
     property WildcardMatch : Boolean write SetWildcardMatch;
 
-    (**
-     * Request failure on HTTP response >= 400
-     *
-     * Tells the library to fail the request if the HTTP code returned is equal
-     * to or larger than 400. The default action would be to return the page
-     * normally, ignoring that code.
-     *)
-    property FailOnError : Boolean write SetFailOnError default False;
+
 
     (**
      * Keep sending on early HTTP response >= 300
@@ -1043,61 +1291,6 @@ type
     property KeepSendingOnError : Boolean write SetKeepSendingOnError
       default False;
 
-    (**
-     * Do not handle dot dot sequences
-     *
-     * Tell libcurl to not alter the given path before passing it on to the
-     * server.
-     * This instructs libcurl to NOT squash sequences of "/../" or "/./" that
-     * may exist in the URL's path part and that is supposed to be removed
-     * according to RFC 3986 section 5.2.4.
-     * Some server implementations are known to (erroneously) require the dot
-     * dot sequences to remain in the path and some clients want to pass these
-     * on in order to try out server implementations.
-     * By default libcurl will merge such sequences before using the path.
-     *)
-    property PathAsIs : Boolean write SetPathAsIs default False;
-
-    (**
-     * Proxy protocol type
-     *)
-    property ProxyProtocol : TProxyType write SetProxyType default PROXY_HTTP;
-
-    (**
-     * Disable proxy use for specific hosts
-     *
-     * The string consists of a comma separated list of host names that do not
-     * require a proxy to get reached, even if one is specified. The only
-     * wildcard available is a single * character, which matches all hosts, and
-     * effectively disables the proxy. Each name in this list is matched as
-     * either a domain which contains the hostname, or the hostname itself. For
-     * example, example.com would match example.com, example.com:80, and
-     * www.example.com, but not www.notanexample.com or example.com.othertld.
-     * If the name in the noproxy list has a leading period, it is a domain
-     * match against the provided host name. This way ".example.com" will switch
-     * off proxy use for both "www.example.com" as well as for
-     * "foo.example.com".
-     * Setting the noproxy string to "" (an empty string) will explicitly enable
-     * the proxy for all host names, even if there is an environment variable
-     * set for it.
-     * Enter IPv6 numerical addresses in the list of host names without
-     * enclosing brackets: "example.com,::1,localhost"
-     *)
-    property NoProxyHosts : string write SetNoProxyHosts;
-
-    (**
-     * Tunnel through HTTP proxy
-     *
-     * Make libcurl tunnel all operations through the HTTP proxy (set with
-     * Proxy property). There is a big difference between using a proxy and to
-     * tunnel through it.
-     * Tunneling means that an HTTP CONNECT request is sent to the proxy, asking
-     * it to connect to a remote host on a specific port number and then the
-     * traffic is just passed through the proxy. Proxies tend to white-list
-     * specific port numbers it allows CONNECT requests to and often only port
-     * 80 and 443 are allowed.
-     *)
-    property HttpProxyTunnel : Boolean write SetHttpProxyTunnel;
 
     (**
      * Set remote port number to work with
@@ -1108,10 +1301,7 @@ type
      * Usually, you just let the URL decide which port to use but this
      * allows the application to override that.
      *)
-    property Port : Longint write SetPort;
-
-
-
+    //property Port : Longint;
 
     (**
      * Set life-time for DNS cache entries
@@ -1143,65 +1333,6 @@ type
      *)
     property DNSoverHTTPS : string write SetDNSoverHTTPS;
 
-
-
-    (**
-     * Enable/disable TCP Fast Open
-     *
-     * TCP Fast Open (RFC7413) is a mechanism that allows data to be carried in
-     * the SYN and SYN-ACK packets and consumed by the receiving end during the
-     * initial connection handshake, saving up to one full round-trip time
-     * (RTT).
-     *)
-    property TCPFastOpen : Boolean write SetTCPFastOpen default False;
-
-    (**
-     * Disable TCP's Nagle algorithm on this connection
-     *
-     * The purpose of this algorithm is to try to minimize the number of small
-     * packets on the network (where "small packets" means TCP segments less
-     * than the Maximum Segment Size (MSS) for the network).
-     * Maximizing the amount of data sent per TCP segment is good because it
-     * amortizes the overhead of the send. However, in some cases small segments
-     * may need to be sent without delay. This is less efficient than sending
-     * larger amounts of data at a time, and can contribute to congestion on the
-     * network if overdone.
-     *)
-    property TCPNoDelay : Boolean write SetTCPNoDelay default True;
-
-
-
-    (**
-     * Enable/disable TCP keep-alive probing
-     *
-     * If set, TCP keepalive probes will be sent. The delay and frequency of
-     * these probes can be controlled by the TCPKeepIdle and TCPKeepInterval
-     * options, provided the operating system supports them. Set to False
-     * (default behavior) to disable keepalive probes
-     *)
-    property TCPKeepalive : Boolean write SetTCPKeepalive default False;
-
-    (**
-     * Set TCP keep-alive idle time wait
-     *
-     * Sets the delay, that the operating system will wait while the connection
-     * is idle before sending keepalive probes. Not all operating systems
-     * support this option.
-     *)
-    property TCPKeepIdle : TTimeInterval write SetTCPKeepIdle;
-
-    (**
-     * Set TCP keep-alive interval
-     *
-     * Sets the interval, that the operating system will wait between sending
-     * keepalive probes. Not all operating systems support this option.
-     *)
-    property TCPKeepInterval : TTimeInterval write SetTCPKeepInterval;
-
-
-
-
-
     (**
      * User name and password to use in authentification
      *
@@ -1225,17 +1356,6 @@ type
      * leakage.
      *)
     property UserPassword : string write SetUserPassword;
-
-    (**
-     * User name and password to use for proxy authentification
-     *
-     * Pass a parameter, which should be [user name]:[password] to use for the
-     * connection to the HTTP proxy. Both the name and the password will be URL
-     * decoded before use, so to include for example a colon in the user name
-     * you should encode it as %3A. (This is different to how UserPassword is
-     * used - beware.)
-     *)
-    property ProxyUserPasswod : string write SetProxyUserPassword;
 
     (**
      * User name to use in authentication
@@ -1275,20 +1395,6 @@ type
     property LoginOptions : string write SetLoginOptions;
 
     (**
-     * User name to use for proxy authentication
-     *
-     * Sets the user name to be used in protocol authentication with the proxy.
-     *)
-    property ProxyUsername : string write SetProxyUsername;
-
-    (**
-     * Password to use with proxy authentication
-     *
-     * The option should be used in conjunction with the ProxyUsername option.
-     *)
-    property ProxyPassword : string write SetProxyPassword;
-
-    (**
      * Tell libcurl which authentication method(s) you want it to use speaking
      * to the remote server.
      *)
@@ -1300,11 +1406,6 @@ type
     property TLSUsername : string write SetTLSUsername;
 
     (**
-     * User name to use for proxy TLS authentication
-     *)
-    property ProxyTLSUsername : string write SetProxyTLSUsername;
-
-    (**
      * Password to use for TLS authentication
      *
      * Requires that the TLSUsername option also be set.
@@ -1312,32 +1413,9 @@ type
     property TLSPassword : string write SetTLSPassword;
 
     (**
-     * Password to use for proxy TLS
-     *
-     * Requires that the ProxyTLSUsername option also be set.
-     *)
-    property ProxyTLSPassword : string write SetProxyTLSPassword;
-
-    (**
      * Set TLS authentication methods
      *)
     property TLSAuth : TTLSAuthMethod write SetTLSAuth;
-
-    (**
-     * Set proxy TLS authentication methods
-     *)
-    property ProxyTLSAuth : TTLSAuthMethod write SetProxyTLSAuth;
-
-    (**
-     * Set HTTP proxy authentication methods to try
-     *
-     * Tell libcurl which HTTP authentication method(s) you want it to use for
-     * your proxy authentication. If more than one bit is set, libcurl will
-     * first query the site to see what authentication methods it supports and
-     * then pick the best one you allow it to use. For some methods, this will
-     * induce an extra network round-trip.
-     *)
-    property ProxyHTTPAuth : Longint write SetProxyHTTPAuth;
 
     (**
      * Authorisation identity (identity to act as)
@@ -1450,42 +1528,6 @@ type
       default -1;
 
     (**
-     * Set allowed protocols
-     *
-     * Limits what protocols libcurl may use in the transfer. This allows you to
-     * have a libcurl built to support a wide range of protocols but still limit
-     * specific transfers to only be allowed to use a subset of them. By default
-     * libcurl will accept all protocols it supports
-     *)
-    property Protocols : TProtocols write SetAllowedProtocols
-      default [PROTOCOL_DICT, PROTOCOL_FILE, PROTOCOL_FTP, PROTOCOL_FTPS,
-      PROTOCOL_GOPHER, PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_IMAP,
-      PROTOCOL_IMAPS, PROTOCOL_LDAP, PROTOCOL_LDAPS, PROTOCOL_POP3,
-      PROTOCOL_POP3S, PROTOCOL_RTMP, PROTOCOL_RTMPE, PROTOCOL_RTMPS,
-      PROTOCOL_RTMPT, PROTOCOL_RTMPTE, PROTOCOL_RTMPTS, PROTOCOL_RTSP,
-      PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS, PROTOCOL_SMTP,
-      PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
-
-    (**
-     * Set protocols allowed to redirect to
-     *
-     * Limits what protocols libcurl may use in a transfer that it follows to in
-     * a redirect when FollowRedirect is enabled. This allows you to limit
-     * specific transfers to only be allowed to use a subset of protocols in
-     * redirections.
-     *)
-    property RedirectProtocols : TProtocols write SetAllowedRedirectProtocols
-      default [PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_FTP, PROTOCOL_FTPS];
-
-    (**
-     * Default protocol to use if the URL is missing a scheme name
-     *
-     * This option does not change the default proxy protocol (http).
-     * Without this option libcurl would make a guess based on the host.
-     *)
-    property DefaultProtocol : TProtocol write SetDefaultProtocol;
-
-    (**
      * Set allowed methods for SOCKS5 proxy authentication
      *
      * Tell libcurl which authentication method(s) are allowed for SOCKS5 proxy
@@ -1515,26 +1557,6 @@ type
     property SOCKS5GSSAPINegotiation : Boolean write SetSOCKS5GSSAPINegotiation;
 
     (**
-     * Proxy authentication service name
-     *
-     * String holding the name of the service. The default service name is
-     * "HTTP" for HTTP based proxies and "rcmd" for SOCKS5. This option allows
-     * you to change it.
-     *)
-    property ProxyServiceName : string write SetProxyServiceName;
-
-    (**
-     * Send HAProxy PROXY protocol v.1 header
-     *
-     * Tells the library to send an HAProxy PROXY protocol v1 header at
-     * beginning of the connection. The default action is not to send this
-     * header.
-     * This option is primarily useful when sending test requests to a service
-     * that expects this header.
-     *)
-    property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
-
-    (**
      * Authentication service name
      *
      * String holding the name of the service for DIGEST-MD5, SPNEGO and
@@ -1543,8 +1565,6 @@ type
      * them.
      *)
     property AuthServiceName : string write SetAuthServiceName;
-
-
 
     (**
      * Request then .netrc is used
@@ -1916,6 +1936,159 @@ type
 
 implementation
 
+{ TSession.TProxyProperty }
+
+procedure TSession.TProxyProperty.SetPreProxy(APreProxy: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PRE_PROXY, PChar(APreProxy));
+end;
+
+procedure TSession.TProxyProperty.SetProxy(AProxy: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY, PChar(AProxy));
+end;
+
+procedure TSession.TProxyProperty.SetPort(APort: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXYPORT, APort);
+end;
+
+procedure TSession.TProxyProperty.SetProxyType(AType: TProxyType);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXYTYPE, Longint(AType));
+end;
+
+procedure TSession.TProxyProperty.SetProxyServiceName(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_SERVICE_NAME, PChar(AName));
+end;
+
+procedure TSession.TProxyProperty.SetNoProxyHosts(AHosts: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NOPROXY, PChar(AHosts));
+end;
+
+procedure TSession.TProxyProperty.SetHttpProxyTunnel(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HTTPPROXYTUNNEL, Longint(AEnable));
+end;
+
+procedure TSession.TProxyProperty.SetProxyUserPassword(AUserpwd: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXYUSERPWD, PChar(AUserpwd));
+end;
+
+procedure TSession.TProxyProperty.SetProxyUsername(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXYUSERNAME, PChar(AName));
+end;
+
+procedure TSession.TProxyProperty.SetProxyPassword(APassword: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXYPASSWORD, PChar(APassword));
+end;
+
+procedure TSession.TProxyProperty.SetProxyTLSUsername(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_USERNAME, PChar(AName));
+end;
+
+procedure TSession.TProxyProperty.SetProxyTLSPassword(APassword: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(APassword));
+end;
+
+procedure TSession.TProxyProperty.SetProxyTLSAuth(AMethod: TTLSAuthMethod);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
+end;
+
+procedure TSession.TProxyProperty.SetProxyHTTPAuth(AMethod: TAuthMethods);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if AUTH_BASIC in AMethod then
+    bitmask := bitmask or CURLAUTH_BASIC;
+  if AUTH_DIGEST in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST;
+  if AUTH_NEGOTIATE in AMethod then
+    bitmask := bitmask or CURLAUTH_NEGOTIATE;
+  if AUTH_GSSAPI in AMethod then
+    bitmask := bitmask or CURLAUTH_GSSAPI;
+  if AUTH_NTLM in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM;
+  if AUTH_DIGEST_IE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST_IE;
+  if AUTH_NTLM_WB in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM_WB;
+  if AUTH_BEARER in AMethod then
+    bitmask := bitmask or CURLAUTH_BEARER;
+  if AUTH_ANY in AMethod then
+    bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
+      CURLAUTH_BEARER;
+  if AUTH_ANYSAFE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
+
+  curl_easy_setopt(FHandle, CURLOPT_PROXYAUTH, bitmask);
+end;
+
+procedure TSession.TProxyProperty.SetHAProxyHeader(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
+end;
+
+constructor TSession.TProxyProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TProxyProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.TTCPProperty }
+
+procedure TSession.TTCPProperty.SetTCPFastOpen(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TCP_FASTOPEN, Longint(AEnable));
+end;
+
+procedure TSession.TTCPProperty.SetTCPNoDelay(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TCP_NODELAY, Longint(AEnable));
+end;
+
+procedure TSession.TTCPProperty.SetTCPKeepalive(ASendProbe: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPALIVE, Longint(ASendProbe));
+end;
+
+procedure TSession.TTCPProperty.SetTCPKeepIdle(ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPIDLE, Longint(Ceil(ATime.Seconds)));
+end;
+
+procedure TSession.TTCPProperty.SetTCPKeepInterval(ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPINTVL,
+    Longint(Ceil(ATime.Seconds)));
+end;
+
+constructor TSession.TTCPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TTCPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TSession.TOptionsProperty }
 
 procedure TSession.TOptionsProperty.SetPort(APort: Longint);
@@ -1930,7 +2103,7 @@ end;
 
 procedure TSession.TOptionsProperty.SetAddressScope(AScope: Longint);
 begin
-  curl_easy_setopt(handle, CURLOPT_ADDRESS_SCOPE, AScope);
+  curl_easy_setopt(FHandle, CURLOPT_ADDRESS_SCOPE, AScope);
 end;
 
 procedure TSession.TOptionsProperty.SetInterface(AInterface: string);
@@ -1940,7 +2113,7 @@ end;
 
 procedure TSession.TOptionsProperty.SetUnixSocketPath(APath: string);
 begin
-  if path = '' then
+  if APath = '' then
   begin
     curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, 0);
   end else
@@ -1951,7 +2124,7 @@ end;
 
 procedure TSession.TOptionsProperty.SetAbstractUnixSocketPath(APath: string);
 begin
-  if path = '' then
+  if APath = '' then
   begin
     curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET, 0);
   end else
@@ -1962,7 +2135,158 @@ end;
 
 procedure TSession.TOptionsProperty.SetBufferSize(ASize: TDataSize);
 begin
-  curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, Longint(ASize.Bytes));
+  curl_easy_setopt(FHandle, CURLOPT_BUFFERSIZE, Longint(ASize.Bytes));
+end;
+
+procedure TSession.TOptionsProperty.SetFailOnError(AFailOnError: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FAILONERROR, Longint(AFailOnError));
+end;
+
+procedure TSession.TOptionsProperty.SetPathAsIs(ALeaveIt: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PATH_AS_IS, Longint(ALeaveIt));
+end;
+
+procedure TSession.TOptionsProperty.SetAllowedProtocols(AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if PROTOCOL_DICT in AProtocols then
+    bitmask := bitmask or CURLPROTO_DICT;
+  if PROTOCOL_FILE in AProtocols then
+    bitmask := bitmask or CURLPROTO_FILE;
+  if PROTOCOL_FTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTP;
+  if PROTOCOL_FTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTPS;
+  if PROTOCOL_GOPHER in AProtocols then
+    bitmask := bitmask or CURLPROTO_GOPHER;
+  if PROTOCOL_HTTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTP;
+  if PROTOCOL_HTTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTPS;
+  if PROTOCOL_IMAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAP;
+  if PROTOCOL_IMAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAPS;
+  if PROTOCOL_LDAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAP;
+  if PROTOCOL_LDAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAPS;
+  if PROTOCOL_POP3 in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3;
+  if PROTOCOL_POP3S in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3S;
+  if PROTOCOL_RTMP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMP;
+  if PROTOCOL_RTMPE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPE;
+  if PROTOCOL_RTMPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPS;
+  if PROTOCOL_RTMPT in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPT;
+  if PROTOCOL_RTMPTE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTE;
+  if PROTOCOL_RTMPTS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTS;
+  if PROTOCOL_RTSP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTSP;
+  if PROTOCOL_SCP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SCP;
+  if PROTOCOL_SFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SFTP;
+  if PROTOCOL_SMB in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMB;
+  if PROTOCOL_SMBS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMBS;
+  if PROTOCOL_SMTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTP;
+  if PROTOCOL_SMTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTPS;
+  if PROTOCOL_TELNET in AProtocols then
+    bitmask := bitmask or CURLPROTO_TELNET;
+  if PROTOCOL_TFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_TFTP;
+
+  curl_easy_setopt(FHandle, CURLOPT_PROTOCOLS, bitmask);
+end;
+
+procedure TSession.TOptionsProperty.SetAllowedRedirectProtocols(
+  AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if PROTOCOL_DICT in AProtocols then
+    bitmask := bitmask or CURLPROTO_DICT;
+  if PROTOCOL_FILE in AProtocols then
+    bitmask := bitmask or CURLPROTO_FILE;
+  if PROTOCOL_FTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTP;
+  if PROTOCOL_FTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTPS;
+  if PROTOCOL_GOPHER in AProtocols then
+    bitmask := bitmask or CURLPROTO_GOPHER;
+  if PROTOCOL_HTTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTP;
+  if PROTOCOL_HTTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTPS;
+  if PROTOCOL_IMAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAP;
+  if PROTOCOL_IMAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAPS;
+  if PROTOCOL_LDAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAP;
+  if PROTOCOL_LDAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAPS;
+  if PROTOCOL_POP3 in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3;
+  if PROTOCOL_POP3S in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3S;
+  if PROTOCOL_RTMP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMP;
+  if PROTOCOL_RTMPE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPE;
+  if PROTOCOL_RTMPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPS;
+  if PROTOCOL_RTMPT in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPT;
+  if PROTOCOL_RTMPTE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTE;
+  if PROTOCOL_RTMPTS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTS;
+  if PROTOCOL_RTSP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTSP;
+  if PROTOCOL_SCP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SCP;
+  if PROTOCOL_SFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SFTP;
+  if PROTOCOL_SMB in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMB;
+  if PROTOCOL_SMBS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMBS;
+  if PROTOCOL_SMTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTP;
+  if PROTOCOL_SMTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTPS;
+  if PROTOCOL_TELNET in AProtocols then
+    bitmask := bitmask or CURLPROTO_TELNET;
+  if PROTOCOL_TFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_TFTP;
+
+  curl_easy_setopt(FHandle, CURLOPT_REDIR_PROTOCOLS, bitmask);
+end;
+
+procedure TSession.TOptionsProperty.SetDefaultProtocol(AProtocol: TProtocol);
+var
+  protocol : string;
+begin
+  protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
+  protocol := LowerCase(Copy(protocol, Length('PROTOCOL_') + 1,
+    Length(protocol) - Length('PROTOCOL_') + 1));
+  curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
@@ -2645,6 +2969,10 @@ begin
   handle := curl_easy_init;
   buffer := TStringStream.Create('');
 
+  FOptions := TOptionsProperty.Create(handle);
+  FTCP := TTCPProperty.Create(handle);
+  FProxy := TProxyProperty.Create(handle);
+
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
@@ -2676,35 +3004,11 @@ begin
   end;
 end;
 
-procedure TSession.SetPreProxy(preProxy: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PRE_PROXY, PChar(preProxy));
-  end;
-end;
-
-procedure TSession.SetProxy(proxy: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXY, PChar(proxy));
-  end;
-end;
-
 procedure TSession.SetUserAgent(agent: string);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_USERAGENT, PChar(agent));
-  end;
-end;
-
-procedure TSession.SetProxyPort(port: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYPORT, port);
   end;
 end;
 
@@ -2773,60 +3077,12 @@ begin
   end;
 end;
 
-procedure TSession.SetFailOnError(failOnError: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_FAILONERROR, Longint(failOnError));
-  end;
-end;
-
 procedure TSession.SetKeepSendingOnError(keepSending: boolean);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_KEEP_SENDING_ON_ERROR,
       Longint(keepSending));
-  end;
-end;
-
-procedure TSession.SetPathAsIs(pathAsIs: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PATH_AS_IS, Longint(pathAsIs));
-  end;
-end;
-
-procedure TSession.SetProxyType(proxy: TProxyType);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYTYPE, Longint(proxy));
-  end;
-end;
-
-procedure TSession.SetProxyServiceName(AName: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXY_SERVICE_NAME, PChar(AName));
-  end;
-end;
-
-procedure TSession.SetNoProxyHosts(hosts: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_NOPROXY, PChar(hosts));
-  end;
-end;
-
-procedure TSession.SetHttpProxyTunnel(proxyTunnel: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_HTTPPROXYTUNNEL, Longint(proxyTunnel));
   end;
 end;
 
@@ -2877,59 +3133,11 @@ begin
   end;
 end;
 
-procedure TSession.SetTCPFastOpen(fastOpen: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TCP_FASTOPEN, Longint(fastOpen));
-  end;
-end;
-
-procedure TSession.SetTCPNoDelay(noDelay: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TCP_NODELAY, Longint(noDelay));
-  end;
-end;
-
-procedure TSession.SetTCPKeepalive(probe: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, Longint(probe));
-  end;
-end;
-
-procedure TSession.SetTCPKeepIdle(time: TTimeInterval);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TCP_KEEPIDLE, Longint(Ceil(time.Seconds)));
-  end;
-end;
-
-procedure TSession.SetTCPKeepInterval(time: TTimeInterval);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TCP_KEEPINTVL, Longint(Ceil(time.Seconds)));
-  end;
-end;
-
 procedure TSession.SetUserPassword(userpwd: string);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_USERPWD, PChar(userpwd));
-  end;
-end;
-
-procedure TSession.SetProxyUserPassword(userpwd: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYUSERPWD, PChar(userpwd));
   end;
 end;
 
@@ -2954,22 +3162,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_LOGIN_OPTIONS, PChar(options));
-  end;
-end;
-
-procedure TSession.SetProxyUsername(name: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYUSERNAME, PChar(name));
-  end;
-end;
-
-procedure TSession.SetProxyPassword(pass: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYPASSWORD, PChar(pass));
   end;
 end;
 
@@ -3016,27 +3208,11 @@ begin
   end;
 end;
 
-procedure TSession.SetProxyTLSUsername(name: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_USERNAME, PChar(name));
-  end;
-end;
-
 procedure TSession.SetTLSPassword(pass: string);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TLSAUTH_PASSWORD, PChar(pass));
-  end;
-end;
-
-procedure TSession.SetProxyTLSPassword(pass: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(pass));
   end;
 end;
 
@@ -3046,31 +3222,6 @@ begin
   begin
     curl_easy_setopt(handle, CURLOPT_TLSAUTH_TYPE,
       PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
-  end;
-end;
-
-procedure TSession.SetProxyTLSAuth(method: TTLSAuthMethod);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXY_TLSAUTH_TYPE,
-      PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
-  end;
-end;
-
-procedure TSession.SetProxyHTTPAuth(method: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PROXYAUTH, method);
-  end;
-end;
-
-procedure TSession.SetHAProxyHeader(ASend: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
   end;
 end;
 
@@ -3200,155 +3351,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE_LARGE, size);
-  end;
-end;
-
-procedure TSession.SetAllowedProtocols(AProtocols: TProtocols);
-var
-  bitmask : Longint;
-begin
-  if Opened then
-  begin
-    bitmask := 0;
-    if PROTOCOL_DICT in AProtocols then
-      bitmask := bitmask or CURLPROTO_DICT;
-    if PROTOCOL_FILE in AProtocols then
-      bitmask := bitmask or CURLPROTO_FILE;
-    if PROTOCOL_FTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_FTP;
-    if PROTOCOL_FTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_FTPS;
-    if PROTOCOL_GOPHER in AProtocols then
-      bitmask := bitmask or CURLPROTO_GOPHER;
-    if PROTOCOL_HTTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_HTTP;
-    if PROTOCOL_HTTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_HTTPS;
-    if PROTOCOL_IMAP in AProtocols then
-      bitmask := bitmask or CURLPROTO_IMAP;
-    if PROTOCOL_IMAPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_IMAPS;
-    if PROTOCOL_LDAP in AProtocols then
-      bitmask := bitmask or CURLPROTO_LDAP;
-    if PROTOCOL_LDAPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_LDAPS;
-    if PROTOCOL_POP3 in AProtocols then
-      bitmask := bitmask or CURLPROTO_POP3;
-    if PROTOCOL_POP3S in AProtocols then
-      bitmask := bitmask or CURLPROTO_POP3S;
-    if PROTOCOL_RTMP in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMP;
-    if PROTOCOL_RTMPE in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPE;
-    if PROTOCOL_RTMPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPS;
-    if PROTOCOL_RTMPT in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPT;
-    if PROTOCOL_RTMPTE in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPTE;
-    if PROTOCOL_RTMPTS in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPTS;
-    if PROTOCOL_RTSP in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTSP;
-    if PROTOCOL_SCP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SCP;
-    if PROTOCOL_SFTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SFTP;
-    if PROTOCOL_SMB in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMB;
-    if PROTOCOL_SMBS in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMBS;
-    if PROTOCOL_SMTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMTP;
-    if PROTOCOL_SMTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMTPS;
-    if PROTOCOL_TELNET in AProtocols then
-      bitmask := bitmask or CURLPROTO_TELNET;
-    if PROTOCOL_TFTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_TFTP;
-
-    curl_easy_setopt(handle, CURLOPT_PROTOCOLS, bitmask);
-  end;
-end;
-
-procedure TSession.SetAllowedRedirectProtocols(AProtocols: TProtocols);
-var
-  bitmask : Longint;
-begin
-  if Opened then
-  begin
-    bitmask := 0;
-    if PROTOCOL_DICT in AProtocols then
-      bitmask := bitmask or CURLPROTO_DICT;
-    if PROTOCOL_FILE in AProtocols then
-      bitmask := bitmask or CURLPROTO_FILE;
-    if PROTOCOL_FTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_FTP;
-    if PROTOCOL_FTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_FTPS;
-    if PROTOCOL_GOPHER in AProtocols then
-      bitmask := bitmask or CURLPROTO_GOPHER;
-    if PROTOCOL_HTTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_HTTP;
-    if PROTOCOL_HTTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_HTTPS;
-    if PROTOCOL_IMAP in AProtocols then
-      bitmask := bitmask or CURLPROTO_IMAP;
-    if PROTOCOL_IMAPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_IMAPS;
-    if PROTOCOL_LDAP in AProtocols then
-      bitmask := bitmask or CURLPROTO_LDAP;
-    if PROTOCOL_LDAPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_LDAPS;
-    if PROTOCOL_POP3 in AProtocols then
-      bitmask := bitmask or CURLPROTO_POP3;
-    if PROTOCOL_POP3S in AProtocols then
-      bitmask := bitmask or CURLPROTO_POP3S;
-    if PROTOCOL_RTMP in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMP;
-    if PROTOCOL_RTMPE in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPE;
-    if PROTOCOL_RTMPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPS;
-    if PROTOCOL_RTMPT in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPT;
-    if PROTOCOL_RTMPTE in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPTE;
-    if PROTOCOL_RTMPTS in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTMPTS;
-    if PROTOCOL_RTSP in AProtocols then
-      bitmask := bitmask or CURLPROTO_RTSP;
-    if PROTOCOL_SCP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SCP;
-    if PROTOCOL_SFTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SFTP;
-    if PROTOCOL_SMB in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMB;
-    if PROTOCOL_SMBS in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMBS;
-    if PROTOCOL_SMTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMTP;
-    if PROTOCOL_SMTPS in AProtocols then
-      bitmask := bitmask or CURLPROTO_SMTPS;
-    if PROTOCOL_TELNET in AProtocols then
-      bitmask := bitmask or CURLPROTO_TELNET;
-    if PROTOCOL_TFTP in AProtocols then
-      bitmask := bitmask or CURLPROTO_TFTP;
-
-    curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS, bitmask);
-  end;
-end;
-
-procedure TSession.SetDefaultProtocol(AProtocol: TProtocol);
-var
-  protocol : string;
-begin
-  if Opened then
-  begin
-    protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
-    protocol := LowerCase(Copy(protocol, Length('PROTOCOL_'), Length(protocol) -
-      Length('PROTOCOL_')));
-    curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
   end;
 end;
 
