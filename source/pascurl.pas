@@ -220,49 +220,49 @@ type
   TProtocols = set of TProtocol;
 
   TStatusCode = (
-    HTTP_CONTINUE                     = 100,
-    HTTP_SWITCHING_PROTOCOL           = 101,
+    HTTP_CONTINUE                             = 100,
+    HTTP_SWITCHING_PROTOCOL                   = 101,
 
-    HTTP_OK                           = 200,
-    HTTP_CREATED                      = 201,
-    HTTP_ACCEPTED                     = 202,
-    HTTP_NON_AUTHORITATIVE_INFORMATION = 203,
-    HTTP_NO_CONTENT                   = 204,
-    HTTP_RESET_CONTENT                = 205,
-    HTTP_PARTIAL_CONTENT              = 206,
+    HTTP_OK                                   = 200,
+    HTTP_CREATED                              = 201,
+    HTTP_ACCEPTED                             = 202,
+    HTTP_NON_AUTHORITATIVE_INFORMATION        = 203,
+    HTTP_NO_CONTENT                           = 204,
+    HTTP_RESET_CONTENT                        = 205,
+    HTTP_PARTIAL_CONTENT                      = 206,
 
-    HTTP_MULTIPLE_CHOICES             = 300,
-    HTTP_MOVED_PERMANENTLY            = 301,
-    HTTP_FOUND                        = 302,
-    HTTP_SEE_OTHER                    = 303,
-    HTTP_NOT_MODIFIED                 = 304,
-    HTTP_USE_PROXY                    = 305,
-    HTTP_TEMPORARY_REDIRECT           = 307,
+    HTTP_MULTIPLE_CHOICES                     = 300,
+    HTTP_MOVED_PERMANENTLY                    = 301,
+    HTTP_FOUND                                = 302,
+    HTTP_SEE_OTHER                            = 303,
+    HTTP_NOT_MODIFIED                         = 304,
+    HTTP_USE_PROXY                            = 305,
+    HTTP_TEMPORARY_REDIRECT                   = 307,
 
-    HTTP_BAD_REQUEST                  = 400,
-    HTTP_UNAUTHORIZED                 = 401,
-    HTTP_FORBIDDEN                    = 403,
-    HTTP_NOT_FOUND                    = 404,
-    HTTP_METHOD_NOT_ALLOWED           = 405,
-    HTTP_NOT_ACCEPTABLE               = 406,
-    HTTP_PROXY_AUTHENTIFICATION_REQUIRED = 407,
-    HTTP_REQUEST_TIMEOUT              = 408,
-    HTTP_CONFLICT                     = 409,
-    HTTP_GONE                         = 410,
-    HTTP_LENGTH_REQUIRED              = 411,
-    HTTP_PRECONDITION_FAILED          = 412,
-    HTTP_REQUEST_ENTITY_TOO_LARGE     = 413,
-    HTTP_REQUEST_URL_TOO_LONG         = 414,
-    HTTP_UNSUPPORTED_MEDIA_TYPE       = 415,
-    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE = 416,
-    HTTP_EXPECTATION_FAILED           = 417,
+    HTTP_BAD_REQUEST                          = 400,
+    HTTP_UNAUTHORIZED                         = 401,
+    HTTP_FORBIDDEN                            = 403,
+    HTTP_NOT_FOUND                            = 404,
+    HTTP_METHOD_NOT_ALLOWED                   = 405,
+    HTTP_NOT_ACCEPTABLE                       = 406,
+    HTTP_PROXY_AUTHENTIFICATION_REQUIRED      = 407,
+    HTTP_REQUEST_TIMEOUT                      = 408,
+    HTTP_CONFLICT                             = 409,
+    HTTP_GONE                                 = 410,
+    HTTP_LENGTH_REQUIRED                      = 411,
+    HTTP_PRECONDITION_FAILED                  = 412,
+    HTTP_REQUEST_ENTITY_TOO_LARGE             = 413,
+    HTTP_REQUEST_URL_TOO_LONG                 = 414,
+    HTTP_UNSUPPORTED_MEDIA_TYPE               = 415,
+    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE      = 416,
+    HTTP_EXPECTATION_FAILED                   = 417,
 
-    HTTP_INTERNAL_SERVER_ERROR        = 500,
-    HTTP_NOT_IMPLEMENTED              = 501,
-    HTTP_BAD_GETEWAY                  = 502,
-    HTTP_SERVICE_UNAVAIBLE            = 503,
-    HTTP_GATEWAY_TIMEOUT              = 504,
-    HTTP_VERSION_NOT_SUPPORTED        = 505
+    HTTP_INTERNAL_SERVER_ERROR                = 500,
+    HTTP_NOT_IMPLEMENTED                      = 501,
+    HTTP_BAD_GETEWAY                          = 502,
+    HTTP_SERVICE_UNAVAIBLE                    = 503,
+    HTTP_GATEWAY_TIMEOUT                      = 504,
+    HTTP_VERSION_NOT_SUPPORTED                = 505
   );
 
   HTTPVersionCode = (
@@ -420,6 +420,29 @@ type
     REDIRECT_POST_303                 = CURL_REDIR_POST_303,
 
     REDIRECT_POST_ALL                 = CURL_REDIR_POST_ALL
+  );
+
+  TNETRCOption = (
+   (**
+    * The use of the ~/.netrc file is optional, and information in the URL is to
+    * be preferred. The file will be scanned for the host and user name (to find
+    * the password only) or for the host only, to find the first user name and
+    * password after that machine, which ever information is not specified.
+    *)
+    NETRC_OPTIONAL                    = CURL_NETRC_OPTIONAL,
+
+   (**
+    * The library will ignore the ~/.netrc file.
+    *)
+    NETRC_IGNORED                     = CURL_NETRC_IGNORED,
+
+   (**
+    * The use of the ~/.netrc file is required, and information in the URL is to
+    * be ignored. The file will be scanned for the host and user name (to find
+    * the password only) or for the host only, to find the first user name and
+    * password after that machine, which ever information is not specified.
+    *)
+    NETRC_REQUIRED                    = CURL_NETRC_REQUIRED
   );
 
   { TTimeInterval }
@@ -608,6 +631,7 @@ type
     procedure SetProxy (proxy : string);
     procedure SetProxyPort (port : Longint);
     procedure SetProxyType (proxy : TProxyType);
+    procedure SetProxyServiceName (AName : string);
     procedure SetNoProxyHosts (hosts : string);
     procedure SetHttpProxyTunnel (proxyTunnel : Boolean);
     procedure SetProxyUserPassword (userpwd : string);
@@ -617,8 +641,10 @@ type
     procedure SetProxyTLSPassword (pass : string);
     procedure SetProxyTLSAuth (method : TTLSAuthMethod);
     procedure SetProxyHTTPAuth (method : Longint);
+    procedure SetHAProxyHeader (ASend : Boolean);
     procedure SetSOCKS5Auth (AMethod : TAuthMethods);
-
+    procedure SetSOCKS5GSSAPIServiceName (AName : string);
+    procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
 
     procedure SetUserAgent (agent : string);
     procedure SetPort (port : Longint);
@@ -670,6 +696,9 @@ type
     procedure SetAllowedProtocols (AProtocols : TProtocols);
     procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
     procedure SetDefaultProtocol (AProtocol : TProtocol);
+    procedure SetAuthServiceName (AName : string);
+    procedure SetInterface (AInterface : string);
+    procedure SetNetrc (AOption : TNETRCOption);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1412,6 +1441,79 @@ type
      *)
     property SOCKS5Auth : TAuthMethods write SetSOCKS5Auth
       default [AUTH_BASIC, AUTH_GSSAPI];
+
+    (**
+     * SOCKS5 proxy authentication service name
+     *
+     * String holding the name of the service. The default service name for a
+     * SOCKS5 server is "rcmd". This option allows you to change it.
+     *)
+    property SOCKS5GSSAPIServiceName : string write SetSOCKS5GSSAPIServiceName;
+
+    (**
+     * Set socks proxy gssapi nogotiation protection
+     *
+     * As part of the gssapi negotiation a protection mode is negotiated. The
+     * RFC 1961 says in section 4.3/4.4 it should be protected, but the NEC
+     * reference implementation does not. If enabled, this option allows the
+     * unprotected exchange of the protection mode negotiation.
+     *)
+    property SOCKS5GSSAPINegotiation : Boolean write SetSOCKS5GSSAPINegotiation;
+
+    (**
+     * Proxy authentication service name
+     *
+     * String holding the name of the service. The default service name is
+     * "HTTP" for HTTP based proxies and "rcmd" for SOCKS5. This option allows
+     * you to change it.
+     *)
+    property ProxyServiceName : string write SetProxyServiceName;
+
+    (**
+     * Send HAProxy PROXY protocol v.1 header
+     *
+     * Tells the library to send an HAProxy PROXY protocol v1 header at
+     * beginning of the connection. The default action is not to send this
+     * header.
+     * This option is primarily useful when sending test requests to a service
+     * that expects this header.
+     *)
+    property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
+
+    (**
+     * Authentication service name
+     *
+     * String holding the name of the service for DIGEST-MD5, SPNEGO and
+     * Kerberos 5 authentication mechanisms. The default service names are
+     * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to change
+     * them.
+     *)
+    property AuthServiceName : string write SetAuthServiceName;
+
+    (**
+     * Source interface for outgoing trafic
+     *
+     * This sets the interface name to use as outgoing network interface. The
+     * name can be an interface name, an IP address, or a host name.
+     * If the parameter starts with "if!" then it is treated as only as
+     * interface name and no attempt will ever be named to do treat it as an IP
+     * address or to do name resolution on it. If the parameter starts with
+     * "host!" it is treated as either an IP address or a hostname. Hostnames
+     * are resolved synchronously. Using the if! format is highly recommended
+     * when using the multi interfaces to avoid allowing the code to block.
+     *)
+    property InterfaceName : string write SetInterface;
+
+    (**
+     * Request then .netrc is used
+     *
+     * This parameter controls the preference level of libcurl between using
+     * user names and passwords from your ~/.netrc file, relative to user names
+     * and passwords in the URL supplied with URL. On Windows, libcurl will use
+     * the file as %HOME%/_netrc, but you can also tell libcurl a different file
+     * name to use with NetrcFile.
+     *)
+    property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
   public
 
     (**
@@ -2602,6 +2704,14 @@ begin
   end;
 end;
 
+procedure TSession.SetProxyServiceName(AName: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_PROXY_SERVICE_NAME, PChar(AName));
+  end;
+end;
+
 procedure TSession.SetNoProxyHosts(hosts: string);
 begin
   if Opened then
@@ -2898,6 +3008,14 @@ begin
   end;
 end;
 
+procedure TSession.SetHAProxyHeader(ASend: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
+  end;
+end;
+
 procedure TSession.SetSOCKS5Auth(AMethod: TAuthMethods);
 var
   bitmask : Longint;
@@ -2911,6 +3029,22 @@ begin
       bitmask := bitmask or CURLAUTH_GSSAPI;
 
     curl_easy_setopt(handle, CURLOPT_SOCKS5_AUTH, bitmask);
+  end;
+end;
+
+procedure TSession.SetSOCKS5GSSAPIServiceName(AName: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_SOCKS5_GSSAPI_SERVICE, PChar(AName));
+  end;
+end;
+
+procedure TSession.SetSOCKS5GSSAPINegotiation(AEnable: Boolean);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_SOCKS5_GSSAPI_NEC, Longint(AEnable));
   end;
 end;
 
@@ -3157,6 +3291,30 @@ begin
     protocol := LowerCase(Copy(protocol, Length('PROTOCOL_'), Length(protocol) -
       Length('PROTOCOL_')));
     curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
+  end;
+end;
+
+procedure TSession.SetAuthServiceName(AName: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_SERVICE_NAME, PChar(AName));
+  end;
+end;
+
+procedure TSession.SetInterface(AInterface: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_INTERFACE, PChar(AInterface));
+  end;
+end;
+
+procedure TSession.SetNetrc(AOption: TNETRCOption);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_NETRC, Longint(AOption));
   end;
 end;
 
