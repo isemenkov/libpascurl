@@ -699,6 +699,7 @@ type
     procedure SetAuthServiceName (AName : string);
     procedure SetInterface (AInterface : string);
     procedure SetNetrc (AOption : TNETRCOption);
+    procedure SetNetrcFile (AFile : string);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1514,6 +1515,15 @@ type
      * name to use with NetrcFile.
      *)
     property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
+
+    (**
+     * File name to read .netrc info from
+     *
+     * String containing the full path name to the file you want libcurl to use
+     * as .netrc file. If this option is omitted, and Netrc is set, libcurl will
+     * attempt to find a .netrc file in the current user's home directory.
+     *)
+    property NetrcFile : string write SetNetrcFile;
   public
 
     (**
@@ -3315,6 +3325,14 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_NETRC, Longint(AOption));
+  end;
+end;
+
+procedure TSession.SetNetrcFile(AFile: string);
+begin
+  if Opened then
+  begin
+    curl_easy_setopt(handle, CURLOPT_NETRC_FILE, PChar(AFile));
   end;
 end;
 
