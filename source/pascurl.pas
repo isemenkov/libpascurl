@@ -447,6 +447,30 @@ type
     NETRC_REQUIRED                    = Longint(CURL_NETRC_REQUIRED)
   );
 
+  TEncoding = (
+   (**
+    * Non-compressed
+    *)
+    ENCODE_NONE,
+
+    (**
+     * Requests the server to compress its response using the zlib algorithm
+     *)
+    ENCODE_DEFLATE,
+
+   (**
+    * Requests the gzip algorithm
+    *)
+    ENCODE_GZIP,
+
+   (**
+    * Requests the brotli algorithm
+    *)
+    ENCODE_BR
+  );
+
+  TEncodings = set of TEncoding;
+
   { TTimeInterval }
 
   TTimeIntervalType = (
@@ -1381,6 +1405,7 @@ type
         procedure SetPostMethod (AEnable : Boolean);
         procedure SetPostFields (AData : string);
         procedure SetPostFieldsSize (ASize : LongWord);
+        procedure SetAcceptEncoding (AEncodings : TEncodings);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -1457,6 +1482,24 @@ type
          * strlen() to get the size.
          *)
         property PostFieldsSize : LongWord write SetPostFieldsSize default -1;
+
+        (**
+         * Enables automatic decompression of HTTP
+         *
+         * Sets the contents of the Accept-Encoding: header sent in an HTTP
+         * request, and enables decoding of a response when a Content-Encoding:
+         * header is received.
+         * libcurl potentially supports several different compressed encodings
+         * depending on what support that has been built-in.
+         * Alternatively, you can specify exactly the encoding or list of
+         * encodings you want in the response. Four encodings are supported:
+         * identity, meaning non-compressed, deflate which requests the server
+         * to compress its response using the zlib algorithm, gzip which
+         * requests the gzip algorithm and (since curl 7.57.0) br which is
+         * brotli.
+         *)
+        property AcceptEncoding : TEncodings write SetAcceptEncoding
+          default [ENCODE_NONE];
       end;
 
       { TIMAPProperty }
@@ -2275,7 +2318,7 @@ begin
     bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
       CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
 
-  curl_easy_setopt(handle, CURLOPT_HTTPAUTH, bitmask);
+  curl_easy_setopt(FHandle, CURLOPT_HTTPAUTH, bitmask);
 end;
 
 procedure TSession.THTTPProperty.SetUnrestrictedAuth(ASend: Boolean);
@@ -2320,6 +2363,51 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE, ASize);
 end;
 
+procedure TSession.THTTPProperty.SetAcceptEncoding(AEncodings: TEncodings);
+
+  function GetEncodingName (AEncoding : TEncoding) : string;
+  var
+    alg : string;
+  begin
+    alg := GetEnumName(TypeInfo(TEncodings), Ord(AEncoding));
+    Result := LowerCase(Copy(alg, Length('ENCODE_') + 1, Length(alg) -
+      Length('ENCODE_') + 1));
+  end;
+
+  procedure UpdateEncodeString (var encode : string);
+  begin
+    if encode <> '' then
+      encode := encode + ', ';
+  end;
+
+var
+  enc : string;
+begin
+  if AEncodings = [ENCODE_NONE] then
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, 0);
+  end else
+  begin
+    if ENCODE_DEFLATE in AEncodings then
+    begin
+      UpdateEncodeString(enc);
+      enc := enc + GetEncodingName(ENCODE_DEFLATE);
+    end;
+    if ENCODE_GZIP in AEncodings then
+    begin
+      UpdateEncodeString(enc);
+      enc := enc + GetEncodingName(ENCODE_GZIP);
+    end;
+    if ENCODE_BR in AEncodings then
+    begin
+      UpdateEncodeString(enc);
+      enc := enc + GetEncodingName(ENCODE_BR);
+    end;
+
+    curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, PChar(enc));
+  end;
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -2359,7 +2447,7 @@ end;
 
 procedure TSession.TSecurityProperty.SetTLSAuth(AMethod: TTLSAuthMethod);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_TYPE,
     PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
 end;
 
@@ -2523,6 +2611,12 @@ end;
 procedure TSession.TProxyProperty.SetProxyTLSPassword(APassword: string);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(APassword));
+end;
+
+procedure TSession.TProxyProperty.SetProxyTLSAuth(AMethod: TTLSAuthMethod);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
 end;
 
 procedure TSession.TProxyProperty.SetProxyHTTPAuth(AMethod: TAuthMethods);
@@ -3388,15 +3482,6 @@ end;
 procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
   curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, ARange);
-end;
-
-procedure TSession.SetTLSAuth(method: TTLSAuthMethod);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TLSAUTH_TYPE,
-      PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
-  end;
 end;
 
 initialization
