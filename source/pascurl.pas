@@ -596,13 +596,6 @@ type
         procedure SetBufferSize (ASize : TDataSize);
         procedure SetFailOnError (AFailOnError : Boolean);
         procedure SetPathAsIs (ALeaveIt : Boolean);
-        procedure SetAllowedProtocols (AProtocols : TProtocols);
-        procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
-        procedure SetDefaultProtocol (AProtocol : TProtocol);
-        procedure SetFollowRedirect (AFollow : Boolean);
-        procedure SetMaxRedirects (AAmount : Longint);
-        procedure SetNoBody (ANoBody : boolean);
-        procedure SetVerbose (AEnable : boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -678,23 +671,48 @@ type
          *
          * Tell libcurl to not alter the given path before passing it on to the
          * server.
-         * This instructs libcurl to NOT squash sequences of "/../" or "/./" that
-         * may exist in the URL's path part and that is supposed to be removed
-         * according to RFC 3986 section 5.2.4.
-         * Some server implementations are known to (erroneously) require the dot
-         * dot sequences to remain in the path and some clients want to pass these
-         * on in order to try out server implementations.
+         * This instructs libcurl to NOT squash sequences of "/../" or "/./"
+         * that may exist in the URL's path part and that is supposed to be
+         * removed according to RFC 3986 section 5.2.4.
+         * Some server implementations are known to (erroneously) require the
+         * dot dot sequences to remain in the path and some clients want to pass
+         * these on in order to try out server implementations.
          * By default libcurl will merge such sequences before using the path.
          *)
         property PathAsIs : Boolean write SetPathAsIs default False;
 
+      end;
+
+      { TProtocolProperty }
+
+      TProtocolProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetAllowedProtocols (AProtocols : TProtocols);
+        procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
+        procedure SetDefaultProtocol (AProtocol : TProtocol);
+        procedure SetFollowRedirect (AFollow : Boolean);
+        procedure SetMaxRedirects (AAmount : Longint);
+        procedure SetNoBody (ANoBody : Boolean);
+        procedure SetVerbose (AEnable : Boolean);
+        procedure SetIncludeHeader (AIncludeHeader : Boolean);
+        procedure SetIgnoreContentLength (AIgnoreLength : Boolean);
+        procedure SetTransferEncoding (AEncoding : Boolean);
+        procedure SetWildcardMatch (AMatch : Boolean);
+        procedure SetKeepSendingOnError (AKeepSending : Boolean);
+        procedure SetRemotePort (APort : Word);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
         (**
          * Set allowed protocols
          *
-         * Limits what protocols libcurl may use in the transfer. This allows you to
-         * have a libcurl built to support a wide range of protocols but still limit
-         * specific transfers to only be allowed to use a subset of them. By default
-         * libcurl will accept all protocols it supports
+         * Limits what protocols libcurl may use in the transfer. This allows
+         * you to have a libcurl built to support a wide range of protocols but
+         * still limit specific transfers to only be allowed to use a subset of
+         * them. By default libcurl will accept all protocols it supports
          *)
         property Protocols : TProtocols write SetAllowedProtocols
           default [PROTOCOL_DICT, PROTOCOL_FILE, PROTOCOL_FTP, PROTOCOL_FTPS,
@@ -708,10 +726,10 @@ type
         (**
          * Set protocols allowed to redirect to
          *
-         * Limits what protocols libcurl may use in a transfer that it follows to in
-         * a redirect when FollowRedirect is enabled. This allows you to limit
-         * specific transfers to only be allowed to use a subset of protocols in
-         * redirections.
+         * Limits what protocols libcurl may use in a transfer that it follows
+         * to in a redirect when FollowRedirect is enabled. This allows you to
+         * limit specific transfers to only be allowed to use a subset of
+         * protocols in redirections.
          *)
         property RedirectProtocols : TProtocols write SetAllowedRedirectProtocols
           default [PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_FTP, PROTOCOL_FTPS];
@@ -764,6 +782,100 @@ type
          *)
         property VerboseMode : Boolean write SetVerbose default False;
 
+        (**
+         * Pass headers to the data stream
+         *
+         * Ask libcurl to include the headers in the data stream.
+         * When asking to get the headers passed to the body, it is not possible
+         * to accurately separate them again without detailed knowledge about
+         * the protocol in use.
+         *)
+        property IncludeHeader : Boolean write SetIncludeHeader default False;
+
+        (**
+         * Ignore content length
+         *
+         * Ignore the Content-Length header in the HTTP response and ignore
+         * asking for or relying on it for FTP transfers.
+         * This is useful for HTTP with Apache 1.x (and similar servers) which
+         * will report incorrect content length for files over 2 gigabytes. If
+         * this option is used, curl will not be able to accurately report
+         * progress, and will simply stop the download when the server ends the
+         * connection. It is also useful with FTP when for example the file is
+         * growing while the transfer is in progress which otherwise will
+         * unconditionally cause libcurl to report error.
+         *)
+        property IgnoreContentLength : Boolean write SetIgnoreContentLength
+          default False;
+
+        (**
+         * Ask for HTTP Transfer Encoding
+         *
+         * Add a request for compressed Transfer Encoding in the outgoing HTTP
+         * request. If the server supports this and so desires, it can respond
+         * with the HTTP response sent using a compressed Transfer-Encoding that
+         * will be automatically uncompressed by libcurl on reception.
+         *)
+        property TransferEncoding : Boolean write SetTransferEncoding
+          default False;
+
+        (**
+         * Enable directory wildcard transfers
+         * [This feature is only supported for FTP download]
+         *
+         * Transfer multiple files according to a file name pattern. The pattern
+         * can be specified as part of the Url option, using an fnmatch-like
+         * pattern (Shell Pattern Matching) in the last part of URL (file name).
+         *
+         * A brief introduction of its syntax follows:
+         *
+         * * - ASTERISK
+         * ftp://example.com/some/path/*.txt (for all txt's from the root
+         * directory). Only two asterisks are allowed within the same pattern
+         * string.
+         *
+         * ? - QUESTION MARK
+         * Question mark matches any (exactly one) character.
+         * ftp://example.com/some/path/photo?.jpeg
+         *
+         * [ - BRACKET EXPRESSION
+         * The left bracket opens a bracket expression. The question mark and
+         * asterisk have no special meaning in a bracket expression. Each
+         * bracket expression ends by the right bracket and matches exactly one
+         * character. Some examples follow:
+         * [a-zA-Z0-9] or [f-gF-G] - character interval
+         * [abc] - character enumeration
+         * [^abc] or [!abc] - negation
+         * [[:name:]] class expression. Supported classes are alnum,lower,
+         * space, alpha, digit, print, upper, blank, graph, xdigit.
+         * [][-!^] - special case - matches only '-', ']', '[', '!' or '^'.
+         * These characters have no special purpose.
+         * [\[\]\\] - escape syntax. Matches '[', ']' or '´.
+         * Using the rules above, a file name pattern can be constructed:
+         * ftp://example.com/some/path/[a-z[:upper:]\\].jpeg
+         *)
+        property WildcardMatch : Boolean write SetWildcardMatch;
+
+        (**
+         * Keep sending on early HTTP response >= 300
+         *
+         * Tells the library to keep sending the request body if the HTTP code
+         * returned is equal to or larger than 300. The default action would be
+         * to stop sending and close the stream or connection.
+         *)
+        property KeepSendingOnError : Boolean write SetKeepSendingOnError
+          default False;
+
+        (**
+         * Set remote port number to work with
+         *
+         * This option sets number to be the remote port number to connect to,
+         * instead of the one specified in the URL or the default port for the
+         * used protocol.
+         * Usually, you just let the URL decide which port to use but this
+         * allows the application to override that.
+         *)
+        property Port : Word write SetRemotePort;
       end;
 
       { TTCPProperty }
@@ -1205,14 +1317,46 @@ type
         property TLSPassword : string write SetTLSPassword;
       end;
 
+      { THTTPProperty }
+
+      THTTPProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetUserAgent (AAgent : string);
+        procedure SetAutoReferer (AUpdateHeaders : Boolean);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set HTTP user-agent header
+         *
+         * It will be used to set the User-Agent: header in the HTTP request
+         * sent to the remote server. This can be used to fool servers or
+         * scripts.
+         *)
+        property UserAgent : string write SetUserAgent;
+
+        (**
+         * Automatically update the referer header
+         *
+         * When enabled, libcurl will automatically set the Referer: header
+         * field in HTTP requests where it follows a Location: redirect.
+         *)
+        property AutoReferer : Boolean write SetAutoReferer default True;
+      end;
+
   protected
     handle : CURL;
     buffer : TStringStream;
     FOptions : TOptionsProperty;
+    FProtocol : TProtocolProperty;
     FTCP : TTCPProperty;
     FProxy : TProxyProperty;
     FDNS : TDNSProperty;
-
+    FSecurity : TSecurityProperty;
+    FHTTP : THTTPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -1255,25 +1399,8 @@ type
 
     function IsOpened : Boolean;
     procedure SetUrl (url : string);
-    procedure SetPort (APort : Longint);
-    procedure SetPortRange (ARange : Longint);
-
-
-    procedure SetUserAgent (agent : string);
-    procedure SetAutoReferer (updateHeaders : boolean);
-    procedure SetIncludeHeader (includeHeader : boolean);
-    procedure SetIgnoreContentLength (ignoreLength : boolean);
-
-    procedure SetTransferEncoding (encoding : boolean);
-
-    procedure SetWildcardMatch (match : boolean);
-
-    procedure SetKeepSendingOnError (keepSending : boolean);
-
-
-
-
-
+    procedure SetLocalPort (APort : Word);
+    procedure SetLocalPortRange (ARange : Longint);
 
     procedure SetLoginOptions (options : string);
     procedure SetHTTPAuth (AMethod : TAuthMethods);
@@ -1301,9 +1428,12 @@ type
     destructor Destroy; override;
 
     property Options : TOptionsProperty read FOptions write FOptions;
+    property Protocol : TProtocolProperty read FProtocol write FProtocol;
     property TCP : TTCPProperty read FTCP write FTCP;
     property Proxy : TProxyProperty read FProxy write FProxy;
     property DNS : TDNSProperty read FDNS write FDNS;
+    property Security : TSecurityProperty read FSecurity write FSecurity;
+    property HTTP : THTTPProperty read FHTTP write FHTTP;
 
     (**
      * Check if session opened and correctly
@@ -1347,7 +1477,7 @@ type
      * This sets the local port number of the socket used for the connection.
      * 0, disabled - use whatever the system thinks is fine
      *)
-     property Port : Longint write SetPort default 0;
+     property Port : Word write SetLocalPort;
 
      (**
      * Number of additional local ports to try
@@ -1360,127 +1490,7 @@ type
      * times so setting this value to something too low might cause unnecessary
      * connection setup failures.
      *)
-     property PortRange : Longint write SetPortRange default 1;
-
-    (**
-     * Set HTTP user-agent header
-     *
-     * It will be used to set the User-Agent: header in the HTTP request sent to
-     * the remote server. This can be used to fool servers or scripts.
-     *)
-    property UserAgent : string write SetUserAgent;
-
-    (**
-     * Automatically update the referer header
-     *
-     * When enabled, libcurl will automatically set the Referer: header field in
-     * HTTP requests where it follows a Location: redirect.
-     *)
-    property AutoReferer : Boolean write SetAutoReferer default True;
-
-    (**
-     * Pass headers to the data stream
-     *
-     * Ask libcurl to include the headers in the data stream.
-     * When asking to get the headers passed to the body, it is not possible to
-     * accurately separate them again without detailed knowledge about the
-     * protocol in use.
-     *)
-    property IncludeHeader : Boolean write SetIncludeHeader default False;
-
-    (**
-     * Ignore content length
-     *
-     * Ignore the Content-Length header in the HTTP response and ignore asking
-     * for or relying on it for FTP transfers.
-     * This is useful for HTTP with Apache 1.x (and similar servers) which will
-     * report incorrect content length for files over 2 gigabytes. If this
-     * option is used, curl will not be able to accurately report progress,
-     * and will simply stop the download when the server ends the connection.
-     * It is also useful with FTP when for example the file is growing while the
-     * transfer is in progress which otherwise will unconditionally cause
-     * libcurl to report error.
-     *)
-    property IgnoreContentLength : Boolean write SetIgnoreContentLength
-      default False;
-
-
-
-    (**
-     * Ask for HTTP Transfer Encoding
-     *
-     * Add a request for compressed Transfer Encoding in the outgoing HTTP
-     * request. If the server supports this and so desires, it can respond with
-     * the HTTP response sent using a compressed Transfer-Encoding that will be
-     * automatically uncompressed by libcurl on reception.
-     *)
-    property TransferEncoding : Boolean write SetTransferEncoding
-      default False;
-
-
-
-    (**
-     * Enable directory wildcard transfers
-     * [This feature is only supported for FTP download]
-     *
-     * Transfer multiple files according to a file name pattern. The pattern can
-     * be specified as part of the Url option, using an fnmatch-like pattern
-     * (Shell Pattern Matching) in the last part of URL (file name).
-     *
-     * A brief introduction of its syntax follows:
-     *
-     * * - ASTERISK
-     * ftp://example.com/some/path/*.txt (for all txt's from the root
-     * directory). Only two asterisks are allowed within the same pattern
-     * string.
-     *
-     * ? - QUESTION MARK
-     * Question mark matches any (exactly one) character.
-     * ftp://example.com/some/path/photo?.jpeg
-     *
-     * [ - BRACKET EXPRESSION
-     * The left bracket opens a bracket expression. The question mark and
-     * asterisk have no special meaning in a bracket expression. Each bracket
-     * expression ends by the right bracket and matches exactly one character.
-     * Some examples follow:
-     * [a-zA-Z0-9] or [f-gF-G] - character interval
-     * [abc] - character enumeration
-     * [^abc] or [!abc] - negation
-     * [[:name:]] class expression. Supported classes are alnum,lower, space,
-     * alpha, digit, print, upper, blank, graph, xdigit.
-     * [][-!^] - special case - matches only '-', ']', '[', '!' or '^'. These
-     * characters have no special purpose.
-     * [\[\]\\] - escape syntax. Matches '[', ']' or '´.
-     * Using the rules above, a file name pattern can be constructed:
-     * ftp://example.com/some/path/[a-z[:upper:]\\].jpeg
-     *)
-    property WildcardMatch : Boolean write SetWildcardMatch;
-
-
-
-    (**
-     * Keep sending on early HTTP response >= 300
-     *
-     * Tells the library to keep sending the request body if the HTTP code
-     * returned is equal to or larger than 300. The default action would be to
-     * stop sending and close the stream or connection.
-     *)
-    property KeepSendingOnError : Boolean write SetKeepSendingOnError
-      default False;
-
-
-    (**
-     * Set remote port number to work with
-     *
-     * This option sets number to be the remote port number to connect to,
-     * instead of the one specified in the URL or the default port for the
-     * used protocol.
-     * Usually, you just let the URL decide which port to use but this
-     * allows the application to override that.
-     *)
-    //property Port : Longint;
-
-
+     property PortRange : Longint write SetLocalPortRange default 1;
 
     (**
      * Set login options
@@ -1990,6 +2000,236 @@ type
 
 implementation
 
+{ TSession.TProtocolProperty }
+
+procedure TSession.TProtocolProperty.SetAllowedProtocols
+  (AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if PROTOCOL_DICT in AProtocols then
+    bitmask := bitmask or CURLPROTO_DICT;
+  if PROTOCOL_FILE in AProtocols then
+    bitmask := bitmask or CURLPROTO_FILE;
+  if PROTOCOL_FTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTP;
+  if PROTOCOL_FTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTPS;
+  if PROTOCOL_GOPHER in AProtocols then
+    bitmask := bitmask or CURLPROTO_GOPHER;
+  if PROTOCOL_HTTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTP;
+  if PROTOCOL_HTTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTPS;
+  if PROTOCOL_IMAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAP;
+  if PROTOCOL_IMAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAPS;
+  if PROTOCOL_LDAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAP;
+  if PROTOCOL_LDAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAPS;
+  if PROTOCOL_POP3 in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3;
+  if PROTOCOL_POP3S in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3S;
+  if PROTOCOL_RTMP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMP;
+  if PROTOCOL_RTMPE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPE;
+  if PROTOCOL_RTMPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPS;
+  if PROTOCOL_RTMPT in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPT;
+  if PROTOCOL_RTMPTE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTE;
+  if PROTOCOL_RTMPTS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTS;
+  if PROTOCOL_RTSP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTSP;
+  if PROTOCOL_SCP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SCP;
+  if PROTOCOL_SFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SFTP;
+  if PROTOCOL_SMB in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMB;
+  if PROTOCOL_SMBS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMBS;
+  if PROTOCOL_SMTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTP;
+  if PROTOCOL_SMTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTPS;
+  if PROTOCOL_TELNET in AProtocols then
+    bitmask := bitmask or CURLPROTO_TELNET;
+  if PROTOCOL_TFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_TFTP;
+
+  curl_easy_setopt(FHandle, CURLOPT_PROTOCOLS, bitmask);
+end;
+
+procedure TSession.TProtocolProperty.SetAllowedRedirectProtocols
+  (AProtocols: TProtocols);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if PROTOCOL_DICT in AProtocols then
+    bitmask := bitmask or CURLPROTO_DICT;
+  if PROTOCOL_FILE in AProtocols then
+    bitmask := bitmask or CURLPROTO_FILE;
+  if PROTOCOL_FTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTP;
+  if PROTOCOL_FTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_FTPS;
+  if PROTOCOL_GOPHER in AProtocols then
+    bitmask := bitmask or CURLPROTO_GOPHER;
+  if PROTOCOL_HTTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTP;
+  if PROTOCOL_HTTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_HTTPS;
+  if PROTOCOL_IMAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAP;
+  if PROTOCOL_IMAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_IMAPS;
+  if PROTOCOL_LDAP in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAP;
+  if PROTOCOL_LDAPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_LDAPS;
+  if PROTOCOL_POP3 in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3;
+  if PROTOCOL_POP3S in AProtocols then
+    bitmask := bitmask or CURLPROTO_POP3S;
+  if PROTOCOL_RTMP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMP;
+  if PROTOCOL_RTMPE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPE;
+  if PROTOCOL_RTMPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPS;
+  if PROTOCOL_RTMPT in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPT;
+  if PROTOCOL_RTMPTE in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTE;
+  if PROTOCOL_RTMPTS in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTMPTS;
+  if PROTOCOL_RTSP in AProtocols then
+    bitmask := bitmask or CURLPROTO_RTSP;
+  if PROTOCOL_SCP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SCP;
+  if PROTOCOL_SFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SFTP;
+  if PROTOCOL_SMB in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMB;
+  if PROTOCOL_SMBS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMBS;
+  if PROTOCOL_SMTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTP;
+  if PROTOCOL_SMTPS in AProtocols then
+    bitmask := bitmask or CURLPROTO_SMTPS;
+  if PROTOCOL_TELNET in AProtocols then
+    bitmask := bitmask or CURLPROTO_TELNET;
+  if PROTOCOL_TFTP in AProtocols then
+    bitmask := bitmask or CURLPROTO_TFTP;
+
+  curl_easy_setopt(FHandle, CURLOPT_REDIR_PROTOCOLS, bitmask);
+end;
+
+procedure TSession.TProtocolProperty.SetDefaultProtocol(AProtocol: TProtocol);
+var
+  protocol : string;
+begin
+  protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
+  protocol := LowerCase(Copy(protocol, Length('PROTOCOL_') + 1,
+    Length(protocol) - Length('PROTOCOL_') + 1));
+  curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
+end;
+
+procedure TSession.TProtocolProperty.SetFollowRedirect(AFollow: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION, Longint(AFollow));
+end;
+
+procedure TSession.TProtocolProperty.SetMaxRedirects(AAmount: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount);
+end;
+
+procedure TSession.TProtocolProperty.SetNoBody(ANoBody: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody));
+end;
+
+procedure TSession.TProtocolProperty.SetVerbose(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_VERBOSE, Longint(AEnable));
+end;
+
+procedure TSession.TProtocolProperty.SetIncludeHeader(AIncludeHeader: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HEADER, Longint(AIncludeHeader));
+end;
+
+procedure TSession.TProtocolProperty.SetIgnoreContentLength(
+  AIgnoreLength: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
+    Longint(AIgnoreLength));
+end;
+
+procedure TSession.TProtocolProperty.SetTransferEncoding(AEncoding: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING, Longint(AEncoding));
+end;
+
+procedure TSession.TProtocolProperty.SetWildcardMatch(AMatch: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_WILDCARDMATCH, Longint(AMatch));
+end;
+
+procedure TSession.TProtocolProperty.SetKeepSendingOnError
+  (AKeepSending: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_KEEP_SENDING_ON_ERROR,
+    Longint(AKeepSending));
+end;
+
+procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort));
+end;
+
+constructor TSession.TProtocolProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TProtocolProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.THTTPProperty }
+
+procedure TSession.THTTPProperty.SetUserAgent(AAgent: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_USERAGENT, PChar(AAgent));
+end;
+
+procedure TSession.THTTPProperty.SetAutoReferer(AUpdateHeaders: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_AUTOREFERER, Longint(AUpdateHeaders));
+end;
+
+constructor TSession.THTTPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.THTTPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TSession.TSecurityProperty }
 
 procedure TSession.TSecurityProperty.SetUserPassword(AUserpwd: string);
@@ -2297,167 +2537,6 @@ end;
 procedure TSession.TOptionsProperty.SetPathAsIs(ALeaveIt: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PATH_AS_IS, Longint(ALeaveIt));
-end;
-
-procedure TSession.TOptionsProperty.SetAllowedProtocols(AProtocols: TProtocols);
-var
-  bitmask : Longint;
-begin
-  bitmask := 0;
-  if PROTOCOL_DICT in AProtocols then
-    bitmask := bitmask or CURLPROTO_DICT;
-  if PROTOCOL_FILE in AProtocols then
-    bitmask := bitmask or CURLPROTO_FILE;
-  if PROTOCOL_FTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_FTP;
-  if PROTOCOL_FTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_FTPS;
-  if PROTOCOL_GOPHER in AProtocols then
-    bitmask := bitmask or CURLPROTO_GOPHER;
-  if PROTOCOL_HTTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_HTTP;
-  if PROTOCOL_HTTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_HTTPS;
-  if PROTOCOL_IMAP in AProtocols then
-    bitmask := bitmask or CURLPROTO_IMAP;
-  if PROTOCOL_IMAPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_IMAPS;
-  if PROTOCOL_LDAP in AProtocols then
-    bitmask := bitmask or CURLPROTO_LDAP;
-  if PROTOCOL_LDAPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_LDAPS;
-  if PROTOCOL_POP3 in AProtocols then
-    bitmask := bitmask or CURLPROTO_POP3;
-  if PROTOCOL_POP3S in AProtocols then
-    bitmask := bitmask or CURLPROTO_POP3S;
-  if PROTOCOL_RTMP in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMP;
-  if PROTOCOL_RTMPE in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPE;
-  if PROTOCOL_RTMPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPS;
-  if PROTOCOL_RTMPT in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPT;
-  if PROTOCOL_RTMPTE in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPTE;
-  if PROTOCOL_RTMPTS in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPTS;
-  if PROTOCOL_RTSP in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTSP;
-  if PROTOCOL_SCP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SCP;
-  if PROTOCOL_SFTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SFTP;
-  if PROTOCOL_SMB in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMB;
-  if PROTOCOL_SMBS in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMBS;
-  if PROTOCOL_SMTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMTP;
-  if PROTOCOL_SMTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMTPS;
-  if PROTOCOL_TELNET in AProtocols then
-    bitmask := bitmask or CURLPROTO_TELNET;
-  if PROTOCOL_TFTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_TFTP;
-
-  curl_easy_setopt(FHandle, CURLOPT_PROTOCOLS, bitmask);
-end;
-
-procedure TSession.TOptionsProperty.SetAllowedRedirectProtocols(
-  AProtocols: TProtocols);
-var
-  bitmask : Longint;
-begin
-  bitmask := 0;
-  if PROTOCOL_DICT in AProtocols then
-    bitmask := bitmask or CURLPROTO_DICT;
-  if PROTOCOL_FILE in AProtocols then
-    bitmask := bitmask or CURLPROTO_FILE;
-  if PROTOCOL_FTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_FTP;
-  if PROTOCOL_FTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_FTPS;
-  if PROTOCOL_GOPHER in AProtocols then
-    bitmask := bitmask or CURLPROTO_GOPHER;
-  if PROTOCOL_HTTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_HTTP;
-  if PROTOCOL_HTTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_HTTPS;
-  if PROTOCOL_IMAP in AProtocols then
-    bitmask := bitmask or CURLPROTO_IMAP;
-  if PROTOCOL_IMAPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_IMAPS;
-  if PROTOCOL_LDAP in AProtocols then
-    bitmask := bitmask or CURLPROTO_LDAP;
-  if PROTOCOL_LDAPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_LDAPS;
-  if PROTOCOL_POP3 in AProtocols then
-    bitmask := bitmask or CURLPROTO_POP3;
-  if PROTOCOL_POP3S in AProtocols then
-    bitmask := bitmask or CURLPROTO_POP3S;
-  if PROTOCOL_RTMP in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMP;
-  if PROTOCOL_RTMPE in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPE;
-  if PROTOCOL_RTMPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPS;
-  if PROTOCOL_RTMPT in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPT;
-  if PROTOCOL_RTMPTE in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPTE;
-  if PROTOCOL_RTMPTS in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTMPTS;
-  if PROTOCOL_RTSP in AProtocols then
-    bitmask := bitmask or CURLPROTO_RTSP;
-  if PROTOCOL_SCP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SCP;
-  if PROTOCOL_SFTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SFTP;
-  if PROTOCOL_SMB in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMB;
-  if PROTOCOL_SMBS in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMBS;
-  if PROTOCOL_SMTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMTP;
-  if PROTOCOL_SMTPS in AProtocols then
-    bitmask := bitmask or CURLPROTO_SMTPS;
-  if PROTOCOL_TELNET in AProtocols then
-    bitmask := bitmask or CURLPROTO_TELNET;
-  if PROTOCOL_TFTP in AProtocols then
-    bitmask := bitmask or CURLPROTO_TFTP;
-
-  curl_easy_setopt(FHandle, CURLOPT_REDIR_PROTOCOLS, bitmask);
-end;
-
-procedure TSession.TOptionsProperty.SetDefaultProtocol(AProtocol: TProtocol);
-var
-  protocol : string;
-begin
-  protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
-  protocol := LowerCase(Copy(protocol, Length('PROTOCOL_') + 1,
-    Length(protocol) - Length('PROTOCOL_') + 1));
-  curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
-end;
-
-procedure TSession.TOptionsProperty.SetFollowRedirect(AFollow: Boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION, Longint(AFollow));
-end;
-
-procedure TSession.TOptionsProperty.SetMaxRedirects(AAmount: Longint);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount);
-end;
-
-procedure TSession.TOptionsProperty.SetNoBody(ANoBody: boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody));
-end;
-
-procedure TSession.TOptionsProperty.SetVerbose(AEnable: boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_VERBOSE, Longint(AEnable));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
@@ -3141,15 +3220,19 @@ begin
   buffer := TStringStream.Create('');
 
   FOptions := TOptionsProperty.Create(handle);
+  FProtocol := TProtocolProperty.Create(handle);
   FTCP := TTCPProperty.Create(handle);
   FProxy := TProxyProperty.Create(handle);
+  FDNS := TDNSProperty.Create(handle);
+  FSecurity := TSecurityProperty.Create(handle);
+  FHTTP := THTTPProperty.Create(handle);
 
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION,
       @TSession.WriteFunctionCallback);
-    FOptions.FollowRedirect := True;
+    FProtocol.FollowRedirect := True;
   end;
 end;
 
@@ -3175,72 +3258,14 @@ begin
   end;
 end;
 
-procedure TSession.SetPort(APort: Longint);
+procedure TSession.SetLocalPort(APort: Word);
 begin
-  curl_easy_setopt(handle, CURLOPT_LOCALPORT, APort);
+  curl_easy_setopt(handle, CURLOPT_LOCALPORT, Longint(APort));
 end;
 
-procedure TSession.SetPortRange(ARange: Longint);
+procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
   curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, ARange);
-end;
-
-procedure TSession.SetUserAgent(agent: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_USERAGENT, PChar(agent));
-  end;
-end;
-
-procedure TSession.SetAutoReferer(updateHeaders: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_AUTOREFERER, Longint(updateHeaders));
-  end;
-end;
-
-procedure TSession.SetIncludeHeader(includeHeader: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_HEADER, Longint(includeHeader));
-  end;
-end;
-
-procedure TSession.SetIgnoreContentLength(ignoreLength: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_IGNORE_CONTENT_LENGTH,
-      Longint(ignoreLength));
-  end;
-end;
-
-procedure TSession.SetTransferEncoding(encoding: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TRANSFER_ENCODING, Longint(encoding));
-  end;
-end;
-
-procedure TSession.SetWildcardMatch(match: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_WILDCARDMATCH, Longint(match));
-  end;
-end;
-
-procedure TSession.SetKeepSendingOnError(keepSending: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_KEEP_SENDING_ON_ERROR,
-      Longint(keepSending));
-  end;
 end;
 
 procedure TSession.SetLoginOptions(options: string);

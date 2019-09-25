@@ -49,7 +49,7 @@ begin
   if ParamCount >= 1 then
   begin
     session.Url := Params[1];
-    session.Options.DefaultProtocol := PROTOCOL_HTTP;
+    session.Protocol.DefaultProtocol := PROTOCOL_HTTP;
     session_info := TSessionInfo.Create(session);
     if session_info.Opened and not session_info.HasErrors then
     begin
