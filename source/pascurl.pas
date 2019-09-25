@@ -400,27 +400,29 @@ type
     SRP
   );
 
-  TPostRedirects = (
-    REDIRECT_POST_NONE                = 0,
+  TPostRedirect = (
+    REDIRECT_POST_NONE,
 
     (**
      * Tells the library to respect RFC 7231 (section 6.4.2 to 6.4.4) and not
      * convert POST requests into GET requests when following a 301 redirection
      *)
-    REDIRECT_POST_301                 = CURL_REDIR_POST_301,
+    REDIRECT_POST_301,
 
     (**
      * Makes libcurl maintain the request method after a 302 redirect
      *)
-    REDIRECT_POST_302                 = CURL_REDIR_POST_302,
+    REDIRECT_POST_302,
 
     (**
      * Makes libcurl maintain the request method after a 303 redirect
      *)
-    REDIRECT_POST_303                 = CURL_REDIR_POST_303,
+    REDIRECT_POST_303,
 
-    REDIRECT_POST_ALL                 = CURL_REDIR_POST_ALL
+    REDIRECT_POST_ALL
   );
+
+  TPostRedirects = set of TPostRedirect;
 
   TNETRCOption = (
    (**
@@ -1250,9 +1252,20 @@ type
         procedure SetPassword (APassword : string);
         procedure SetTLSUsername (AName : string);
         procedure SetTLSPassword (APassword : string);
+        procedure SetTLSAuth (AMethod : TTLSAuthMethod);
+        procedure SetAllowUsernameInURL (AAllow : Boolean);
+        procedure SetAuthServiceName (AName : string);
+        procedure SetNetrc (AOption : TNETRCOption);
+        procedure SetNetrcFile (AFile : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+        (**
+         * Allow/disallow specifying user name in the url
+         *)
+        property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
+          default True;
 
         (**
          * User name and password to use in authentification
@@ -1315,6 +1328,42 @@ type
          * Requires that the TLSUsername option also be set.
          *)
         property TLSPassword : string write SetTLSPassword;
+
+        (**
+         * Set TLS authentication methods
+         *)
+        property TLSAuth : TTLSAuthMethod write SetTLSAuth;
+
+        (**
+         * Authentication service name
+         *
+         * String holding the name of the service for DIGEST-MD5, SPNEGO and
+         * Kerberos 5 authentication mechanisms. The default service names are
+         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+         * change them.
+         *)
+        property AuthServiceName : string write SetAuthServiceName;
+
+        (**
+         * Request then .netrc is used
+         *
+         * This parameter controls the preference level of libcurl between using
+         * user names and passwords from your ~/.netrc file, relative to user
+         * names and passwords in the URL supplied with URL. On Windows, libcurl
+         * will use the file as %HOME%/_netrc, but you can also tell libcurl a
+         * different file name to use with NetrcFile.
+         *)
+        property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
+
+        (**
+         * File name to read .netrc info from
+         *
+         * String containing the full path name to the file you want libcurl to
+         * use as .netrc file. If this option is omitted, and Netrc is set,
+         * libcurl will attempt to find a .netrc file in the current user's home
+         * directory.
+         *)
+        property NetrcFile : string write SetNetrcFile;
       end;
 
       { THTTPProperty }
@@ -1325,6 +1374,13 @@ type
 
         procedure SetUserAgent (AAgent : string);
         procedure SetAutoReferer (AUpdateHeaders : Boolean);
+        procedure SetHTTPAuth (AMethod : TAuthMethods);
+        procedure SetUnrestrictedAuth (ASend : Boolean);
+        procedure SetPostRedirect (ARedirect : TPostRedirects);
+        procedure SetPutMethod (AEnable : Boolean);
+        procedure SetPostMethod (AEnable : Boolean);
+        procedure SetPostFields (AData : string);
+        procedure SetPostFieldsSize (ASize : LongWord);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -1345,6 +1401,122 @@ type
          * field in HTTP requests where it follows a Location: redirect.
          *)
         property AutoReferer : Boolean write SetAutoReferer default True;
+
+        (**
+         * Tell libcurl which authentication method(s) you want it to use
+         * speaking to the remote server.
+         *)
+        property HTTPAuth : TAuthMethods write SetHTTPAuth default [AUTH_BASIC];
+
+        (**
+         * Send credentials to other hosts too
+         *
+         * Make libcurl continue to send authentication (user+password)
+         * credentials when following locations, even when hostname changed.
+         * By default, libcurl will only send given credentials to the initial
+         * host name as given in the original URL, to avoid leaking username +
+         * password to other sites.
+         *)
+        property UnrestrictedAuth : Boolean write SetUnrestrictedAuth;
+
+        (**
+         * How to act on an HTTP POST redirect
+         *)
+        property PostRedirect : TPostRedirects write SetPostRedirect
+          default [REDIRECT_POST_NONE];
+
+        (**
+         * Make an HTTP PUT request
+         *
+         * This option is deprecated since version 7.12.1. Use Upload!
+         *)
+        property Put : Boolean write SetPutMethod default False;
+
+        (**
+         * Request an HTTP POST
+         *)
+        property Post : Boolean write SetPostMethod default False;
+
+        (**
+         * Specify data to POST to server
+         *
+         * Pass the full data to send in an HTTP POST operation. You must make
+         * sure that the data is formatted the way you want the server to
+         * receive it. libcurl will not convert or encode it for you in any way.
+         * For example, the web server may assume that this data is url-encoded.
+         *)
+        property PostFields : string write SetPostFields;
+
+        (**
+         * Size of POST data
+         *
+         * If you want to post data to the server without having libcurl do a
+         * strlen() to measure the data size, this option must be used. When
+         * this option is used you can post fully binary data, which otherwise
+         * is likely to fail. If this size is set to -1, the library will use
+         * strlen() to get the size.
+         *)
+        property PostFieldsSize : LongWord write SetPostFieldsSize default -1;
+      end;
+
+      { TIMAPProperty }
+
+      TIMAPProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetLoginOptions (AOptions : string);
+        procedure SetSASLAuthzid (AAuthzid : string);
+        procedure SetSASLIR (ASend : Boolean);
+        procedure SetXOAuth2Bearer (AToken : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set login options
+         *
+         * For more information about the login options please see RFC 2384, RFC
+         * 5092 and IETF draft draft-earhart-url-smtp-00.txt
+         * LoginOptions can be used to set protocol specific login options, such
+         * as the preferred authentication mechanism via "AUTH=NTLM" or
+         * "AUTH=*", and should be used in conjunction with the Username option.
+         *)
+        property LoginOptions : string write SetLoginOptions;
+
+        (**
+         * Authorisation identity (identity to act as)
+         *
+         * Authorisation identity (authzid) for the transfer. Only applicable to
+         * the PLAIN SASL authentication mechanism where it is optional.
+         * When not specified only the authentication identity (authcid) as
+         * specified by the username will be sent to the server, along with the
+         * password. The server will derive a authzid from the authcid when not
+         * provided, which it will then uses internally.
+         * When the authzid is specified, the use of which is server dependent,
+         * it can be used to access another user's inbox, that the user has been
+         * granted access to, or a shared mailbox for example.
+         *)
+        property SASLAuthzid : string write SetSASLAuthzid;
+
+        (**
+         * Enable/disable sending initial response in first packet
+         *
+         * curl will send the initial response to the server in the first
+         * authentication packet in order to reduce the number of ping pong
+         * requests. Only applicable to the following supporting SASL
+         * authentication mechanisms:
+         * Login * Plain * GSSAPI * NTLM * OAuth 2.0
+         *)
+        property SASLInitialResponse : Boolean write SetSASLIR default False;
+
+        (**
+         * Specify OAuth 2.0 access token
+         *
+         * OAuth 2.0 Bearer Access Token for use with HTTP, IMAP, POP3 and SMTP
+         * servers that support the OAuth 2.0 Authorization Framework.
+         *)
+        property XOAuth2BearerToken : string write SetXOAuth2Bearer;
       end;
 
   protected
@@ -1357,6 +1529,7 @@ type
     FDNS : TDNSProperty;
     FSecurity : TSecurityProperty;
     FHTTP : THTTPProperty;
+    FIMAP : TIMAPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -1401,28 +1574,6 @@ type
     procedure SetUrl (url : string);
     procedure SetLocalPort (APort : Word);
     procedure SetLocalPortRange (ARange : Longint);
-
-    procedure SetLoginOptions (options : string);
-    procedure SetHTTPAuth (AMethod : TAuthMethods);
-
-    procedure SetTLSAuth (method : TTLSAuthMethod);
-    procedure SetSASLAuthzid (authzid : string);
-    procedure SetSASLIR (send : Boolean);
-    procedure SetXOAuth2Bearer (token : string);
-    procedure SetAllowUsernameInURL (allow : Boolean);
-    procedure SetUnrestrictedAuth (send : Boolean);
-
-    procedure SetPostRedirect (redir : Longint);
-    procedure SetPutMethod (put : Boolean);
-    procedure SetPostMethod (post : Boolean);
-    procedure SetPostFields (data : string);
-    procedure SetPostFieldsSize (size : Longint);
-    procedure SetPostFieldsSizeLarge (size : LongWord);
-
-    procedure SetAuthServiceName (AName : string);
-
-    procedure SetNetrc (AOption : TNETRCOption);
-    procedure SetNetrcFile (AFile : string);
   public
     constructor Create;
     destructor Destroy; override;
@@ -1434,6 +1585,7 @@ type
     property DNS : TDNSProperty read FDNS write FDNS;
     property Security : TSecurityProperty read FSecurity write FSecurity;
     property HTTP : THTTPProperty read FHTTP write FHTTP;
+    property IMAP : TIMAPProperty read FIMAP write FIMAP;
 
     (**
      * Check if session opened and correctly
@@ -1491,164 +1643,6 @@ type
      * connection setup failures.
      *)
      property PortRange : Longint write SetLocalPortRange default 1;
-
-    (**
-     * Set login options
-     *
-     * For more information about the login options please see RFC 2384, RFC
-     * 5092 and IETF draft draft-earhart-url-smtp-00.txt
-     * LoginOptions can be used to set protocol specific login options, such as
-     * the preferred authentication mechanism via "AUTH=NTLM" or "AUTH=*", and
-     * should be used in conjunction with the Username option.
-     *)
-    property LoginOptions : string write SetLoginOptions;
-
-    (**
-     * Tell libcurl which authentication method(s) you want it to use speaking
-     * to the remote server.
-     *)
-    property HTTPAuth : TAuthMethods write SetHTTPAuth default [AUTH_BASIC];
-
-
-
-    (**
-     * Set TLS authentication methods
-     *)
-    property TLSAuth : TTLSAuthMethod write SetTLSAuth;
-
-    (**
-     * Authorisation identity (identity to act as)
-     *
-     * Authorisation identity (authzid) for the transfer. Only applicable to the
-     * PLAIN SASL authentication mechanism where it is optional.
-     * When not specified only the authentication identity (authcid) as
-     * specified by the username will be sent to the server, along with the
-     * password. The server will derive a authzid from the authcid when not
-     * provided, which it will then uses internally.
-     * When the authzid is specified, the use of which is server dependent, it
-     * can be used to access another user's inbox, that the user has been
-     * granted access to, or a shared mailbox for example.
-     *)
-    property SASLAuthzid : string write SetSASLAuthzid;
-
-    (**
-     * Enable/disable sending initial response in first packet
-     *
-     * curl will send the initial response to the server in the first
-     * authentication packet in order to reduce the number of ping pong
-     * requests. Only applicable to the following supporting SASL authentication
-     * mechanisms:
-     * Login * Plain * GSSAPI * NTLM * OAuth 2.0
-     *)
-    property SASLInitialResponse : Boolean write SetSASLIR default False;
-
-    (**
-     * Specify OAuth 2.0 access token
-     *
-     * OAuth 2.0 Bearer Access Token for use with HTTP, IMAP, POP3 and SMTP
-     * servers that support the OAuth 2.0 Authorization Framework.
-     *)
-    property XOAuth2BearerToken : string write SetXOAuth2Bearer;
-
-    (**
-     * Allow/disallow specifying user name in the url
-     *)
-    property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
-      default True;
-
-    (**
-     * Send credentials to other hosts too
-     *
-     * Make libcurl continue to send authentication (user+password) credentials
-     * when following locations, even when hostname changed.
-     * By default, libcurl will only send given credentials to the initial host
-     * name as given in the original URL, to avoid leaking username + password
-     * to other sites.
-     *)
-    property UnrestrictedAuth : Boolean write SetUnrestrictedAuth;
-
-
-
-    (**
-     * How to act on an HTTP POST redirect
-     *)
-    property PostRedirect : Longint write SetPostRedirect;
-
-    (**
-     * Make an HTTP PUT request
-     *
-     * This option is deprecated since version 7.12.1. Use Upload!
-     *)
-    property Put : Boolean write SetPutMethod;
-
-    (**
-     * Request an HTTP POST
-     *)
-    property Post : Boolean write SetPostMethod default False;
-
-    (**
-     * Specify data to POST to server
-     *
-     * Pass the full data to send in an HTTP POST operation. You must make sure
-     * that the data is formatted the way you want the server to receive it.
-     * libcurl will not convert or encode it for you in any way. For example,
-     * the web server may assume that this data is url-encoded.
-     *)
-    property PostFields : string write SetPostFields;
-
-    (**
-     * Size of POST data
-     *
-     * If you want to post data to the server without having libcurl do a
-     * strlen() to measure the data size, this option must be used. When this
-     * option is used you can post fully binary data, which otherwise is likely
-     * to fail. If this size is set to -1, the library will use strlen() to get
-     * the size.
-     * If you post more than 2GB, use PostFieldsSizeLarge.
-     *)
-    property PostFieldsSize : Longint write SetPostFieldsSize default -1;
-
-    (**
-     * Size of POST data
-     *
-     * If you want to post data to the server without having libcurl do a
-     * strlen() to measure the data size, this option must be used. When this
-     * option is used you can post fully binary data, which otherwise is likely
-     * to fail. If this size is set to -1, the library will use strlen() to get
-     * the size.
-     *)
-    property PostFieldsSizeLarge : LongWord write SetPostFieldsSizeLarge
-      default -1;
-
-    (**
-     * Authentication service name
-     *
-     * String holding the name of the service for DIGEST-MD5, SPNEGO and
-     * Kerberos 5 authentication mechanisms. The default service names are
-     * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to change
-     * them.
-     *)
-    property AuthServiceName : string write SetAuthServiceName;
-
-    (**
-     * Request then .netrc is used
-     *
-     * This parameter controls the preference level of libcurl between using
-     * user names and passwords from your ~/.netrc file, relative to user names
-     * and passwords in the URL supplied with URL. On Windows, libcurl will use
-     * the file as %HOME%/_netrc, but you can also tell libcurl a different file
-     * name to use with NetrcFile.
-     *)
-    property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
-
-    (**
-     * File name to read .netrc info from
-     *
-     * String containing the full path name to the file you want libcurl to use
-     * as .netrc file. If this option is omitted, and Netrc is set, libcurl will
-     * attempt to find a .netrc file in the current user's home directory.
-     *)
-    property NetrcFile : string write SetNetrcFile;
   public
 
     (**
@@ -2000,6 +1994,38 @@ type
 
 implementation
 
+{ TSession.TIMAPProperty }
+
+procedure TSession.TIMAPProperty.SetLoginOptions(AOptions: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+end;
+
+procedure TSession.TIMAPProperty.SetSASLAuthzid(AAuthzid: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+end;
+
+procedure TSession.TIMAPProperty.SetSASLIR(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+end;
+
+procedure TSession.TIMAPProperty.SetXOAuth2Bearer(AToken: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+end;
+
+constructor TSession.TIMAPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TIMAPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TSession.TProtocolProperty }
 
 procedure TSession.TProtocolProperty.SetAllowedProtocols
@@ -2220,6 +2246,80 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_AUTOREFERER, Longint(AUpdateHeaders));
 end;
 
+procedure TSession.THTTPProperty.SetHTTPAuth(AMethod: TAuthMethods);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if AUTH_BASIC in AMethod then
+    bitmask := bitmask or CURLAUTH_BASIC;
+  if AUTH_DIGEST in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST;
+  if AUTH_NEGOTIATE in AMethod then
+    bitmask := bitmask or CURLAUTH_NEGOTIATE;
+  if AUTH_GSSAPI in AMethod then
+    bitmask := bitmask or CURLAUTH_GSSAPI;
+  if AUTH_NTLM in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM;
+  if AUTH_DIGEST_IE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST_IE;
+  if AUTH_NTLM_WB in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM_WB;
+  if AUTH_BEARER in AMethod then
+    bitmask := bitmask or CURLAUTH_BEARER;
+  if AUTH_ANY in AMethod then
+    bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
+      CURLAUTH_BEARER;
+  if AUTH_ANYSAFE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
+
+  curl_easy_setopt(handle, CURLOPT_HTTPAUTH, bitmask);
+end;
+
+procedure TSession.THTTPProperty.SetUnrestrictedAuth(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH, Longint(ASend));
+end;
+
+procedure TSession.THTTPProperty.SetPostRedirect(ARedirect: TPostRedirects);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if REDIRECT_POST_301 in ARedirect then
+    bitmask := bitmask or CURL_REDIR_POST_301;
+  if REDIRECT_POST_302 in ARedirect then
+    bitmask := bitmask or CURL_REDIR_POST_302;
+  if REDIRECT_POST_303 in ARedirect then
+    bitmask := bitmask or CURL_REDIR_POST_303;
+  if REDIRECT_POST_ALL in ARedirect then
+    bitmask := CURL_REDIR_POST_ALL;
+
+  curl_easy_setopt(FHandle, CURLOPT_POSTREDIR, bitmask);
+end;
+
+procedure TSession.THTTPProperty.SetPutMethod(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PUT, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetPostMethod(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_POST, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetPostFields(AData: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_POSTFIELDS, PChar(AData));
+end;
+
+procedure TSession.THTTPProperty.SetPostFieldsSize(ASize: LongWord);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE, ASize);
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -2255,6 +2355,33 @@ end;
 procedure TSession.TSecurityProperty.SetTLSPassword(APassword: string);
 begin
   curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_PASSWORD, PChar(APassword));
+end;
+
+procedure TSession.TSecurityProperty.SetTLSAuth(AMethod: TTLSAuthMethod);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
+end;
+
+procedure TSession.TSecurityProperty.SetAllowUsernameInURL(AAllow: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_DISALLOW_USERNAME_IN_URL,
+    Longint(Boolean(not AAllow)));
+end;
+
+procedure TSession.TSecurityProperty.SetAuthServiceName(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME, PChar(AName));
+end;
+
+procedure TSession.TSecurityProperty.SetNetrc(AOption: TNETRCOption);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NETRC, Longint(AOption));
+end;
+
+procedure TSession.TSecurityProperty.SetNetrcFile(AFile: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NETRC_FILE, PChar(AFile));
 end;
 
 constructor TSession.TSecurityProperty.Create(AHandle: CURL);
@@ -2396,12 +2523,6 @@ end;
 procedure TSession.TProxyProperty.SetProxyTLSPassword(APassword: string);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(APassword));
-end;
-
-procedure TSession.TProxyProperty.SetProxyTLSAuth(AMethod: TTLSAuthMethod);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
-    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
 end;
 
 procedure TSession.TProxyProperty.SetProxyHTTPAuth(AMethod: TAuthMethods);
@@ -3226,6 +3347,7 @@ begin
   FDNS := TDNSProperty.Create(handle);
   FSecurity := TSecurityProperty.Create(handle);
   FHTTP := THTTPProperty.Create(handle);
+  FIMAP := TIMAPProperty.Create(handle);
 
   if Opened then
   begin
@@ -3268,168 +3390,12 @@ begin
   curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, ARange);
 end;
 
-procedure TSession.SetLoginOptions(options: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_LOGIN_OPTIONS, PChar(options));
-  end;
-end;
-
-procedure TSession.SetHTTPAuth(AMethod: TAuthMethods);
-var
-  bitmask : Longint;
-begin
-  if Opened then
-  begin
-    bitmask := 0;
-    if AUTH_BASIC in AMethod then
-      bitmask := bitmask or CURLAUTH_BASIC;
-    if AUTH_DIGEST in AMethod then
-      bitmask := bitmask or CURLAUTH_DIGEST;
-    if AUTH_NEGOTIATE in AMethod then
-      bitmask := bitmask or CURLAUTH_NEGOTIATE;
-    if AUTH_GSSAPI in AMethod then
-      bitmask := bitmask or CURLAUTH_GSSAPI;
-    if AUTH_NTLM in AMethod then
-      bitmask := bitmask or CURLAUTH_NTLM;
-    if AUTH_DIGEST_IE in AMethod then
-      bitmask := bitmask or CURLAUTH_DIGEST_IE;
-    if AUTH_NTLM_WB in AMethod then
-      bitmask := bitmask or CURLAUTH_NTLM_WB;
-    if AUTH_BEARER in AMethod then
-      bitmask := bitmask or CURLAUTH_BEARER;
-    if AUTH_ANY in AMethod then
-      bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
-        CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
-        CURLAUTH_BEARER;
-    if AUTH_ANYSAFE in AMethod then
-      bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
-        CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
-
-    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, bitmask);
-  end;
-end;
-
 procedure TSession.SetTLSAuth(method: TTLSAuthMethod);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TLSAUTH_TYPE,
       PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
-  end;
-end;
-
-procedure TSession.SetSASLAuthzid(authzid: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_SASL_AUTHZID, PChar(authzid));
-  end;
-end;
-
-procedure TSession.SetSASLIR(send: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_SASL_IR, Longint(send));
-  end;
-end;
-
-procedure TSession.SetXOAuth2Bearer(token: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_XOAUTH2_BEARER, PChar(token));
-  end;
-end;
-
-procedure TSession.SetAllowUsernameInURL(allow: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_DISALLOW_USERNAME_IN_URL,
-      Longint(Boolean(not allow)));
-  end;
-end;
-
-procedure TSession.SetUnrestrictedAuth(send: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_UNRESTRICTED_AUTH, Longint(send));
-  end;
-end;
-
-procedure TSession.SetPostRedirect(redir: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_POSTREDIR, redir);
-  end;
-end;
-
-procedure TSession.SetPutMethod(put: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PUT, Longint(put));
-  end;
-end;
-
-procedure TSession.SetPostMethod(post: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_POST, Longint(post));
-  end;
-end;
-
-procedure TSession.SetPostFields(data: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDS, PChar(data));
-  end;
-end;
-
-procedure TSession.SetPostFieldsSize(size: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, size);
-  end;
-end;
-
-procedure TSession.SetPostFieldsSizeLarge(size: LongWord);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE_LARGE, size);
-  end;
-end;
-
-procedure TSession.SetAuthServiceName(AName: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_SERVICE_NAME, PChar(AName));
-  end;
-end;
-
-procedure TSession.SetNetrc(AOption: TNETRCOption);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_NETRC, Longint(AOption));
-  end;
-end;
-
-procedure TSession.SetNetrcFile(AFile: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_NETRC_FILE, PChar(AFile));
   end;
 end;
 
