@@ -80,10 +80,12 @@ object pascal wrapper around cURL library
     if ParamCount = 2 then
     begin
       session := TSession.Create;
-      with session do
-      begin
-        Url := ParamStr(1);
-      end;
+      session.Url := Param[1];
+
+      session.Protocol.FollowRedirect := True;
+      session.Protocol.DefaultProtocol := PROTOCOL_HTTPS;
+      session.Protocol.TransferEncoding := True; 
+    
       
       info := TSessionInfo.Create(session);
       if info.Opened and not info.HasErrors then
