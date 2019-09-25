@@ -589,8 +589,6 @@ type
       private
         FHandle : CURL;
 
-        procedure SetPort (APort : Longint);
-        procedure SetPortRange (ARange : Longint);
         procedure SetAddressScope (AScope : Longint);
         procedure SetInterface (AInterface : string);
         procedure SetUnixSocketPath (APath : string);
@@ -601,30 +599,13 @@ type
         procedure SetAllowedProtocols (AProtocols : TProtocols);
         procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
         procedure SetDefaultProtocol (AProtocol : TProtocol);
+        procedure SetFollowRedirect (AFollow : Boolean);
+        procedure SetMaxRedirects (AAmount : Longint);
+        procedure SetNoBody (ANoBody : boolean);
+        procedure SetVerbose (AEnable : boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
-
-        (**
-         * Set local port number to use for socket
-         *
-         * This sets the local port number of the socket used for the connection.
-         * 0, disabled - use whatever the system thinks is fine
-         *)
-         property Port : Longint write SetPort default 0;
-
-         (**
-         * Number of additional local ports to try
-         *
-         * Pass a long. The range argument is the number of attempts libcurl will
-         * make to find a working local port number. It starts with the given
-         * LocalPort and adds one to the number for each retry. Setting this option
-         * to 1 or below will make libcurl do only one try for the exact port
-         * number. Port numbers by nature are scarce resources that will be busy at
-         * times so setting this value to something too low might cause unnecessary
-         * connection setup failures.
-         *)
-         property PortRange : Longint write SetPortRange default 1;
 
          (**
          * Set scope id for IPv6 addresses
@@ -743,6 +724,46 @@ type
          *)
         property DefaultProtocol : TProtocol write SetDefaultProtocol;
 
+        (**
+         * Follow HTTP 3XXX redirects
+         *
+         * Tells the library to follow any Location: header that the server
+         * sends as part of an HTTP header in a 3xx response. The Location:
+         * header can specify a relative or an absolute URL to follow.
+         * libcurl will issue another request for the new URL and follow new
+         * Location: headers all the way until no more such headers are
+         * returned. libcurl limits what protocols it automatically follows to.
+         * By default libcurl will allow HTTP, HTTPS, FTP and FTPS on redirect.
+         *)
+        property FollowRedirect : Boolean write SetFollowRedirect default True;
+
+        (**
+         * Meximum numbers of redirects allowed
+         *
+         * Setting the limit to 0 will make libcurl refuse any redirect.
+         * Set it to -1 for an infinite number of redirects.
+         *)
+        property MaxRedirects : Longint write SetMaxRedirects default -1;
+
+        (**
+         * Do the download request without getting the body
+         *
+         * Tells libcurl to not include the body-part in the output when doing
+         * what would otherwise be a download. For HTTP(S), this makes libcurl
+         * do a HEAD request. For most other protocols it means just not asking
+         * to transfer the body data.
+         *)
+        property NoBody : Boolean write SetNoBody default False;
+
+        (**
+         * Set verbose mode on/off
+         *
+         * Make the library display a lot of verbose information about its
+         * operations. Very useful for libcurl and/or protocol debugging and
+         * understanding. The verbose information will be sent to stderr.
+         *)
+        property VerboseMode : Boolean write SetVerbose default False;
+
       end;
 
       { TTCPProperty }
@@ -813,11 +834,56 @@ type
          property KeepInterval : TTimeInterval write SetTCPKeepInterval;
       end;
 
+      { TSOCKS5Property }
+
+      TSOCKS5Property = class
+      private
+        FHandle : CURL;
+
+        procedure SetSOCKS5Auth (AMethod : TAuthMethods);
+        procedure SetSOCKS5GSSAPIServiceName (AName : string);
+        procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set allowed methods for SOCKS5 proxy authentication
+         *
+         * Tell libcurl which authentication method(s) are allowed for SOCKS5
+         * proxy authentication. The only supported flags are AUTH_BASIC, which
+         * allows username/password authentication, AUTH_GSSAPI, which allows
+         * GSS-API authentication, and AUTH_NONE, which allows no
+         * authentication.
+         *)
+        property Auth : TAuthMethods write SetSOCKS5Auth
+          default [AUTH_BASIC, AUTH_GSSAPI];
+
+        (**
+         * SOCKS5 proxy authentication service name
+         *
+         * String holding the name of the service. The default service name for
+         * a SOCKS5 server is "rcmd". This option allows you to change it.
+         *)
+        property GSSAPIServiceName : string write SetSOCKS5GSSAPIServiceName;
+
+        (**
+         * Set socks proxy gssapi nogotiation protection
+         *
+         * As part of the gssapi negotiation a protection mode is negotiated.
+         * The RFC 1961 says in section 4.3/4.4 it should be protected, but the
+         * NEC reference implementation does not. If enabled, this option allows
+         * the unprotected exchange of the protection mode negotiation.
+         *)
+        property GSSAPINegotiation : Boolean write SetSOCKS5GSSAPINegotiation;
+      end;
+
       { TProxyProperty }
 
       TProxyProperty = class
       private
         FHandle : CURL;
+        FSOCKS5 : TSOCKS5Property;
 
         procedure SetPreProxy (APreProxy : string);
         procedure SetProxy (AProxy : string);
@@ -837,6 +903,8 @@ type
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+        property SOCKS5 : TSOCKS5Property read FSOCKS5 write FSOCKS5;
 
         (**
          * Set pre-proxy to use
@@ -1015,12 +1083,136 @@ type
         property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
       end;
 
+      { TDNSProperty }
+
+      TDNSProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetDNSCacheTimeout (ATimeout : TTimeInterval);
+        procedure SetDNSGlobalCache (AEnable : Boolean);
+        procedure SetDNSoverHTTPS (AUrl : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set life-time for DNS cache entries
+         *
+         * Name resolves will be kept in memory and used for this time interval.
+         * Set to zero to completely disable caching.
+         *)
+        property CacheTimeout : TTimeInterval write SetDNSCacheTimeout;
+
+        (**
+         * Enable/disable global DNS cache
+         *
+         * Tells curl to use a global DNS cache that will survive between easy
+         * handle creations and deletions. This is not thread-safe and this will
+         * use a global variable.
+         *
+         * WARNING: this option is considered obsolete. Stop using it. Switch
+         * over to using the share interface instead!
+         *)
+        property GlobalCache : Boolean write SetDNSGlobalCache;
+
+        (**
+         * Provide the DNS-over-HTTPS URL
+         *
+         * Pass in a string to a URL for the DOH server to use for name resolving.
+         * The parameter should be a string which must be URL-encoded in the
+         * following format: "https://host:port/path". It MUST specify a HTTPS URL.
+         * Disable DOH use again by setting this option to '' (empty string).
+         *)
+        property DNSoverHTTPS : string write SetDNSoverHTTPS;
+      end;
+
+      { TSecurityProperty }
+
+      TSecurityProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetUserPassword (AUserpwd : string);
+        procedure SetUsername (AName : string);
+        procedure SetPassword (APassword : string);
+        procedure SetTLSUsername (AName : string);
+        procedure SetTLSPassword (APassword : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * User name and password to use in authentification
+         *
+         * Login details string for the connection. The format of which is:
+         * [user name]:[password].
+         * When using Kerberos V5 authentication with a Windows based server,
+         * you should specify the user name part with the domain name in order
+         * for the server to successfully obtain a Kerberos Ticket. If you don't
+         * then the initial part of the authentication handshake may fail.
+         * When using NTLM, the user name can be specified simply as the user
+         * name without the domain name should the server be part of a single
+         * domain and forest.
+         * To specify the domain name use either Down-Level Logon Name or UPN
+         * (User Principal Name) formats. For example, EXAMPLE\user and
+         * user@example.com respectively.
+         * When using HTTP and FollowLocation, libcurl might perform several
+         * requests to possibly different hosts. libcurl will only send this
+         * user and password information to hosts using the initial host name,
+         * so if libcurl follows locations to other hosts it will not send the
+         * user and password to those. This is enforced to prevent accidental
+         * information leakage.
+         *)
+        property UserPassword : string write SetUserPassword;
+
+        (**
+         * User name to use in authentication
+         *
+         * Sets the user name to be used in protocol authentication. You should
+         * not use this option together with the (older) UserPassword option.
+         * When using Kerberos V5 authentication with a Windows based server,
+         * you should include the domain name in order for the server to
+         * successfully obtain a Kerberos Ticket. If you don't then the initial
+         * part of the authentication handshake may fail.
+         * When using NTLM, the user name can be specified simply as the user
+         * name without the domain name should the server be part of a single
+         * domain and forest.
+         * To include the domain name use either Down-Level Logon Name or UPN
+         * (User Principal Name) formats. For example, EXAMPLE\user and
+         * user@example.com respectively.
+         *)
+        property Username : string write SetUsername;
+
+        (**
+         * Password to use in authentication
+         *
+         * The Password option should be used in conjunction with the Username
+         * option.
+         *)
+        property Password : string write SetPassword;
+
+        (**
+         * User name to use for TLS authentication
+         *)
+        property TLSUsername : string write SetTLSUsername;
+
+        (**
+         * Password to use for TLS authentication
+         *
+         * Requires that the TLSUsername option also be set.
+         *)
+        property TLSPassword : string write SetTLSPassword;
+      end;
+
   protected
     handle : CURL;
     buffer : TStringStream;
     FOptions : TOptionsProperty;
     FTCP : TTCPProperty;
     FProxy : TProxyProperty;
+    FDNS : TDNSProperty;
+
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -1063,45 +1255,36 @@ type
 
     function IsOpened : Boolean;
     procedure SetUrl (url : string);
+    procedure SetPort (APort : Longint);
+    procedure SetPortRange (ARange : Longint);
 
-    { Proxy settings }
-    procedure SetSOCKS5Auth (AMethod : TAuthMethods);
-    procedure SetSOCKS5GSSAPIServiceName (AName : string);
-    procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
 
     procedure SetUserAgent (agent : string);
-
-    procedure SetFollowRedirect (redirect : boolean);
     procedure SetAutoReferer (updateHeaders : boolean);
     procedure SetIncludeHeader (includeHeader : boolean);
     procedure SetIgnoreContentLength (ignoreLength : boolean);
-    procedure SetNoBody (noBody : boolean);
+
     procedure SetTransferEncoding (encoding : boolean);
-    procedure SetVerbose (verbose : boolean);
+
     procedure SetWildcardMatch (match : boolean);
 
     procedure SetKeepSendingOnError (keepSending : boolean);
 
-    procedure SetLocalPort (port : Longint);
-    procedure SetLocalPortRange (range : Longint);
-    procedure SetDNSCacheTimeout (timeout : TTimeInterval);
-    procedure SetDNSGlobalCache (enable : Boolean);
-    procedure SetDNSoverHTTPS (url : string);
 
-    procedure SetUserPassword (userpwd : string);
-    procedure SetUsername (name : string);
-    procedure SetPassword (pass : string);
+
+
+
+
     procedure SetLoginOptions (options : string);
     procedure SetHTTPAuth (AMethod : TAuthMethods);
-    procedure SetTLSUsername (name : string);
-    procedure SetTLSPassword (pass : string);
+
     procedure SetTLSAuth (method : TTLSAuthMethod);
     procedure SetSASLAuthzid (authzid : string);
     procedure SetSASLIR (send : Boolean);
     procedure SetXOAuth2Bearer (token : string);
     procedure SetAllowUsernameInURL (allow : Boolean);
     procedure SetUnrestrictedAuth (send : Boolean);
-    procedure SetMaxRedirects (amount : Longint);
+
     procedure SetPostRedirect (redir : Longint);
     procedure SetPutMethod (put : Boolean);
     procedure SetPostMethod (post : Boolean);
@@ -1120,6 +1303,7 @@ type
     property Options : TOptionsProperty read FOptions write FOptions;
     property TCP : TTCPProperty read FTCP write FTCP;
     property Proxy : TProxyProperty read FProxy write FProxy;
+    property DNS : TDNSProperty read FDNS write FDNS;
 
     (**
      * Check if session opened and correctly
@@ -1158,25 +1342,33 @@ type
     property Url : string write SetUrl;
 
     (**
+     * Set local port number to use for socket
+     *
+     * This sets the local port number of the socket used for the connection.
+     * 0, disabled - use whatever the system thinks is fine
+     *)
+     property Port : Longint write SetPort default 0;
+
+     (**
+     * Number of additional local ports to try
+     *
+     * Pass a long. The range argument is the number of attempts libcurl will
+     * make to find a working local port number. It starts with the given
+     * LocalPort and adds one to the number for each retry. Setting this option
+     * to 1 or below will make libcurl do only one try for the exact port
+     * number. Port numbers by nature are scarce resources that will be busy at
+     * times so setting this value to something too low might cause unnecessary
+     * connection setup failures.
+     *)
+     property PortRange : Longint write SetPortRange default 1;
+
+    (**
      * Set HTTP user-agent header
      *
      * It will be used to set the User-Agent: header in the HTTP request sent to
      * the remote server. This can be used to fool servers or scripts.
      *)
     property UserAgent : string write SetUserAgent;
-
-    (**
-     * Follow HTTP 3XXX redirects
-     *
-     * Tells the library to follow any Location: header that the server sends as
-     * part of an HTTP header in a 3xx response. The Location: header can
-     * specify a relative or an absolute URL to follow.
-     * libcurl will issue another request for the new URL and follow new
-     * Location: headers all the way until no more such headers are returned.
-     * libcurl limits what protocols it automatically follows to.
-     * By default libcurl will allow HTTP, HTTPS, FTP and FTPS on redirect.
-     *)
-    property FollowRedirect : Boolean write SetFollowRedirect default True;
 
     (**
      * Automatically update the referer header
@@ -1212,15 +1404,7 @@ type
     property IgnoreContentLength : Boolean write SetIgnoreContentLength
       default False;
 
-    (**
-     * Do the download request without getting the body
-     *
-     * Tells libcurl to not include the body-part in the output when doing what
-     * would otherwise be a download. For HTTP(S), this makes libcurl do a HEAD
-     * request. For most other protocols it means just not asking to transfer
-     * the body data.
-     *)
-    property NoBody : Boolean write SetNoBody default False;
+
 
     (**
      * Ask for HTTP Transfer Encoding
@@ -1233,14 +1417,7 @@ type
     property TransferEncoding : Boolean write SetTransferEncoding
       default False;
 
-    (**
-     * Set verbose mode on/off
-     *
-     * Make the library display a lot of verbose information about its
-     * operations. Very useful for libcurl and/or protocol debugging and
-     * understanding. The verbose information will be sent to stderr.
-     *)
-    property VerboseMode : Boolean write SetVerbose default False;
+
 
     (**
      * Enable directory wildcard transfers
@@ -1303,85 +1480,7 @@ type
      *)
     //property Port : Longint;
 
-    (**
-     * Set life-time for DNS cache entries
-     *
-     * Name resolves will be kept in memory and used for this time interval.
-     * Set to zero to completely disable caching.
-     *)
-    property DNSCacheTimeout : TTimeInterval write SetDNSCacheTimeout;
 
-    (**
-     * Enable/disable global DNS cache
-     *
-     * Tells curl to use a global DNS cache that will survive between easy
-     * handle creations and deletions. This is not thread-safe and this will use
-     * a global variable.
-     *
-     * WARNING: this option is considered obsolete. Stop using it. Switch over
-     * to using the share interface instead!
-     *)
-    property DNSGlobalCache : Boolean write SetDNSGlobalCache;
-
-    (**
-     * Provide the DNS-over-HTTPS URL
-     *
-     * Pass in a string to a URL for the DOH server to use for name resolving.
-     * The parameter should be a string which must be URL-encoded in the
-     * following format: "https://host:port/path". It MUST specify a HTTPS URL.
-     * Disable DOH use again by setting this option to '' (empty string).
-     *)
-    property DNSoverHTTPS : string write SetDNSoverHTTPS;
-
-    (**
-     * User name and password to use in authentification
-     *
-     * Login details string for the connection. The format of which is:
-     * [user name]:[password].
-     * When using Kerberos V5 authentication with a Windows based server, you
-     * should specify the user name part with the domain name in order for the
-     * server to successfully obtain a Kerberos Ticket. If you don't then the
-     * initial part of the authentication handshake may fail.
-     * When using NTLM, the user name can be specified simply as the user name
-     * without the domain name should the server be part of a single domain and
-     * forest.
-     * To specify the domain name use either Down-Level Logon Name or UPN (User
-     * Principal Name) formats. For example, EXAMPLE\user and user@example.com
-     * respectively.
-     * When using HTTP and FollowLocation, libcurl might perform several
-     * requests to possibly different hosts. libcurl will only send this user
-     * and password information to hosts using the initial host name, so if
-     * libcurl follows locations to other hosts it will not send the user and
-     * password to those. This is enforced to prevent accidental information
-     * leakage.
-     *)
-    property UserPassword : string write SetUserPassword;
-
-    (**
-     * User name to use in authentication
-     *
-     * Sets the user name to be used in protocol authentication. You should not
-     * use this option together with the (older) UserPassword option.
-     * When using Kerberos V5 authentication with a Windows based server, you
-     * should include the domain name in order for the server to successfully
-     * obtain a Kerberos Ticket. If you don't then the initial part of the
-     * authentication handshake may fail.
-     * When using NTLM, the user name can be specified simply as the user name
-     * without the domain name should the server be part of a single domain and
-     * forest.
-     * To include the domain name use either Down-Level Logon Name or UPN (User
-     * Principal Name) formats. For example, EXAMPLE\user and user@example.com
-     * respectively.
-     *)
-    property Username : string write SetUsername;
-
-    (**
-     * Password to use in authentication
-     *
-     * The Password option should be used in conjunction with the Username
-     * option.
-     *)
-    property Password : string write SetPassword;
 
     (**
      * Set login options
@@ -1400,17 +1499,7 @@ type
      *)
     property HTTPAuth : TAuthMethods write SetHTTPAuth default [AUTH_BASIC];
 
-    (**
-     * User name to use for TLS authentication
-     *)
-    property TLSUsername : string write SetTLSUsername;
 
-    (**
-     * Password to use for TLS authentication
-     *
-     * Requires that the TLSUsername option also be set.
-     *)
-    property TLSPassword : string write SetTLSPassword;
 
     (**
      * Set TLS authentication methods
@@ -1468,13 +1557,7 @@ type
      *)
     property UnrestrictedAuth : Boolean write SetUnrestrictedAuth;
 
-    (**
-     * Meximum numbers of redirects allowed
-     *
-     * Setting the limit to 0 will make libcurl refuse any redirect.
-     * Set it to -1 for an infinite number of redirects.
-     *)
-    property MaxRedirects : Longint write SetMaxRedirects default -1;
+
 
     (**
      * How to act on an HTTP POST redirect
@@ -1526,35 +1609,6 @@ type
      *)
     property PostFieldsSizeLarge : LongWord write SetPostFieldsSizeLarge
       default -1;
-
-    (**
-     * Set allowed methods for SOCKS5 proxy authentication
-     *
-     * Tell libcurl which authentication method(s) are allowed for SOCKS5 proxy
-     * authentication. The only supported flags are AUTH_BASIC, which allows
-     * username/password authentication, AUTH_GSSAPI, which allows GSS-API
-     * authentication, and AUTH_NONE, which allows no authentication.
-     *)
-    property SOCKS5Auth : TAuthMethods write SetSOCKS5Auth
-      default [AUTH_BASIC, AUTH_GSSAPI];
-
-    (**
-     * SOCKS5 proxy authentication service name
-     *
-     * String holding the name of the service. The default service name for a
-     * SOCKS5 server is "rcmd". This option allows you to change it.
-     *)
-    property SOCKS5GSSAPIServiceName : string write SetSOCKS5GSSAPIServiceName;
-
-    (**
-     * Set socks proxy gssapi nogotiation protection
-     *
-     * As part of the gssapi negotiation a protection mode is negotiated. The
-     * RFC 1961 says in section 4.3/4.4 it should be protected, but the NEC
-     * reference implementation does not. If enabled, this option allows the
-     * unprotected exchange of the protection mode negotiation.
-     *)
-    property SOCKS5GSSAPINegotiation : Boolean write SetSOCKS5GSSAPINegotiation;
 
     (**
      * Authentication service name
@@ -1936,6 +1990,112 @@ type
 
 implementation
 
+{ TSession.TSecurityProperty }
+
+procedure TSession.TSecurityProperty.SetUserPassword(AUserpwd: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_USERPWD, PChar(AUserpwd));
+end;
+
+procedure TSession.TSecurityProperty.SetUsername(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_USERNAME, PChar(AName));
+end;
+
+procedure TSession.TSecurityProperty.SetPassword(APassword: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PASSWORD, PChar(APassword));
+end;
+
+procedure TSession.TSecurityProperty.SetTLSUsername(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_USERNAME, PChar(AName));
+end;
+
+procedure TSession.TSecurityProperty.SetTLSPassword(APassword: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_PASSWORD, PChar(APassword));
+end;
+
+constructor TSession.TSecurityProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TSecurityProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.TDNSProperty }
+
+procedure TSession.TDNSProperty.SetDNSCacheTimeout(ATimeout: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_DNS_CACHE_TIMEOUT,
+    Longint(ceil(ATimeout.Seconds)));
+end;
+
+procedure TSession.TDNSProperty.SetDNSGlobalCache(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_DNS_USE_GLOBAL_CACHE, Longint(AEnable));
+end;
+
+procedure TSession.TDNSProperty.SetDNSoverHTTPS(AUrl: string);
+begin
+  if AUrl <> '' then
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_DOH_URL, PChar(AUrl));
+  end else
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_DOH_URL, 0);
+  end;
+end;
+
+constructor TSession.TDNSProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TDNSProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.TSOCKS5Property }
+
+procedure TSession.TSOCKS5Property.SetSOCKS5Auth(AMethod: TAuthMethods);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if AUTH_BASIC in AMethod then
+    bitmask := bitmask or CURLAUTH_BASIC;
+  if AUTH_GSSAPI in AMethod then
+    bitmask := bitmask or CURLAUTH_GSSAPI;
+
+  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_AUTH, bitmask);
+end;
+
+procedure TSession.TSOCKS5Property.SetSOCKS5GSSAPIServiceName(AName: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_SERVICE, PChar(AName));
+end;
+
+procedure TSession.TSOCKS5Property.SetSOCKS5GSSAPINegotiation(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_NEC, Longint(AEnable));
+end;
+
+constructor TSession.TSOCKS5Property.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TSOCKS5Property.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TSession.TProxyProperty }
 
 procedure TSession.TProxyProperty.SetPreProxy(APreProxy: string);
@@ -2044,6 +2204,7 @@ end;
 constructor TSession.TProxyProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
+  FSOCKS5 := TSOCKS5Property.Create(AHandle);
 end;
 
 destructor TSession.TProxyProperty.Destroy;
@@ -2090,16 +2251,6 @@ begin
 end;
 
 { TSession.TOptionsProperty }
-
-procedure TSession.TOptionsProperty.SetPort(APort: Longint);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_LOCALPORT, APort);
-end;
-
-procedure TSession.TOptionsProperty.SetPortRange(ARange: Longint);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
-end;
 
 procedure TSession.TOptionsProperty.SetAddressScope(AScope: Longint);
 begin
@@ -2287,6 +2438,26 @@ begin
   protocol := LowerCase(Copy(protocol, Length('PROTOCOL_') + 1,
     Length(protocol) - Length('PROTOCOL_') + 1));
   curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
+end;
+
+procedure TSession.TOptionsProperty.SetFollowRedirect(AFollow: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION, Longint(AFollow));
+end;
+
+procedure TSession.TOptionsProperty.SetMaxRedirects(AAmount: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount);
+end;
+
+procedure TSession.TOptionsProperty.SetNoBody(ANoBody: boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody));
+end;
+
+procedure TSession.TOptionsProperty.SetVerbose(AEnable: boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_VERBOSE, Longint(AEnable));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
@@ -2978,7 +3149,7 @@ begin
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION,
       @TSession.WriteFunctionCallback);
-    FollowRedirect := True;
+    FOptions.FollowRedirect := True;
   end;
 end;
 
@@ -3004,19 +3175,21 @@ begin
   end;
 end;
 
+procedure TSession.SetPort(APort: Longint);
+begin
+  curl_easy_setopt(handle, CURLOPT_LOCALPORT, APort);
+end;
+
+procedure TSession.SetPortRange(ARange: Longint);
+begin
+  curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, ARange);
+end;
+
 procedure TSession.SetUserAgent(agent: string);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_USERAGENT, PChar(agent));
-  end;
-end;
-
-procedure TSession.SetFollowRedirect(redirect: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, Longint(redirect));
   end;
 end;
 
@@ -3045,27 +3218,11 @@ begin
   end;
 end;
 
-procedure TSession.SetNoBody(noBody: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_NOBODY, Longint(noBody));
-  end;
-end;
-
 procedure TSession.SetTransferEncoding(encoding: boolean);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TRANSFER_ENCODING, Longint(encoding));
-  end;
-end;
-
-procedure TSession.SetVerbose(verbose: boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_VERBOSE, Longint(verbose));
   end;
 end;
 
@@ -3083,77 +3240,6 @@ begin
   begin
     curl_easy_setopt(handle, CURLOPT_KEEP_SENDING_ON_ERROR,
       Longint(keepSending));
-  end;
-end;
-
-procedure TSession.SetLocalPort(port: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_LOCALPORT, port);
-  end;
-end;
-
-procedure TSession.SetLocalPortRange(range: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, range);
-  end;
-end;
-
-procedure TSession.SetDNSCacheTimeout(timeout: TTimeInterval);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_DNS_CACHE_TIMEOUT,
-      Longint(ceil(timeout.Seconds)));
-  end;
-end;
-
-procedure TSession.SetDNSGlobalCache(enable: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_DNS_USE_GLOBAL_CACHE, Longint(enable));
-  end;
-end;
-
-procedure TSession.SetDNSoverHTTPS(url: string);
-begin
-  if Opened then
-  begin
-    if url = '' then
-    begin
-      curl_easy_setopt(handle, CURLOPT_DOH_URL, 0);
-    end else
-    begin
-      curl_easy_setopt(handle, CURLOPT_DOH_URL, PChar(url));
-    end;
-  end;
-end;
-
-procedure TSession.SetUserPassword(userpwd: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_USERPWD, PChar(userpwd));
-  end;
-end;
-
-procedure TSession.SetUsername(name: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_USERNAME, PChar(name));
-  end;
-end;
-
-procedure TSession.SetPassword(pass: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_PASSWORD, PChar(pass));
   end;
 end;
 
@@ -3200,60 +3286,12 @@ begin
   end;
 end;
 
-procedure TSession.SetTLSUsername(name: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TLSAUTH_USERNAME, PChar(name));
-  end;
-end;
-
-procedure TSession.SetTLSPassword(pass: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_TLSAUTH_PASSWORD, PChar(pass));
-  end;
-end;
-
 procedure TSession.SetTLSAuth(method: TTLSAuthMethod);
 begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_TLSAUTH_TYPE,
       PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(method))));
-  end;
-end;
-
-procedure TSession.SetSOCKS5Auth(AMethod: TAuthMethods);
-var
-  bitmask : Longint;
-begin
-  if Opened then
-  begin
-    bitmask := 0;
-    if AUTH_BASIC in AMethod then
-      bitmask := bitmask or CURLAUTH_BASIC;
-    if AUTH_GSSAPI in AMethod then
-      bitmask := bitmask or CURLAUTH_GSSAPI;
-
-    curl_easy_setopt(handle, CURLOPT_SOCKS5_AUTH, bitmask);
-  end;
-end;
-
-procedure TSession.SetSOCKS5GSSAPIServiceName(AName: string);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_SOCKS5_GSSAPI_SERVICE, PChar(AName));
-  end;
-end;
-
-procedure TSession.SetSOCKS5GSSAPINegotiation(AEnable: Boolean);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_SOCKS5_GSSAPI_NEC, Longint(AEnable));
   end;
 end;
 
@@ -3295,14 +3333,6 @@ begin
   if Opened then
   begin
     curl_easy_setopt(handle, CURLOPT_UNRESTRICTED_AUTH, Longint(send));
-  end;
-end;
-
-procedure TSession.SetMaxRedirects(amount: Longint);
-begin
-  if Opened then
-  begin
-    curl_easy_setopt(handle, CURLOPT_MAXREDIRS, amount);
   end;
 end;
 
