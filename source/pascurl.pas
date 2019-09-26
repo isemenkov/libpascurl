@@ -1281,6 +1281,7 @@ type
         procedure SetAuthServiceName (AName : string);
         procedure SetNetrc (AOption : TNETRCOption);
         procedure SetNetrcFile (AFile : string);
+        procedure SetUnrestrictedAuth (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -1388,6 +1389,20 @@ type
          * directory.
          *)
         property NetrcFile : string write SetNetrcFile;
+
+        (**
+         * Send credentials to other hosts too
+         *
+         * Set the long gohead parameter to 1L to make libcurl continue to send
+         * authentication (user+password) credentials when following locations,
+         * even when hostname changed. This option is meaningful only when
+         * setting FollowRedirect.
+         * By default, libcurl will only send given credentials to the initial
+         * host name as given in the original URL, to avoid leaking username +
+         * password to other sites.
+         *)
+        property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
+          default False;
       end;
 
       { THTTPProperty }
@@ -1404,8 +1419,14 @@ type
         procedure SetPutMethod (AEnable : Boolean);
         procedure SetPostMethod (AEnable : Boolean);
         procedure SetPostFields (AData : string);
-        procedure SetPostFieldsSize (ASize : LongWord);
+        procedure SetPostFieldsSize (ASize : Longint);
         procedure SetAcceptEncoding (AEncodings : TEncodings);
+        procedure SetTransferEncoding (AEnable : Boolean);
+        procedure SetReferer (AWhere : string);
+        procedure SetCookie (ACookie : string);
+        procedure SetCookieFile (AFile : string);
+        procedure SetCookieJar (AFile : string);
+        procedure SetCookieSession (ACreate : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -1481,7 +1502,7 @@ type
          * is likely to fail. If this size is set to -1, the library will use
          * strlen() to get the size.
          *)
-        property PostFieldsSize : LongWord write SetPostFieldsSize default -1;
+        property PostFieldsSize : Longint write SetPostFieldsSize default -1;
 
         (**
          * Enables automatic decompression of HTTP
@@ -1500,6 +1521,117 @@ type
          *)
         property AcceptEncoding : TEncodings write SetAcceptEncoding
           default [ENCODE_NONE];
+
+        (**
+         * Ask for HTTP Transfer Encoding
+         *
+         * Adds a request for compressed Transfer Encoding in the outgoing HTTP
+         * request. If the server supports this and so desires, it can respond
+         * with the HTTP response sent using a compressed Transfer-Encoding that
+         * will be automatically uncompressed by libcurl on reception.
+         * Transfer-Encoding differs slightly from the Content-Encoding you ask
+         * for with AcceptEncoding in that a Transfer-Encoding is strictly meant
+         * to be for the transfer and thus MUST be decoded before the data
+         * arrives in the client. Traditionally, Transfer-Encoding has been much
+         * less used and supported by both HTTP clients and HTTP servers.
+         *)
+        property TransferEncoding : Boolean write SetTransferEncoding
+          default False;
+
+        (**
+         * Set the HTTP referer header
+         *
+         * It will be used to set the Referer: header in the http request sent
+         * to the remote server. This can be used to fool servers or scripts.
+         * You can also set any custom header with Header.
+         *)
+        property Referer : string write SetReferer;
+
+        (**
+         * Set contents of HTTP Cookie header
+         *
+         * Will be used to set a cookie in the HTTP request. The format of the
+         * string should be NAME=CONTENTS, where NAME is the cookie name and
+         * CONTENTS is what the cookie should contain.
+         * If you need to set multiple cookies, set them all using a single
+         * option concatenated like this: "name1=content1; name2=content2;" etc.
+         * This option sets the cookie header explicitly in the outgoing
+         * request(s). If multiple requests are done due to authentication,
+         * followed redirections or similar, they will all get this cookie
+         * passed on.
+         * The cookies set by this option are separate from the internal cookie
+         * storage held by the cookie engine and will not be modified by it. If
+         * you enable the cookie engine and either you've imported a cookie of
+         * the same name (e.g. 'foo') or the server has set one, it will have no
+         * effect on the cookies you set here. A request to the server will send
+         * both the 'foo' held by the cookie engine and the 'foo' held by this
+         * option. To set a cookie that is instead held by the cookie engine and
+         * can be modified by the server use CookieList.
+         * Using this option multiple times will only make the latest string
+         * override the previous ones.
+         * This option will not enable the cookie engine. Use CookieFile or
+         * CookieJar to enable parsing and sending cookies automatically.
+         *)
+        property Cookie : string write SetCookie;
+
+        (**
+         * File name to read cookie from
+         *
+         * It should point to the file name of your file holding cookie data to
+         * read. The cookie data can be in either the old Netscape / Mozilla
+         * cookie data format or just regular HTTP headers (Set-Cookie style)
+         * dumped to a file.
+         * It also enables the cookie engine, making libcurl parse and send
+         * cookies on subsequent requests with this handle.
+         * Given an empty or non-existing file or by passing the empty string
+         * ("") to this option, you can enable the cookie engine without reading
+         * any initial cookies. If you tell libcurl the file name is "-" (just a
+         * single minus sign), libcurl will instead read from stdin.
+         * This option only reads cookies. To make libcurl write cookies to
+         * file, see CookieJar.
+         * Exercise caution if you are using this option and multiple transfers
+         * may occur. If you use the Set-Cookie format and don't specify a
+         * domain then the cookie is sent for any domain (even after redirects
+         * are followed) and cannot be modified by a server-set cookie. If a
+         * server sets a cookie of the same name then both will be sent on a
+         * future transfer to that server, likely not what you intended. To
+         * address these issues set a domain in Set-Cookie (doing that will
+         * include sub-domains) or use the Netscape format.
+         * If you use this option multiple times, you just add more files to
+         * read. Subsequent files will add more cookies.
+         *)
+        property CookieFile : string write SetCookieFile;
+
+        (**
+         * File name to store cookies to
+         *
+         * This will make libcurl write all internally known cookies to the
+         * specified file when curl_easy_cleanup is called. If no cookies are
+         * known, no file will be created. Specify "-" as filename to instead
+         * have the cookies written to stdout. Using this option also enables
+         * cookies for this session, so if you for example follow a location it
+         * will make matching cookies get sent accordingly.
+         * Note that libcurl doesn't read any cookies from the cookie jar. If
+         * you want to read cookies from a file, use CookieFile.
+         * If the cookie jar file can't be created or written to (when the
+         * curl_easy_cleanup is called), libcurl will not and cannot report an
+         * error for this.
+         * Since 7.43.0 cookies that were imported in the Set-Cookie format
+         * without a domain name are not exported by this option.
+         *)
+        property CookieJar : string write SetCookieJar;
+
+        (**
+         * Start a new cookie session
+         *
+         * Mark this as a new cookie "session". It will force libcurl to ignore
+         * all cookies it is about to load that are "session cookies" from the
+         * previous session. By default, libcurl always stores and loads all
+         * cookies, independent if they are session cookies or not. Session
+         * cookies are cookies without expiry date and they are meant to be
+         * alive and existing for this "session" only.
+         *)
+        property CookieNewSession : Boolean write SetCookieSession;
       end;
 
       { TIMAPProperty }
@@ -1562,6 +1694,17 @@ type
         property XOAuth2BearerToken : string write SetXOAuth2Bearer;
       end;
 
+      { TFTPProperty }
+
+      TFTPProperty = class
+      private
+        FHandle : CURL;
+
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+      end;
+
   protected
     handle : CURL;
     buffer : TStringStream;
@@ -1573,6 +1716,7 @@ type
     FSecurity : TSecurityProperty;
     FHTTP : THTTPProperty;
     FIMAP : TIMAPProperty;
+    FFTP : TFTPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -2037,6 +2181,18 @@ type
 
 implementation
 
+{ TSession.TFTPProperty }
+
+constructor TSession.TFTPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TFTPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TSession.TIMAPProperty }
 
 procedure TSession.TIMAPProperty.SetLoginOptions(AOptions: string);
@@ -2358,7 +2514,7 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_POSTFIELDS, PChar(AData));
 end;
 
-procedure TSession.THTTPProperty.SetPostFieldsSize(ASize: LongWord);
+procedure TSession.THTTPProperty.SetPostFieldsSize(ASize: Longint);
 begin
   curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE, ASize);
 end;
@@ -2381,7 +2537,7 @@ procedure TSession.THTTPProperty.SetAcceptEncoding(AEncodings: TEncodings);
   end;
 
 var
-  enc : string;
+  enc : string = '';
 begin
   if AEncodings = [ENCODE_NONE] then
   begin
@@ -2406,6 +2562,36 @@ begin
 
     curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, PChar(enc));
   end;
+end;
+
+procedure TSession.THTTPProperty.SetTransferEncoding(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetReferer(AWhere: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_REFERER, PChar(AWhere));
+end;
+
+procedure TSession.THTTPProperty.SetCookie(ACookie: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIE, PChar(ACookie));
+end;
+
+procedure TSession.THTTPProperty.SetCookieFile(AFile: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIEFILE, PChar(AFile));
+end;
+
+procedure TSession.THTTPProperty.SetCookieJar(AFile: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIEJAR, PChar(AFile));
+end;
+
+procedure TSession.THTTPProperty.SetCookieSession(ACreate: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIESESSION, Longint(ACreate));
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
@@ -2470,6 +2656,11 @@ end;
 procedure TSession.TSecurityProperty.SetNetrcFile(AFile: string);
 begin
   curl_easy_setopt(FHandle, CURLOPT_NETRC_FILE, PChar(AFile));
+end;
+
+procedure TSession.TSecurityProperty.SetUnrestrictedAuth(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH, Longint(AEnable));
 end;
 
 constructor TSession.TSecurityProperty.Create(AHandle: CURL);
@@ -3442,6 +3633,7 @@ begin
   FSecurity := TSecurityProperty.Create(handle);
   FHTTP := THTTPProperty.Create(handle);
   FIMAP := TIMAPProperty.Create(handle);
+  FFTP := TFTPProperty.Create(handle);
 
   if Opened then
   begin
