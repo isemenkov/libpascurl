@@ -1706,8 +1706,8 @@ type
       end;
 
   protected
-    handle : CURL;
-    buffer : TStringStream;
+    FHandle : CURL;
+    FBuffer : TMemoryStream;
     FOptions : TOptionsProperty;
     FProtocol : TProtocolProperty;
     FTCP : TTCPProperty;
@@ -3129,7 +3129,7 @@ begin
   if Opened then
   begin
     New(url);
-    curl_easy_getinfo(session.handle, CURLINFO_EFFECTIVE_URL, @url);
+    curl_easy_getinfo(session.FHandle, CURLINFO_EFFECTIVE_URL, @url);
     Result := url;
   end;
 end;
@@ -3141,7 +3141,7 @@ begin
   if Opened then
   begin
     New(url);
-    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_URL, @url);
+    curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_URL, @url);
     Result := url;
   end;
 end;
@@ -3153,7 +3153,7 @@ begin
   if Opened then
   begin
     New(content_type);
-    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_TYPE, @content_type);
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_TYPE, @content_type);
     Result := content_type;
   end;
 end;
@@ -3165,7 +3165,7 @@ begin
   if Opened then
   begin
     New(ip);
-    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_IP, @ip);
+    curl_easy_getinfo(session.FHandle, CURLINFO_PRIMARY_IP, @ip);
     Result := ip;
   end;
 end;
@@ -3177,7 +3177,7 @@ begin
   if Opened then
   begin
     New(ip);
-    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_IP, @ip);
+    curl_easy_getinfo(session.FHandle, CURLINFO_LOCAL_IP, @ip);
     Result := ip;
   end;
 end;
@@ -3188,16 +3188,24 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_RESPONSE_CODE, @code);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RESPONSE_CODE, @code);
     Result := TStatusCode(code);
   end;
 end;
 
 function TSessionInfo.GetContent: string;
+var
+  ContentLength : Longint;
+  ContentString : string;
 begin
   if Opened then
   begin
-    Result := session.buffer.DataString;
+    ContentLength := Length(string(session.FBuffer.Memory));
+    SetLength(ContentString, ContentLength);
+    //Result := string(session.FBuffer.Memory);
+    Move(PChar(session.FBuffer.Memory), PChar(ContentString)[0], ContentLength);
+    Result := ContentString;
+    //Result := IntToStr(ContentLength);
   end;
 end;
 
@@ -3207,7 +3215,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_SSL_VERIFYRESULT, @verify);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SSL_VERIFYRESULT, @verify);
     Result := (verify = 0);
   end;
 end;
@@ -3218,7 +3226,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_PROXY_SSL_VERIFYRESULT, @verify);
+    curl_easy_getinfo(session.FHandle, CURLINFO_PROXY_SSL_VERIFYRESULT, @verify);
     Result := Boolean(verify);
   end;
 end;
@@ -3229,7 +3237,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_HTTP_CONNECTCODE, @code);
+    curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_CONNECTCODE, @code);
     Result := TStatusCode(code);
   end;
 end;
@@ -3240,7 +3248,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_HTTP_VERSION, @ver);
+    curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_VERSION, @ver);
     Result := HTTPVersionCode(ver);
   end;
 end;
@@ -3251,7 +3259,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_COUNT, @count);
+    curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_COUNT, @count);
     Result := count;
   end;
 end;
@@ -3262,7 +3270,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_SIZE_UPLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SIZE_UPLOAD_T, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3273,7 +3281,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_SIZE_DOWNLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SIZE_DOWNLOAD_T, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3284,7 +3292,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3295,7 +3303,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_SPEED_UPLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SPEED_UPLOAD_T, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3306,7 +3314,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_HEADER_SIZE, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_HEADER_SIZE, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3317,7 +3325,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_REQUEST_SIZE, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_REQUEST_SIZE, @bytes);
     Result := TDataSize.Create(bytes);
   end;
 end;
@@ -3328,7 +3336,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @bytes);
     Result := bytes;
   end;
 end;
@@ -3339,7 +3347,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_CONTENT_LENGTH_UPLOAD_T, @bytes);
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD_T, @bytes);
     Result := bytes;
   end;
 end;
@@ -3350,7 +3358,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_NUM_CONNECTS, @num);
+    curl_easy_getinfo(session.FHandle, CURLINFO_NUM_CONNECTS, @num);
     Result := num;
   end;
 end;
@@ -3361,7 +3369,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_PRIMARY_PORT, @port);
+    curl_easy_getinfo(session.FHandle, CURLINFO_PRIMARY_PORT, @port);
     Result := port;
   end;
 end;
@@ -3372,7 +3380,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_LOCAL_PORT, @port);
+    curl_easy_getinfo(session.FHandle, CURLINFO_LOCAL_PORT, @port);
     Result := port;
   end;
 end;
@@ -3383,7 +3391,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_FILETIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_FILETIME_T, @time);
     Result := time_t(time);
   end;
 end;
@@ -3394,7 +3402,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_TOTAL_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3405,7 +3413,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_NAMELOOKUP_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3416,7 +3424,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_CONNECT_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3427,7 +3435,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_APPCONNECT_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_APPCONNECT_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3438,7 +3446,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_PRETRANSFER_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_PRETRANSFER_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3449,7 +3457,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_STARTTRANSFER_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_STARTTRANSFER_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3460,7 +3468,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_REDIRECT_TIME_T, @time);
+    curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_TIME_T, @time);
     Result := TTimeInterval.Create(time);
   end;
 end;
@@ -3471,7 +3479,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_RETRY_AFTER, @delay);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RETRY_AFTER, @delay);
     Result := TTimeInterval.Create(Double(delay), tiSeconds);
   end;
 end;
@@ -3480,7 +3488,7 @@ function TSessionInfo.GetOsErrno: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_OS_ERRNO, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_OS_ERRNO, @Result);
   end;
 end;
 
@@ -3488,7 +3496,7 @@ function TSessionInfo.GetLastSocket: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_LASTSOCKET, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_LASTSOCKET, @Result);
   end;
 end;
 
@@ -3496,7 +3504,7 @@ function TSessionInfo.GetActiveSocket: curl_socket_t;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_ACTIVESOCKET, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_ACTIVESOCKET, @Result);
   end;
 end;
 
@@ -3507,7 +3515,7 @@ begin
   if Opened then
   begin
     New(path);
-    curl_easy_getinfo(session.handle, CURLINFO_FTP_ENTRY_PATH, @path);
+    curl_easy_getinfo(session.FHandle, CURLINFO_FTP_ENTRY_PATH, @path);
     Result := path;
   end;
 end;
@@ -3518,7 +3526,7 @@ var
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_CONDITION_UNMET, @unmet);
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONDITION_UNMET, @unmet);
     Result := Boolean(unmet);
   end;
 end;
@@ -3530,7 +3538,7 @@ begin
   if Opened then
   begin
     New(id);
-    curl_easy_getinfo(session.handle, CURLINFO_RTSP_SESSION_ID, @id);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_SESSION_ID, @id);
     Result := id;
   end;
 end;
@@ -3539,7 +3547,7 @@ function TSessionInfo.GetRTSPClientCSeq: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_RTSP_CLIENT_CSEQ, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_CLIENT_CSEQ, @Result);
   end;
 end;
 
@@ -3547,7 +3555,7 @@ function TSessionInfo.GetRTSPServerCSeq: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_RTSP_SERVER_CSEQ, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_SERVER_CSEQ, @Result);
   end;
 end;
 
@@ -3555,7 +3563,7 @@ function TSessionInfo.GetRTSPReceivedCSeq: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.handle, CURLINFO_RTSP_CSEQ_RECV, @Result);
+    curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_CSEQ_RECV, @Result);
   end;
 end;
 
@@ -3566,7 +3574,7 @@ begin
   if Opened then
   begin
     New(sc);
-    curl_easy_getinfo(session.handle, CURLINFO_SCHEME, @sc);
+    curl_easy_getinfo(session.FHandle, CURLINFO_SCHEME, @sc);
     Result := sc;
   end;
 end;
@@ -3576,8 +3584,8 @@ begin
   if s.Opened then
   begin
     Self.session := s;
-    curl_easy_setopt(session.handle, CURLOPT_ERRORBUFFER, PChar(errorBuffer));
-    hasInfo := (curl_easy_perform(session.handle) = CURLE_OK);
+    curl_easy_setopt(session.FHandle, CURLOPT_ERRORBUFFER, PChar(errorBuffer));
+    hasInfo := (curl_easy_perform(session.FHandle) = CURLE_OK);
   end;
 end;
 
@@ -3591,7 +3599,8 @@ begin
     Result := TSession(data).FDownloadFunction(ptr, size);
   end else
   begin
-    Result := TSession(data).Write(ptr, size, nmemb);
+    //Result := TSession(data).Write(ptr, size, nmemb);
+    Result := TSession(data).FBuffer.Write(Pointer(ptr), size * nmemb);
   end;
 end;
 
@@ -3609,8 +3618,7 @@ end;
 
 function TSession.Write(ptr: PChar; size: LongWord; nmemb: LongWord): LongWord;
 begin
-  buffer.WriteString(string(ptr));
-  Result := size * nmemb;
+  Result := FBuffer.Write(ptr, nmemb);
 end;
 
 function TSession.Read(buf: PChar; size: LongWord; nitems: LongWord): LongWord;
@@ -3622,23 +3630,23 @@ constructor TSession.Create;
 begin
   inherited Create;
 
-  handle := curl_easy_init;
-  buffer := TStringStream.Create('');
+  FHandle := curl_easy_init;
+  FBuffer := TMemoryStream.Create;
 
-  FOptions := TOptionsProperty.Create(handle);
-  FProtocol := TProtocolProperty.Create(handle);
-  FTCP := TTCPProperty.Create(handle);
-  FProxy := TProxyProperty.Create(handle);
-  FDNS := TDNSProperty.Create(handle);
-  FSecurity := TSecurityProperty.Create(handle);
-  FHTTP := THTTPProperty.Create(handle);
-  FIMAP := TIMAPProperty.Create(handle);
-  FFTP := TFTPProperty.Create(handle);
+  FOptions := TOptionsProperty.Create(FHandle);
+  FProtocol := TProtocolProperty.Create(FHandle);
+  FTCP := TTCPProperty.Create(FHandle);
+  FProxy := TProxyProperty.Create(FHandle);
+  FDNS := TDNSProperty.Create(FHandle);
+  FSecurity := TSecurityProperty.Create(FHandle);
+  FHTTP := THTTPProperty.Create(FHandle);
+  FIMAP := TIMAPProperty.Create(FHandle);
+  FFTP := TFTPProperty.Create(FHandle);
 
   if Opened then
   begin
-    curl_easy_setopt(handle, CURLOPT_WRITEDATA, Pointer(Self));
-    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION,
+    curl_easy_setopt(FHandle, CURLOPT_WRITEDATA, Pointer(Self));
+    curl_easy_setopt(FHandle, CURLOPT_WRITEFUNCTION,
       @TSession.WriteFunctionCallback);
     FProtocol.FollowRedirect := True;
   end;
@@ -3646,34 +3654,34 @@ end;
 
 destructor TSession.Destroy;
 begin
-  curl_easy_cleanup(handle);
-  FreeAndNil(buffer);
+  curl_easy_cleanup(FHandle);
+  FreeAndNil(FBuffer);
 
   inherited Destroy;
 end;
 
 function TSession.IsOpened: Boolean;
 begin
-  Result := {%H-}LongWord(handle) <> 0;
+  Result := FHandle <> Pointer(0);
 end;
 
 procedure TSession.SetUrl(url: string);
 begin
   if Opened then
   begin
-    buffer.Size := 0;
-    curl_easy_setopt(handle, CURLOPT_URL, PChar(url));
+    FBuffer.Clear;
+    curl_easy_setopt(FHandle, CURLOPT_URL, PChar(url));
   end;
 end;
 
 procedure TSession.SetLocalPort(APort: Word);
 begin
-  curl_easy_setopt(handle, CURLOPT_LOCALPORT, Longint(APort));
+  curl_easy_setopt(FHandle, CURLOPT_LOCALPORT, Longint(APort));
 end;
 
 procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
-  curl_easy_setopt(handle, CURLOPT_LOCALPORTRANGE, ARange);
+  curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
 end;
 
 initialization

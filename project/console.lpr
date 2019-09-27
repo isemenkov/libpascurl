@@ -32,7 +32,7 @@ procedure TApplication.DoRun;
 var
   ErrorMsg: String;
   NonOptions : TStringList;
-  ShortOptions : string = 'hs';
+  ShortOptions : string = 'h';
   LongOptions : array [1..2] of string = ('help', 'show-content');
 begin
   ErrorMsg:=CheckOptions(ShortOptions, LongOptions);
@@ -67,7 +67,7 @@ begin
     writeln('IP: ':20,                 session_info.PimaryIP);
     writeln('Total time, ms: ':20,     session_info.TotalTime.Format(tiMicroseconds, '0.##'));
 
-    if HasOption('s', 'show-content') then
+    if HasOption('show-content') then
     begin
       writeln('==== Content ====');
       writeln(session_info.Content);
@@ -95,7 +95,7 @@ end;
 procedure TApplication.WriteHelp;
 begin
   writeln('-h --help':20,         ' show this help');
-  writeln('-s --show-content':20, ' print content');
+  writeln('   --show-content':20, ' print content');
 end;
 
 procedure TApplication.ProcessNonOptions(AParams: TStringList);
