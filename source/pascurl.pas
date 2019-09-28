@@ -306,51 +306,253 @@ type
   );
 
   TFTPStatusCode = (
-  (**
-   * 1xx Positive Preliminary reply
-   *
-   * The requested action is being initiated; expect another reply before
-   * proceeding with a new command. (The user-process sending another command
-   * before the completion reply would be in violation of protocol; but
-   * server-FTP processes should queue any commands that arrive while a
-   * preceding command is in progress.) This type of reply can be used to
-   * indicate that the command was accepted and the user-process may now pay
-   * attention to the data connections, for implementations where simultaneous
-   * monitoring is difficult. The server-FTP process may send at most, one 1xx
-   * reply per command.
-   *)
+    (**
+     * 1xx Positive Preliminary reply
+     *
+     * The requested action is being initiated; expect another reply before
+     * proceeding with a new command. (The user-process sending another command
+     * before the completion reply would be in violation of protocol; but
+     * server-FTP processes should queue any commands that arrive while a
+     * preceding command is in progress.) This type of reply can be used to
+     * indicate that the command was accepted and the user-process may now pay
+     * attention to the data connections, for implementations where simultaneous
+     * monitoring is difficult. The server-FTP process may send at most, one 1xx
+     * reply per command.
+     *)
 
-   (**
-    * The requested action is being initiated, expect another reply before
-    * proceeding with a new command.
-    *)
+     (**
+      * The requested action is being initiated, expect another reply before
+      * proceeding with a new command.
+      *)
     FTP_REQUEST_INIT_WAIT_NEXT_RESPONSE                  = 100,
 
-   (**
-    * Restart marker replay . In this case, the text is exact and not left to
-    * the particular implementation; it must read: MARK yyyy = mmmm where yyyy
-    * is User-process data stream marker, and mmmm server's equivalent marker
-    * (note the spaces between markers and "=").
-    *)
+    (**
+     * Restart marker replay. In this case, the text is exact and not left to
+     * the particular implementation; it must read: MARK yyyy = mmmm where yyyy
+     * is User-process data stream marker, and mmmm server's equivalent marker
+     * (note the spaces between markers and "=").
+     *)
     FTP_RESTART_MARKER_REPLY                             = 110,
 
-   (**
-    * Service ready in nnn minutes.
-    *)
+    (**
+     * Service ready in nnn minutes.
+     *
+     * This indicates that the server accepted and has begun the processing of
+     * the command. The client should wait until another response is received
+     * before proceeding.
+     *)
     FTP_BEGUN_PROCESSING_WAIT_NEXT_RESPONSE              = 120,
 
-   (**
-    * Data connection already open; transfer starting.
-    *)
-    FTP_DATA_CONNECTION_ALREADY_OPENED                   = 125
+    (**
+     * Data connection already open; transfer starting.
+     *
+     * The server may use this code in response to a command initiating a file
+     * transfer if the data connection is already established. After sending or
+     * receiving this response, the server or client may begin sending data over
+     * the data connection.
+     *)
+     FTP_DATA_CONNECTION_ALREADY_OPENED                  = 125,
+
+    (**
+     * File status okay; about to open data connection.
+     *
+     * The server may use this reply code in response to a command initiating a
+     * file transfer before establishing the data connection over which the file
+     * transfer will occur. A PASV or PORT command should have been issued prior
+     * to the command receiving the 150 response code. After sending or
+     * receiving this response, the server/client may begin sending data over
+     * the data connection.
+     *)
+    FTP_INIT_FILE_TRANSFER                               = 150,
+
+    (**
+     * 2xx Positive Completion reply
+     *
+     * The requested action has been successfully completed. A new request may
+     * be initiated.
+     *)
+
+    (**
+     * The requested action has been successfully completed.
+     *
+     * A server issues a 200 response code if a command is accepted and
+     * successfully processed.
+     *)
+    FTP_SUCCESS_COMPLETE                                 = 200,
+
+    (**
+     * Command not implemented, superfluous at this site.
+     *
+     * A 202 response is meant to indicate that the command is recognized but
+     * not implemented by the server because it has no use or meaning to the
+     * server. It is considered a successful reply because the client can
+     * continue its FTP transaction as if the command was successfully completed
+     * on the server.
+     *)
+    FTP_COMMAND_NOT_IMPLEMENTED                          = 202,
+
+    (**
+     * System status, or system help reply.
+     *
+     * A 211 code is given in response to commands asking for status or help
+     * from the server. The information contained along with the response is
+     * intended for user consumption and rarely has a meaning to the client
+     * process itself.
+     *)
+    FTP_SYSTEM_STATUS                                    = 211,
+
+    (**
+     * Directory status.
+     *
+     * A 212 code is given in response to a command asking for directory status
+     * information. A STAT command that includes a path parameter is one command
+     * where a 212 response would be expected.
+     *)
+    FTP_DIRECTORY_STATUS_INFORMATION                     = 212,
+
+    (**
+     * File status.
+     *
+     * A 213 code may be given in response to a command asking for status
+     * information on a file transfer. A STAT command issued during a file
+     * transfer is one command where a 213 response code would be expected.
+     *)
+    FTP_FILE_TRANSFER_STATUS_INFORMATION                 = 213,
+
+    (**
+     * Help message. Explains how to use the server or the meaning of a
+     * particular non-standard command. This reply is useful only to the human
+     * user.
+     *
+     * A 214 code is used in response to the HELP command to provide information
+     * on how to use the server or the meaning of a particular non-standard
+     * command. This response is useful only to the human user and commonly
+     * contains a list of commands recognized by the server.
+     *)
+    FTP_HELP_INFORMATION                                 = 214,
+
+    (**
+     * NAME system type. Where NAME is an official system name from the registry
+     * kept by IANA.
+     *
+     * A 215 code is given in response to the SYST command. The response should
+     * contain an official system name from the list in the Assigned Numbers
+     *)
+    FTP_SYSTEM_NAME                                      = 215,
+
+    (**
+     * Service ready for new user.
+     *
+     * A 220 code is sent in response to a new user connecting to the FTP server
+     * to indicate that the server is ready for the new client. It can also be
+     * sent in response to a REIN command, which is meant to reset the
+     * connection to the moment the client first connected to the server.
+     *)
+    FTP_SERVER_READY                                     = 220,
+
+    (**
+     * Service closing control connection.
+     *
+     * A 221 code is sent over the control connection in response to the
+     * client's QUIT command. It is sent immediately before the control
+     * connection is closed by the server.
+     *)
+    FTP_DATA_CONNECTION_CLOSED                           = 221,
+
+    (**
+     * Data connection open; no transfer in progress.
+     *
+     * A 225 code is sent in response to the ABOR command when the data
+     * connection is still open but there is no file transfer in progress to
+     * abort.
+     *)
+    FTP_DATA_CONNECTION_OPEN_NO_TRANSFER                 = 225,
+
+    (**
+     * Closing data connection. Requested file action successful (for example,
+     * file transfer or file abort).
+     *
+     * A 226 reply code is sent by the server before closing the data connection
+     * after successfully processing the previous client command affecting the
+     * data connection. In most cases, it signals the completion of a file
+     * transfer. It can also be sent in response to the ABOR command, which
+     * signals that the current file transfer was successfully terminated.
+     *)
+    FTP_DATA_CONNECTION_CLOSE                            = 226,
+
+    (**
+     * Entering Passive Mode (h1,h2,h3,h4,p1,p2).
+     *
+     * A 227 code is the response given by the server to the PASV command. It
+     * indicates that the server is ready for the client to connect to it for
+     * the purpose of establishing a data connection. The format of this
+     * response is important because the client software must be capable of
+     * parsing out the connection information it contains. The values h1 to h4
+     * are the IP addresses that the server is listening on.
+     *)
+    FTP_ENTERING_PASSIVE_MODE                            = 227,
+
+    (**
+     * Entering Long Passive Mode (long address, port).
+     *)
+    FTP_ENTERING_LONG_PASSIVE_MODE                       = 228,
+
+    (**
+     * Entering Extended Passive Mode (|||port|).
+     *)
+    FTP_ENTERING_EXTENDED_PASSIVE_MODE                   = 229,
+
+    (**
+     * User logged in, proceed. Logged out if appropriate.
+     *
+     * The server sends a 230 code in response to a command that has provided
+     * sufficient credentials to the server to grant the user access to the FTP
+     * server.
+     *)
+    FTP_USER_LOGGEDIN                                    = 230,
+
+    (**
+     * User logged out; service terminated.
+     *)
+    FTP_USER_LOGGEDOUT                                   = 231,
+
+    (**
+     * Logout command noted, will complete when transfer done.
+     *
+     * A 232 code may be sent in response to a USER command if the server is
+     * willing to allow the user access based on previously exchanged security
+     * data.
+     *)
+    FTP_LOGOUT_NOTED                                     = 232,
+
+    (**
+     * Specifies that the server accepts the authentication mechanism specified
+     * by the client, and the exchange of security data is complete. A higher
+     * level nonstandard code created by Microsoft.
+     *
+     * A 234 code is sent in response to the AUTH command when the requested
+     * security mechanism is accepted and negotiation of the secured connection
+     * can begin.
+     *)
+    FTP_SECURITY_ACCEPTED_NEGOTIATION_CONNECTION_BEGIN   = 234,
+
+    (**
+     * Requested file action okay, completed.
+     *
+     * A 250 code is sent in response to the successful completion of a file
+     * related command or user working directory related command.
+     *)
+    FTP_RESPONSE_SUCCESSFUL_COMPLETION                   = 250,
+
+    (**
+     * "PATHNAME" created.
+     *
+     * A 257 code is used as a successful response to the creation of a new
+     * directory from the MKD command or in response to a PWD command.
+     *)
+    FTP_DIRECTORY_CREATE_SUCCESSFUL                      = 257
 
 
-  (**
-   * 2xx Positive Completion reply
-   *
-   * The requested action has been successfully completed. A new request may be
-   * initiated.
-   *)
 
   (**
    * 3xx Positive Intermediate reply
