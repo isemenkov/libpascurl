@@ -2345,6 +2345,7 @@ type
   protected
     FHandle : CURL;
     FBuffer : TMemoryStream;
+    FUploadOffset : Int64;
     FOptions : TOptionsProperty;
     FProtocol : TProtocolProperty;
     FTCP : TTCPProperty;
@@ -4258,8 +4259,19 @@ begin
 end;
 
 function TSession.Read(buf: PChar; size: LongWord; nitems: LongWord): LongWord;
+var
+  dataSize : Int64;
 begin
   Result := 0;
+  if FBuffer.Size > 0 then
+  begin
+    dataSize := size * nitems;
+    if (dataSize > FBuffer.Size) then
+      dataSize := FBuffer.Size;
+    Move(PChar(FBuffer.Memory)[FUploadOffset], buf[0], dataSize);
+    FUploadOffset := FUploadOffset + dataSize;
+    Result := dataSize;
+  end;
 end;
 
 constructor TSession.Create;
@@ -4268,6 +4280,7 @@ begin
 
   FHandle := curl_easy_init;
   FBuffer := TMemoryStream.Create;
+  FUploadOffset := 0;
 
   FOptions := TOptionsProperty.Create(FHandle);
   FProtocol := TProtocolProperty.Create(FHandle);
@@ -4284,6 +4297,9 @@ begin
     curl_easy_setopt(FHandle, CURLOPT_WRITEDATA, Pointer(Self));
     curl_easy_setopt(FHandle, CURLOPT_WRITEFUNCTION,
       @TSession.WriteFunctionCallback);
+    curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self));
+    curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
+      @TSession.ReadFunctionCallback);
     FProtocol.FollowRedirect := True;
   end;
 end;
