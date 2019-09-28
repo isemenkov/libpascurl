@@ -219,50 +219,82 @@ type
 
   TProtocols = set of TProtocol;
 
-  TStatusCode = (
-    HTTP_CONTINUE                             = 100,
-    HTTP_SWITCHING_PROTOCOL                   = 101,
+  THTTPStatusCode = (
+    HTTP_CONTINUE                                        = 100,
+    HTTP_SWITCHING_PROTOCOL                              = 101,
+    HTTP_CHECKPOINT                                      = 103, { UNOFFICIAL CODE }
 
-    HTTP_OK                                   = 200,
-    HTTP_CREATED                              = 201,
-    HTTP_ACCEPTED                             = 202,
-    HTTP_NON_AUTHORITATIVE_INFORMATION        = 203,
-    HTTP_NO_CONTENT                           = 204,
-    HTTP_RESET_CONTENT                        = 205,
-    HTTP_PARTIAL_CONTENT                      = 206,
+    HTTP_OK                                              = 200,
+    HTTP_CREATED                                         = 201,
+    HTTP_ACCEPTED                                        = 202,
+    HTTP_NON_AUTHORITATIVE_INFORMATION                   = 203,
+    HTTP_NO_CONTENT                                      = 204,
+    HTTP_RESET_CONTENT                                   = 205,
+    HTTP_PARTIAL_CONTENT                                 = 206,
+    HTTP_MULTI_STATUS                                    = 207,
+    HTTP_ALREADY_REPORTED                                = 208,
+    HTTP_THIS_IS_FINE__APACHE_WEB_SERVER                 = 218, { UNOFFICIAL CODE }
+    HTTP_IM_USED                                         = 226,
 
-    HTTP_MULTIPLE_CHOICES                     = 300,
-    HTTP_MOVED_PERMANENTLY                    = 301,
-    HTTP_FOUND                                = 302,
-    HTTP_SEE_OTHER                            = 303,
-    HTTP_NOT_MODIFIED                         = 304,
-    HTTP_USE_PROXY                            = 305,
-    HTTP_TEMPORARY_REDIRECT                   = 307,
+    HTTP_MULTIPLE_CHOICES                                = 300,
+    HTTP_MOVED_PERMANENTLY                               = 301,
+    HTTP_FOUND                                           = 302,
+    HTTP_SEE_OTHER                                       = 303,
+    HTTP_NOT_MODIFIED                                    = 304,
+    HTTP_USE_PROXY                                       = 305,
+    HTTP_TEMPORARY_REDIRECT                              = 307,
+    HTTP_PERMANENT_REDIRECT                              = 308,
 
-    HTTP_BAD_REQUEST                          = 400,
-    HTTP_UNAUTHORIZED                         = 401,
-    HTTP_FORBIDDEN                            = 403,
-    HTTP_NOT_FOUND                            = 404,
-    HTTP_METHOD_NOT_ALLOWED                   = 405,
-    HTTP_NOT_ACCEPTABLE                       = 406,
-    HTTP_PROXY_AUTHENTIFICATION_REQUIRED      = 407,
-    HTTP_REQUEST_TIMEOUT                      = 408,
-    HTTP_CONFLICT                             = 409,
-    HTTP_GONE                                 = 410,
-    HTTP_LENGTH_REQUIRED                      = 411,
-    HTTP_PRECONDITION_FAILED                  = 412,
-    HTTP_REQUEST_ENTITY_TOO_LARGE             = 413,
-    HTTP_REQUEST_URL_TOO_LONG                 = 414,
-    HTTP_UNSUPPORTED_MEDIA_TYPE               = 415,
-    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE      = 416,
-    HTTP_EXPECTATION_FAILED                   = 417,
+    HTTP_BAD_REQUEST                                     = 400,
+    HTTP_UNAUTHORIZED                                    = 401,
+    HTTP_FORBIDDEN                                       = 403,
+    HTTP_NOT_FOUND                                       = 404,
+    HTTP_METHOD_NOT_ALLOWED                              = 405,
+    HTTP_NOT_ACCEPTABLE                                  = 406,
+    HTTP_PROXY_AUTHENTIFICATION_REQUIRED                 = 407,
+    HTTP_REQUEST_TIMEOUT                                 = 408,
+    HTTP_CONFLICT                                        = 409,
+    HTTP_GONE                                            = 410,
+    HTTP_LENGTH_REQUIRED                                 = 411,
+    HTTP_PRECONDITION_FAILED                             = 412,
+    HTTP_REQUEST_ENTITY_TOO_LARGE                        = 413,
+    HTTP_REQUEST_URL_TOO_LONG                            = 414,
+    HTTP_UNSUPPORTED_MEDIA_TYPE                          = 415,
+    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE                 = 416,
+    HTTP_EXPECTATION_FAILED                              = 417,
+    HTTP_IM_A_TEAPOT                                     = 418,
+    HTTP_PAGE_EXPIRED__LARAVEL_FRAMEWORK                 = 419, { UNOFFICIAL CODE }
+    HTTP_METHOD_FAILURE__SPRING_FRAMEWORK                = 420, { UNOFFICIAL CODE }
+    HTTP_MISDIRECTED_REQUEST                             = 421,
+    HTTP_UNPROCESSABLE_ENTITY                            = 422,
+    HTTP_LOCKED                                          = 423,
+    HTTP_FAILED_DEPENDENCY                               = 424,
+    HTTP_TOO_EARLY                                       = 425,
+    HTTP_UPGRADE_REQUIRED                                = 426,
+    HTTP_PRECONDITION_REQUIRED                           = 428,
+    HTTP_TOO_MANY_REQUESTS                               = 429,
+    HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE__SHOPIFY        = 430, { UNOFFICIAL CODE }
+    HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE                 = 431,
+    HTTP_BLOCKED_BY_WINDOWS_PARENTAL_CONTROLS__MICROSOFT = 450, { UNOFFICIAL CODE }
+    HTTP_UNAVAILABLE_FOR_LEGAL_REASONS                   = 451,
+    HTTP_INVALID_TOKEN__ESRI                             = 498, { UNOFFICIAL CODE }
+    HTTP_TOKEN_REQUIRED__ESRI                            = 499, { UNOFFICIAL CODE }
 
-    HTTP_INTERNAL_SERVER_ERROR                = 500,
-    HTTP_NOT_IMPLEMENTED                      = 501,
-    HTTP_BAD_GETEWAY                          = 502,
-    HTTP_SERVICE_UNAVAIBLE                    = 503,
-    HTTP_GATEWAY_TIMEOUT                      = 504,
-    HTTP_VERSION_NOT_SUPPORTED                = 505
+    HTTP_INTERNAL_SERVER_ERROR                           = 500,
+    HTTP_NOT_IMPLEMENTED                                 = 501,
+    HTTP_BAD_GETEWAY                                     = 502,
+    HTTP_SERVICE_UNAVAIBLE                               = 503,
+    HTTP_GATEWAY_TIMEOUT                                 = 504,
+    HTTP_VERSION_NOT_SUPPORTED                           = 505,
+    HTTP_VARIANT_ALSO_NEGOTIATES                         = 506,
+    HTTP_INSUFFICIENT_STORAGE                            = 507,
+    HTTP_LOOP_DETECTED                                   = 508,
+    HTTP_BANDWIDTH_LIMIT_EXCEEDED__APACHE_WEB_SERVER     = 509, { UNOFFICIAL CODE }
+    HTTP_NOT_EXTENDED                                    = 510,
+    HTTP_NETWORK_AUTHENTICATION_REQUIRED                 = 511,
+    HTTP_INVALID_SSL_CERTIFICATE__CLOUDFLARE             = 526, { UNOFFICIAL CODE }
+    HTTP_SITE_IS_FROZEN__PATHEON                         = 530, { UNOFFICIAL CODE }
+    HTTP_NETWORK_READ_TIMEOUT_ERROR                      = 598  { UNOFFICIAL CODE }
   );
 
   HTTPVersionCode = (
@@ -271,6 +303,102 @@ type
     HTTP_VERSION_1_1                  = Longint(CURL_HTTP_VERSION_1_1),
     HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0),
     HTTP_VERSION_3_0                  = Longint(CURL_HTTP_VERSION_3)
+  );
+
+  TFTPStatusCode = (
+  (**
+   * 1xx Positive Preliminary reply
+   *
+   * The requested action is being initiated; expect another reply before
+   * proceeding with a new command. (The user-process sending another command
+   * before the completion reply would be in violation of protocol; but
+   * server-FTP processes should queue any commands that arrive while a
+   * preceding command is in progress.) This type of reply can be used to
+   * indicate that the command was accepted and the user-process may now pay
+   * attention to the data connections, for implementations where simultaneous
+   * monitoring is difficult. The server-FTP process may send at most, one 1xx
+   * reply per command.
+   *)
+
+   (**
+    * The requested action is being initiated, expect another reply before
+    * proceeding with a new command.
+    *)
+    FTP_REQUEST_INIT_WAIT_NEXT_RESPONSE                  = 100,
+
+   (**
+    * Restart marker replay . In this case, the text is exact and not left to
+    * the particular implementation; it must read: MARK yyyy = mmmm where yyyy
+    * is User-process data stream marker, and mmmm server's equivalent marker
+    * (note the spaces between markers and "=").
+    *)
+    FTP_RESTART_MARKER_REPLY                             = 110,
+
+   (**
+    * Service ready in nnn minutes.
+    *)
+    FTP_BEGUN_PROCESSING_WAIT_NEXT_RESPONSE              = 120,
+
+   (**
+    * Data connection already open; transfer starting.
+    *)
+    FTP_DATA_CONNECTION_ALREADY_OPENED                   = 125
+
+
+  (**
+   * 2xx Positive Completion reply
+   *
+   * The requested action has been successfully completed. A new request may be
+   * initiated.
+   *)
+
+  (**
+   * 3xx Positive Intermediate reply
+   *
+   * The command has been accepted, but the requested action is being held in
+   * abeyance, pending receipt of further information. The user should send
+   * another command specifying this information. This reply is used in command
+   * sequence groups.
+   *)
+
+  (**
+   * 4xx Transient Negative Completion reply
+   *
+   * The command was not accepted and the requested action did not take place,
+   * but the error condition is temporary and the action may be requested again.
+   * The user should return to the beginning of the command sequence, if any. It
+   * is difficult to assign a meaning to "transient", particularly when two
+   * distinct sites (Server- and User-processes) have to agree on the
+   * interpretation. Each reply in the 4xx category might have a slightly
+   * different time value, but the intent is that the user-process is encouraged
+   * to try again. A rule of thumb in determining if a reply fits into the 4xx
+   * or the 5xx (Permanent Negative) category is that replies are 4xx if the
+   * commands can be repeated without any change in command form or in
+   * properties of the User or Server (e.g., the command is spelled the same
+   * with the same arguments used; the user does not change his file access or
+   * user name; the server does not put up a new implementation.)
+   *)
+
+  (**
+   * 5xx Permanent Negative Completion reply
+   *
+   * The command was not accepted and the requested action did not take place.
+   * The User-process is discouraged from repeating the exact request (in the
+   * same sequence). Even some "permanent" error conditions can be corrected, so
+   * the human user may want to direct his User-process to reinitiate the
+   * command sequence by direct action at some point in the future (e.g., after
+   * the spelling has been changed, or the user has altered his directory
+   * status.)
+   *)
+
+  (**
+   * 6xx Protected reply
+   *
+   * The RFC 2228 introduced the concept of protected replies to increase
+   * security over the FTP communications. The 6xx replies are Base64 encoded
+   * protected messages that serves as responses to secure commands. When
+   * properly decoded, these replies fall into the above categories.
+   *)
   );
 
   (**
@@ -1762,6 +1890,8 @@ type
     procedure SetLocalPort (APort : Word);
     procedure SetLocalPortRange (ARange : Longint);
   public
+    function ExtractProtocol (AUrl : string) : TProtocol;
+  public
     constructor Create;
     destructor Destroy; override;
 
@@ -1873,11 +2003,11 @@ type
     function GetContentType : string;
     function GetPrimaryIP : string;
     function GetLocalIP : string;
-    function GetResponseCode : TStatusCode;
+    function GetResponseCode : THTTPStatusCode;
     function GetContent : string;
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
-    function GetConnectResponseCode : TStatusCode;
+    function GetConnectResponseCode : THTTPStatusCode;
     function GetHttpVersion : HTTPVersionCode;
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
@@ -1967,7 +2097,7 @@ type
     (**
      * Get the last response code
      *)
-    property ResponseCode : TStatusCode read GetResponseCode;
+    property ResponseCode : THTTPStatusCode read GetResponseCode;
 
     (**
      * Get the response content
@@ -1991,7 +2121,7 @@ type
      *
      * Last received HTTP proxy response code to a CONNECT request.
      *)
-    property ConnectResponseCode : TStatusCode read GetConnectResponseCode;
+    property ConnectResponseCode : THTTPStatusCode read GetConnectResponseCode;
 
     (**
      * Get the HTTP version used in the connection
@@ -3182,14 +3312,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetResponseCode: TStatusCode;
+function TSessionInfo.GetResponseCode: THTTPStatusCode;
 var
   code : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_RESPONSE_CODE, @code);
-    Result := TStatusCode(code);
+    Result := THTTPStatusCode(code);
   end;
 end;
 
@@ -3229,14 +3359,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConnectResponseCode: TStatusCode;
+function TSessionInfo.GetConnectResponseCode: THTTPStatusCode;
 var
   code : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_CONNECTCODE, @code);
-    Result := TStatusCode(code);
+    Result := THTTPStatusCode(code);
   end;
 end;
 
@@ -3679,6 +3809,23 @@ end;
 procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
   curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
+end;
+
+function TSession.ExtractProtocol(AUrl: string): TProtocol;
+var
+  proto : TProtocol;
+  search, extract, protocolName : string;
+begin
+  search := LowerCase(Copy(AUrl, 1, Pos('://', AUrl) - 1));
+
+  for proto := Low(TProtocol) to High(TProtocol) do
+  begin
+    protocolName := GetEnumName(TypeInfo(TProtocol), Ord(proto));
+    extract := LowerCase(Copy(protocolName, Length('PROTOCOL_') + 1,
+      Length(protocolName) - Length('PROTOCOL_') + 1));
+    if extract = search then
+      Result := proto;
+  end;
 end;
 
 initialization
