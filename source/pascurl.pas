@@ -550,57 +550,364 @@ type
      * A 257 code is used as a successful response to the creation of a new
      * directory from the MKD command or in response to a PWD command.
      *)
-    FTP_DIRECTORY_CREATE_SUCCESSFUL                      = 257
+    FTP_DIRECTORY_CREATE_SUCCESSFUL                      = 257,
 
+    (**
+     * 3xx Positive Intermediate reply
+     *
+     * The command has been accepted, but the requested action is being held in
+     * abeyance, pending receipt of further information. The user should send
+     * another command specifying this information. This reply is used in command
+     * sequence groups.
+     *)
 
+    (**
+     * The command has been accepted, but the requested action is on hold,
+     * pending receipt of further information.
+     *)
+    FTP_ACCEPTED_REQUEST_HOLD                            = 300,
 
-  (**
-   * 3xx Positive Intermediate reply
-   *
-   * The command has been accepted, but the requested action is being held in
-   * abeyance, pending receipt of further information. The user should send
-   * another command specifying this information. This reply is used in command
-   * sequence groups.
-   *)
+    (**
+     * User name okay, need password.
+     *
+     * A 331 code is sent in response to the USER command when a password is
+     * required for the login to continue. It is considered as a positive
+     * intermediate response and the client should immediately respond with a
+     * PASS command.
+     *)
+    FTP_USERNAME_OK                                      = 331,
 
-  (**
-   * 4xx Transient Negative Completion reply
-   *
-   * The command was not accepted and the requested action did not take place,
-   * but the error condition is temporary and the action may be requested again.
-   * The user should return to the beginning of the command sequence, if any. It
-   * is difficult to assign a meaning to "transient", particularly when two
-   * distinct sites (Server- and User-processes) have to agree on the
-   * interpretation. Each reply in the 4xx category might have a slightly
-   * different time value, but the intent is that the user-process is encouraged
-   * to try again. A rule of thumb in determining if a reply fits into the 4xx
-   * or the 5xx (Permanent Negative) category is that replies are 4xx if the
-   * commands can be repeated without any change in command form or in
-   * properties of the User or Server (e.g., the command is spelled the same
-   * with the same arguments used; the user does not change his file access or
-   * user name; the server does not put up a new implementation.)
-   *)
+    (**
+     * Need account for login.
+     *
+     * A 332 code is sent in response to a login-related command where an
+     * account is required to continue the login process. It is considered as a
+     * positive intermediate response and the client should immediately follow
+     * with an ACCT command.
+     *)
+    FTP_NEED_ACCOUNT_TO_LOGIN                            = 332,
 
-  (**
-   * 5xx Permanent Negative Completion reply
-   *
-   * The command was not accepted and the requested action did not take place.
-   * The User-process is discouraged from repeating the exact request (in the
-   * same sequence). Even some "permanent" error conditions can be corrected, so
-   * the human user may want to direct his User-process to reinitiate the
-   * command sequence by direct action at some point in the future (e.g., after
-   * the spelling has been changed, or the user has altered his directory
-   * status.)
-   *)
+    (**
+     * Requested file action pending further information
+     *
+     * A 350 response code is sent by the server in response to a file-related
+     * command that requires further commands in order for the operation to be
+     * completed. The original FTP specification identifies two instances where
+     * this reply code can be used. The first is in response to a REST command,
+     * which would indicate that the server has received the restart marker and
+     * is pending the initiation of file transfer to resume the transfer at the
+     * marker point. The second is in positive response to the RNFR command
+     * where the server is waiting for an RNTOcommand to complete the file
+     * rename operation.
+     *)
+    FTP_NEED_INFORMATION                                 = 350,
 
-  (**
-   * 6xx Protected reply
-   *
-   * The RFC 2228 introduced the concept of protected replies to increase
-   * security over the FTP communications. The 6xx replies are Base64 encoded
-   * protected messages that serves as responses to secure commands. When
-   * properly decoded, these replies fall into the above categories.
-   *)
+    (**
+     * 4xx Transient Negative Completion reply
+     *
+     * The command was not accepted and the requested action did not take place,
+     * but the error condition is temporary and the action may be requested
+     * again. The user should return to the beginning of the command sequence,
+     * if any. It is difficult to assign a meaning to "transient", particularly
+     * when two distinct sites (Server- and User-processes) have to agree on the
+     * interpretation. Each reply in the 4xx category might have a slightly
+     * different time value, but the intent is that the user-process is
+     * encouraged to try again. A rule of thumb in determining if a reply fits
+     * into the 4xx or the 5xx (Permanent Negative) category is that replies are
+     * 4xx if the commands can be repeated without any change in command form or
+     * in properties of the User or Server (e.g., the command is spelled the
+     * same with the same arguments used; the user does not change his file
+     * access or user name; the server does not put up a new implementation.)
+     *)
+
+    (**
+     * The command was not accepted and the requested action did not take place,
+     * but the error condition is temporary and the action may be requested
+     * again.
+     *)
+    FTP_NOT_ACCEPTED                                     = 400,
+
+    (**
+     * Service not available, closing control connection. This may be a reply to
+     * any command if the service knows it must shut down.
+     *
+     * A 421 response code indicates that while the service is still running,
+     * the service is unavailable at the time of connection. It indicates that
+     * the server will be restarting as soon as it finishes processing pending
+     * operations (usually any file transfers currently in progress). It is
+     * considered a transient negative response, which means the client is
+     * encouraged to issue the same command again at a later time when it can be
+     * accepted.
+     *)
+    FTP_SERVICE_NOT_AVAILABLE                            = 421,
+
+    (**
+     * Can't open data connection.
+     *
+     * A 425 response code may be sent in response to any command requiring the
+     * usage of a data connection if the server is unable to open a data
+     * connection. This is considered a transient negative reply as it is
+     * considered to be a temporary condition. It may indicate that the server
+     * does not immediately have the resources available to open a data
+     * connection. In this case, the client is encouraged to restart the FTP
+     * transaction and try again.
+     *)
+    FTP_DATA_CONNECTION_NOT_AVAILABLE                    = 425,
+
+    (**
+     * Connection closed; transfer aborted.
+     *
+     * A 426 response code may be sent in response to any command requiring the
+     * usage of a data connection. It is considered a transient negative reply
+     * as it is considered to be a temporary condition. It is usually sent when
+     * the data connection is unexpectedly closed before the completion of a
+     * data transfer. In this case, the client is encouraged to restart the FTP
+     * transaction and try again.
+     *)
+    FTP_TRANSFER_ABORTED                                 = 426,
+
+    (**
+     * Invalid username or password
+     *)
+    FTP_INVALID_USERNAME_OR_PASSWORD                     = 430,
+
+    (**
+     * Requested host unavailable.
+     *)
+    FTP_HOST_UNAVAILABLE                                 = 434,
+
+    (**
+     * Requested file action not taken.
+     *
+     * A 450 response code may be sent in response to any command requiring the
+     * server to access a local file. It is a transient negative response as the
+     * error is considered a temporary one. It is usually sent when the server
+     * is unable to gain access to a required file at the time the command is
+     * received. In this case, the client is encouraged to restart the FTP
+     * transaction and try again.
+     *)
+    FTP_FILE_ACTION_ABORTED                              = 450,
+
+    (**
+     * Requested action aborted. Local error in processing.
+     *
+     * A 451 response code may be sent in response to any command initiating a
+     * file transfer. It is a transient negative response, which means the error
+     * condition is a temporary one. It is usually sent in response to the
+     * server encountering an unexpected local error when processing data it is
+     * transferring or receiving. In this case, the client is encouraged to
+     * restart the FTP transaction and try again.
+     *)
+    FTP_LOCAL_ERROR                                      = 451,
+
+    (**
+     * Requested action not taken. Insufficient storage space in system. File
+     * unavailable (e.g., file busy).
+     *
+     * A 452 response code may be given in response to any command requiring the
+     * server to store transferred data it receives from the client (a file
+     * upload). It is a transient negative response as the error is considered a
+     * temporary one. It is usually sent because the server does not have
+     * storage space to save the received data. In this case, the client is
+     * encouraged to restart the FTP transaction and try again.
+     *)
+    FTP_INSUFFICIENT_STORAGE_SPACE                       = 452,
+
+    (**
+     * 5xx Permanent Negative Completion reply
+     *
+     * The command was not accepted and the requested action did not take place.
+     * The User-process is discouraged from repeating the exact request (in the
+     * same sequence). Even some "permanent" error conditions can be corrected, so
+     * the human user may want to direct his User-process to reinitiate the
+     * command sequence by direct action at some point in the future (e.g., after
+     * the spelling has been changed, or the user has altered his directory
+     * status.)
+     *)
+
+    (**
+     * Syntax error, command unrecognized and the requested action did not take
+     * place. This may include errors such as command line too long.
+     *
+     * A 500 response code may be sent in response to any command that the
+     * server is unable to recognize. It is a permanent negative response, which
+     * means the client is discouraged from sending the command again since the
+     * server will respond with the same reply code. It usually means that the
+     * client has sent a command to the server that the server does not
+     * recognize. This may be due to an error in the spelling or formatting of
+     * the command itself or that the command is newer than the FTP
+     * implementation in place on the server or is a proprietary command of
+     * another server implementation.
+     *)
+    FTP_COMMAND_UNRECOGNIZED                             = 500,
+
+    (**
+     * Syntax error in parameters or arguments.
+     *
+     * A 501 response code may be sent in response to any command that requires
+     * or supports the optional use of a parameter or argument. It is a
+     * permanent negative response, which means the client is discouraged from
+     * sending the exact command and parameter(s) again since the server will
+     * respond with the same response code. It differs from the 500 response
+     * code in that the server recognizes the command present but is unable to
+     * take the requested action due to a syntax error in the parameter(s)
+     * present with the command. Sending the same command to the server with a
+     * corrected parameter may result in a different response code.
+     *)
+    FTP_PARAMETERS_SYNTAX_ERROR                          = 501,
+
+    (**
+     * Command not implemented.
+     *
+     * A 502 code may be sent in response to any FTP command that the server
+     * does not support. It is a permanent negative reply, which means the
+     * client is discouraged from sending the command again since the server
+     * will respond with the same reply code. The original FTP specification
+     * dictates a minimum implementation for all FTP servers with a list of
+     * required commands. Because of this, a 502 reply code should not be sent
+     * in response to a required command.
+     *)
+    FTP_COMMAND_NOT_SUPPORT                              = 502,
+
+    (**
+     * Bad sequence of commands.
+     *
+     * A 503 response code may be sent in response to any command that requires
+     * the successful processing of previous commands first. It is a permanent
+     * negative reply, which means the client is discouraged from immediately
+     * sending the command again since the server will respond with the same
+     * reply code. For example, a file rename requires a successful RNFR command
+     * before the RNTO command can be sent. Sending the RNTOcommand first will
+     * result in a 503 response code.
+     *)
+    FTP_COMMAND_BAD_SEQUENCE                             = 503,
+
+    (**
+     * Command not implemented for that parameter.
+     *
+     * A 504 response code can be sent in response to any command using a
+     * parameter that is not supported by the server. It is a permanent negative
+     * response, which means the client is discouraged from sending the command
+     * again since the server will respond with the same response code. Issuing
+     * the same command with a different parameter may result in a different
+     * response code.
+     *)
+    FTP_PARAMETER_NOT_SUPPORTED_BY_SERVER                = 504,
+
+    (**
+     * Not logged in.
+     *
+     * A 530 response code may be sent in response to any command that requires
+     * a user to log in before the command is processed. Some servers may reply
+     * to all commands with a 530 response code until the client logs in.
+     *)
+    FTP_NEED_LOGIN                                       = 530,
+
+    (**
+     * Need account for storing files.
+     *
+     * A 532 response code may be sent in response to any command involving the
+     * storage or manipulation of files on the server. It is a permanent
+     * negative response, which means the client is discouraged from sending the
+     * command again since the server will respond with the same response code.
+     * Providing account information first and sending the command again can
+     * result in a different response code.
+     *)
+    FTP_NEED_ACCOUNT_FOR_STORIG_FILES                    = 532,
+
+    (**
+     * Could Not Connect to Server - Policy Requires SSL
+     *
+     * A 534 response code can be issued in response to any command that the
+     * server is unwilling to process due to its security policy. It is a
+     * permanent negative response, which means the client is discouraged from
+     * sending the command again since the server will respond with the same
+     * response code. It usually means that the server requires a certain level
+     * of security to exist on the connection before processing the command or
+     * that it is unwilling to process a command that would provide for
+     * decreased security.
+     *)
+    FTP_REQUIRE_HIGHER_SECURITY_LEVEL                    = 534,
+
+    (**
+     * Requested action not taken. File unavailable (e.g., file not found, no
+     * access).
+     *
+     * A 550 response code may be sent in response to any command requiring the
+     * server to access a local file. It is a permanent negative response, which
+     * means the client is discouraged from sending the command again since the
+     * server will respond with the same response code. It is usually due to a
+     * command requiring access to a file that does not exist or that the user
+     * does not have access rights to.
+     *)
+    FTP_FILE_UNAVAILABLE                                 = 550,
+
+    (**
+     * Requested action aborted. Page type unknown.
+     *
+     * A 551 response code may be sent in response to any command requiring the
+     * server to store information locally. It is a permanent negative reply,
+     * which means the client is discouraged from sending the command again
+     * since the server will respond with the same response code. It is only
+     * applicable when the page file structure is being used (through a STRU P
+     * command).
+     *)
+    FTP_PAGE_FILE_STRUCTURE_UNKNOWN                      = 551,
+
+    (**
+     * Requested file action aborted. Exceeded storage allocation (for current
+     * directory or dataset).
+     *
+     * A 552 response code may be sent in response to any command requiring the
+     * server to store received information locally. It is a permanent negative
+     * response, which means the client is discouraged from sending the command
+     * again since the server will respond with the same reply code. It usually
+     * indicates that the logged in user has exceeded the storage space
+     * allocated to their user account by the administrator.
+     *)
+    FTP_STORAGE_SPACE_EXCEEDED                           = 552,
+
+    (**
+     * Requested action not taken. File name not allowed.
+     *
+     * A 553 response code may be given in response to any command requiring or
+     * supporting the use of a file name as a parameter. It is a permanent
+     * negative reply, which means the client is discouraged from sending the
+     * command again since the server will respond with the same reply code. It
+     * is usually due to the file name contained as a parameter violating the
+     * file naming policies existing on the server. Issuing the command again
+     * with a different file name may result in a different reply code.
+     *)
+    FTP_FILENAME_NOT_ALLOWED                             = 553,
+
+    (**
+     * 6xx Protected reply
+     *
+     * The RFC 2228 introduced the concept of protected replies to increase
+     * security over the FTP communications. The 6xx replies are Base64 encoded
+     * protected messages that serves as responses to secure commands. When
+     * properly decoded, these replies fall into the above categories.
+     *)
+
+    (**
+     * Replies regarding confidentiality and integrity
+     *)
+    FTP_CONFIDENTIALITY_AND_INTEGRITY                    = 600,
+
+    (**
+     * Integrity protected reply.
+     *)
+    FTP_INTEGRITY_PROTECTED_REPLY                        = 631,
+
+    (**
+     * Confidentiality and integrity protected reply.
+     *)
+    FTP_CONFIDENTIALITY_AND_INTEGRITY_REPLY              = 632,
+
+    (**
+     * Confidentiality protected reply.
+     *)
+    FTP_CONFIDENTIALITY_REPLY                            = 633
   );
 
   (**
@@ -2205,7 +2512,7 @@ type
     function GetContentType : string;
     function GetPrimaryIP : string;
     function GetLocalIP : string;
-    function GetResponseCode : THTTPStatusCode;
+    function GetResponseCode : Longint;
     function GetContent : string;
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
@@ -2299,7 +2606,7 @@ type
     (**
      * Get the last response code
      *)
-    property ResponseCode : THTTPStatusCode read GetResponseCode;
+    property ResponseCode : Longint read GetResponseCode;
 
     (**
      * Get the response content
@@ -3514,14 +3821,14 @@ begin
   end;
 end;
 
-function TSessionInfo.GetResponseCode: THTTPStatusCode;
+function TSessionInfo.GetResponseCode: Longint;
 var
   code : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_RESPONSE_CODE, @code);
-    Result := THTTPStatusCode(code);
+    Result := code;
   end;
 end;
 

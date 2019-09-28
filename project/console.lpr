@@ -35,6 +35,7 @@ var
   ShortOptions : string = 'hu:p:';
   LongOptions : array [1..4] of string = ('help', 'show-content', 'username:',
     'password:');
+  protocol : TProtocol;
 begin
   ErrorMsg:=CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg<>'' then begin
@@ -70,10 +71,17 @@ begin
   session_info := TSessionInfo.Create(session);
   if session_info.Opened and not session_info.HasErrors then
   begin
+    protocol := session.ExtractProtocol(session_info.EffectiveUrl);
+
     writeln('Url: ':20,                session_info.EffectiveUrl);
-    if session.ExtractProtocol(session_info.EffectiveUrl) in [PROTOCOL_HTTP,
-      PROTOCOL_HTTPS] then
-        writeln('Response code: ':20,      session_info.ResponseCode);
+    if protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
+    begin
+      writeln('Response code: ':20,      THTTPStatusCode(session_info.ResponseCode));
+    end;
+    if protocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
+    begin
+      writeln('Response code: ':20,    TFTPStatusCode(session_info.ResponseCode));
+    end;
     writeln('Header size, kB: ':20,    session_info.HeaderSize.Format(dsKiloBytes, '0.00'));
     writeln('Content type: ':20,       session_info.ContentType);
     writeln('Content length, kB: ':20, session_info.Downloaded.Format(dsKiloBytes, '0.##'));
@@ -110,6 +118,7 @@ begin
   writeln('-h --help':20,                 ' show this help');
   writeln('   --show-content':20,         ' print content');
   writeln('-u --username=<username>':20,  ' set username');
+  writeln('-p --password=<password>':20,  ' set password');
 end;
 
 procedure TApplication.ProcessNonOptions(AParams: TStringList);
