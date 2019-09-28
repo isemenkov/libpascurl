@@ -3196,16 +3196,14 @@ end;
 function TSessionInfo.GetContent: string;
 var
   ContentLength : Longint;
-  ContentString : string;
 begin
   if Opened then
   begin
-    ContentLength := Length(string(session.FBuffer.Memory));
-    SetLength(ContentString, ContentLength);
-    //Result := string(session.FBuffer.Memory);
-    Move(PChar(session.FBuffer.Memory), PChar(ContentString)[0], ContentLength);
-    Result := ContentString;
-    //Result := IntToStr(ContentLength);
+    ContentLength := Length(string(PChar(session.FBuffer.Memory)));
+    Result := '';
+    UniqueString(Result);
+    SetLength(Result, ContentLength);
+    Move(PChar(session.FBuffer.Memory^), PChar(Result)[0], ContentLength);
   end;
 end;
 
@@ -3599,8 +3597,7 @@ begin
     Result := TSession(data).FDownloadFunction(ptr, size);
   end else
   begin
-    //Result := TSession(data).Write(ptr, size, nmemb);
-    Result := TSession(data).FBuffer.Write(Pointer(ptr), size * nmemb);
+    Result := TSession(data).Write(ptr, size, nmemb);
   end;
 end;
 
@@ -3618,7 +3615,7 @@ end;
 
 function TSession.Write(ptr: PChar; size: LongWord; nmemb: LongWord): LongWord;
 begin
-  Result := FBuffer.Write(ptr, nmemb);
+  Result := FBuffer.Write(ptr^, size * nmemb);
 end;
 
 function TSession.Read(buf: PChar; size: LongWord; nitems: LongWord): LongWord;

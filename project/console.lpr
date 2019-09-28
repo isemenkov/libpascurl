@@ -63,7 +63,7 @@ begin
     writeln('Response code: ':20,      session_info.ResponseCode);
     writeln('Header size, kB: ':20,    session_info.HeaderSize.Format(dsKiloBytes, '0.00'));
     writeln('Content type: ':20,       session_info.ContentType);
-    writeln('Content length, kB: ':20, session_info.Downloaded.Format(dsKiloBytes, '0.00'));
+    writeln('Content length, kB: ':20, session_info.Downloaded.Format(dsKiloBytes, '0.##'));
     writeln('IP: ':20,                 session_info.PimaryIP);
     writeln('Total time, ms: ':20,     session_info.TotalTime.Format(tiMicroseconds, '0.##'));
 
