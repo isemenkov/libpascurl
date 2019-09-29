@@ -10,7 +10,7 @@
 (*                                                                            *)
 (* Module:          Unit 'pascurl'                                            *)
 (* Functionality:   Provides  TSession class  which present  cURL session  to *)
-(*                  assign request params.  And TSessionInfo class to getting *)
+(*                  assign  request  params.  And TResponse  class to getting *)
 (*                  information from server response.                         *)
 (*                                                                            *)
 (******************************************************************************)
@@ -1108,6 +1108,53 @@ type
 
   TEncodings = set of TEncoding;
 
+  { TAltSvc }
+  (**
+   * Setting for the alt-svc engine
+   *)
+  TAltSvc = (
+    (**
+     * No Alt-Svc treatment.
+     *)
+    ALTSVC_DISABLE                 = 0,
+
+    (**
+     * If an Alt-Svc: header is received, this instructs libcurl to switch to
+     * one of those alternatives asap rather than to save it and use for the
+     * next request. (Not currently supported).
+     *)
+    ALTSVC_IMMEDIATELY             = Longint(CURLALTSVC_IMMEDIATELY),
+
+    (**
+     * Do not write the alt-svc cache back to the file specified with
+     * TSession.HTTP.AltSvcCacheFile even if it gets updated. By default a file
+     * specified with that option will be read and written to as deemed
+     * necessary.
+     *)
+    ALTSVC_READONLYFILE            = Longint(CURLALTSVC_READONLYFILE),
+
+    (**
+     * Accept alternative services offered over HTTP/1.1.
+     *)
+    ALTSVC_H1                      = Longint(CURLALTSVC_H1),
+
+    (**
+     * Accept alternative services offered over HTTP/2. This will only be used
+     * if libcurl was also built to actually support HTTP/2, otherwise this bit
+     * will be ignored.
+     *)
+    ALTSVC_H2                      = Longint(CURLALTSVC_H2),
+
+    (**
+     * Accept alternative services offered over HTTP/3. This will only be used
+     * if libcurl was also built to actually support HTTP/3, otherwise this bit
+     * will be ignored.
+     *)
+    ALTSVC_H3                      = Longint(CURLALTSVC_H3)
+  );
+
+  TAltSvcs = set of TAltSvc;
+
   { TTimeInterval }
 
   TTimeIntervalType = (
@@ -1125,7 +1172,7 @@ type
     function  GetMilliseconds : Double; inline;
     procedure SetMilliseconds ( ms : Double); inline;
     function  GetMicroseconds : QWord; inline;
-    procedure SetMicroseconds ( ms : QWord); inline;
+    procedure SetMicroseconds ( us : QWord); inline;
   public
     constructor Create;
     constructor Create (Microseconds : QWord);
@@ -1147,7 +1194,7 @@ type
      *     string.
      *)
     function Format (IntervalType : TTimeIntervalType = tiMilliseconds;
-      const FormatType : string = '0.000###') : string;
+      const FormatType : string = '0.###') : string;
 
     (* 1 s *)
     property Seconds : Double read GetSeconds write SetSeconds;
@@ -1204,7 +1251,7 @@ type
      *     string.
      *)
     function Format (SizeType : TDataSizeType = dsMegaBytes;
-      const FormatType : string = '0.000###') : string;
+      const FormatType : string = '0.###') : string;
 
     (* 1024 Gb *)
     property TeraBytes : Double read GetTeraBytes write SetTeraBytes;
@@ -2042,11 +2089,142 @@ type
           default False;
       end;
 
+      { THTTPCookie }
+      THTTPCookie = class
+      private
+        FHandle : CURL;
+
+        procedure SetCookie (ACookie : string);
+        procedure SetCookieFile (AFile : string);
+        procedure SetCookieJar (AFile : string);
+        procedure SetCookieSession (ACreate : Boolean);
+        procedure SetCookieList (ACookie : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Set contents of HTTP Cookie header
+         *
+         * Will be used to set a cookie in the HTTP request. The format of the
+         * string should be NAME=CONTENTS, where NAME is the cookie name and
+         * CONTENTS is what the cookie should contain.
+         * If you need to set multiple cookies, set them all using a single
+         * option concatenated like this: "name1=content1; name2=content2;" etc.
+         * This option sets the cookie header explicitly in the outgoing
+         * request(s). If multiple requests are done due to authentication,
+         * followed redirections or similar, they will all get this cookie
+         * passed on.
+         * The cookies set by this option are separate from the internal cookie
+         * storage held by the cookie engine and will not be modified by it. If
+         * you enable the cookie engine and either you've imported a cookie of
+         * the same name (e.g. 'foo') or the server has set one, it will have no
+         * effect on the cookies you set here. A request to the server will send
+         * both the 'foo' held by the cookie engine and the 'foo' held by this
+         * option. To set a cookie that is instead held by the cookie engine and
+         * can be modified by the server use CookieList.
+         * Using this option multiple times will only make the latest string
+         * override the previous ones.
+         * This option will not enable the cookie engine. Use CookieFile or
+         * CookieJar to enable parsing and sending cookies automatically.
+         *)
+        property Cookie : string write SetCookie;
+
+        (**
+         * File name to read cookie from
+         *
+         * It should point to the file name of your file holding cookie data to
+         * read. The cookie data can be in either the old Netscape / Mozilla
+         * cookie data format or just regular HTTP headers (Set-Cookie style)
+         * dumped to a file.
+         * It also enables the cookie engine, making libcurl parse and send
+         * cookies on subsequent requests with this handle.
+         * Given an empty or non-existing file or by passing the empty string
+         * ("") to this option, you can enable the cookie engine without reading
+         * any initial cookies. If you tell libcurl the file name is "-" (just a
+         * single minus sign), libcurl will instead read from stdin.
+         * This option only reads cookies. To make libcurl write cookies to
+         * file, see CookieJar.
+         * Exercise caution if you are using this option and multiple transfers
+         * may occur. If you use the Set-Cookie format and don't specify a
+         * domain then the cookie is sent for any domain (even after redirects
+         * are followed) and cannot be modified by a server-set cookie. If a
+         * server sets a cookie of the same name then both will be sent on a
+         * future transfer to that server, likely not what you intended. To
+         * address these issues set a domain in Set-Cookie (doing that will
+         * include sub-domains) or use the Netscape format.
+         * If you use this option multiple times, you just add more files to
+         * read. Subsequent files will add more cookies.
+         *)
+        property CookieFile : string write SetCookieFile;
+
+        (**
+         * File name to store cookies to
+         *
+         * This will make libcurl write all internally known cookies to the
+         * specified file when curl_easy_cleanup is called. If no cookies are
+         * known, no file will be created. Specify "-" as filename to instead
+         * have the cookies written to stdout. Using this option also enables
+         * cookies for this session, so if you for example follow a location it
+         * will make matching cookies get sent accordingly.
+         * Note that libcurl doesn't read any cookies from the cookie jar. If
+         * you want to read cookies from a file, use CookieFile.
+         * If the cookie jar file can't be created or written to (when the
+         * curl_easy_cleanup is called), libcurl will not and cannot report an
+         * error for this.
+         * Since 7.43.0 cookies that were imported in the Set-Cookie format
+         * without a domain name are not exported by this option.
+         *)
+        property CookieJar : string write SetCookieJar;
+
+        (**
+         * Start a new cookie session
+         *
+         * Mark this as a new cookie "session". It will force libcurl to ignore
+         * all cookies it is about to load that are "session cookies" from the
+         * previous session. By default, libcurl always stores and loads all
+         * cookies, independent if they are session cookies or not. Session
+         * cookies are cookies without expiry date and they are meant to be
+         * alive and existing for this "session" only.
+         *)
+        property CookieNewSession : Boolean write SetCookieSession;
+
+        (**
+         * Add to or manipulate cookies held in memory
+         *
+         * Such a cookie can be either a single line in Netscape / Mozilla
+         * format or just regular HTTP-style header (Set-Cookie: ...) format.
+         * This will also enable the cookie engine. This adds that single cookie
+         * to the internal cookie store.
+         * Exercise caution if you are using this option and multiple transfers
+         * may occur. If you use the Set-Cookie format and don't specify a
+         * domain then the cookie is sent for any domain (even after redirects
+         * are followed) and cannot be modified by a server-set cookie. If a
+         * server sets a cookie of the same name (or maybe you've imported one)
+         * then both will be sent on a future transfer to that server, likely
+         * not what you intended. To address these issues set a domain in
+         * Set-Cookie (doing that will include sub-domains) or use the Netscape
+         * format.
+         * Additionally, there are commands available that perform actions if
+         * you pass in these exact strings:
+         * ALL
+         * erases all cookies held in memory
+         * SESS
+         * erases all session cookies held in memory
+         * FLUSH
+         * writes all known cookies to the file specified by CookieJar
+         * RELOAD
+         * loads all cookies from the files specified by CookieFile
+         *)
+        property CookieList : string write SetCookieList;
+      end;
+
       { THTTPProperty }
 
       THTTPProperty = class
       private
         FHandle : CURL;
+        FCookie : THTTPCookie;
 
         procedure SetUserAgent (AAgent : string);
         procedure SetAutoReferer (AUpdateHeaders : Boolean);
@@ -2060,13 +2238,14 @@ type
         procedure SetAcceptEncoding (AEncodings : TEncodings);
         procedure SetTransferEncoding (AEnable : Boolean);
         procedure SetReferer (AWhere : string);
-        procedure SetCookie (ACookie : string);
-        procedure SetCookieFile (AFile : string);
-        procedure SetCookieJar (AFile : string);
-        procedure SetCookieSession (ACreate : Boolean);
+        procedure SetAltSvcCacheFile (AFile : string);
+        procedure SetAltSvcCtrl (AAltSvc : TAltSvcs);
+        procedure SetGetMethod (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+        property Cookie : THTTPCookie read FCookie write FCookie;
 
         (**
          * Set HTTP user-agent header
@@ -2185,90 +2364,40 @@ type
         property Referer : string write SetReferer;
 
         (**
-         * Set contents of HTTP Cookie header
+         * Set alt-svc cache file name
          *
-         * Will be used to set a cookie in the HTTP request. The format of the
-         * string should be NAME=CONTENTS, where NAME is the cookie name and
-         * CONTENTS is what the cookie should contain.
-         * If you need to set multiple cookies, set them all using a single
-         * option concatenated like this: "name1=content1; name2=content2;" etc.
-         * This option sets the cookie header explicitly in the outgoing
-         * request(s). If multiple requests are done due to authentication,
-         * followed redirections or similar, they will all get this cookie
-         * passed on.
-         * The cookies set by this option are separate from the internal cookie
-         * storage held by the cookie engine and will not be modified by it. If
-         * you enable the cookie engine and either you've imported a cookie of
-         * the same name (e.g. 'foo') or the server has set one, it will have no
-         * effect on the cookies you set here. A request to the server will send
-         * both the 'foo' held by the cookie engine and the 'foo' held by this
-         * option. To set a cookie that is instead held by the cookie engine and
-         * can be modified by the server use CookieList.
-         * Using this option multiple times will only make the latest string
-         * override the previous ones.
-         * This option will not enable the cookie engine. Use CookieFile or
-         * CookieJar to enable parsing and sending cookies automatically.
+         * Pass in a pointer to a filename to instruct libcurl to use that file
+         * as the Alt-Svc cache to read existing cache contents from and
+         * possibly also write it back to a after a transfer.
+         * Specify a blank file name ("") to make libcurl not load from a file
+         * at all.
          *)
-        property Cookie : string write SetCookie;
+        property AltSvcCacheFile : string write SetAltSvcCacheFile;
 
         (**
-         * File name to read cookie from
+         * Control alt-svc behavior
          *
-         * It should point to the file name of your file holding cookie data to
-         * read. The cookie data can be in either the old Netscape / Mozilla
-         * cookie data format or just regular HTTP headers (Set-Cookie style)
-         * dumped to a file.
-         * It also enables the cookie engine, making libcurl parse and send
-         * cookies on subsequent requests with this handle.
-         * Given an empty or non-existing file or by passing the empty string
-         * ("") to this option, you can enable the cookie engine without reading
-         * any initial cookies. If you tell libcurl the file name is "-" (just a
-         * single minus sign), libcurl will instead read from stdin.
-         * This option only reads cookies. To make libcurl write cookies to
-         * file, see CookieJar.
-         * Exercise caution if you are using this option and multiple transfers
-         * may occur. If you use the Set-Cookie format and don't specify a
-         * domain then the cookie is sent for any domain (even after redirects
-         * are followed) and cannot be modified by a server-set cookie. If a
-         * server sets a cookie of the same name then both will be sent on a
-         * future transfer to that server, likely not what you intended. To
-         * address these issues set a domain in Set-Cookie (doing that will
-         * include sub-domains) or use the Netscape format.
-         * If you use this option multiple times, you just add more files to
-         * read. Subsequent files will add more cookies.
+         * Populate the correct set of features to instruct libcurl how to
+         * handle Alt-Svc for the transfers using this handle.
+         * libcurl will only accept Alt-Svc headers over a secure transport,
+         * meaning HTTPS. It will also only complete a request to an alternative
+         * origin if that origin is properly hosted over HTTPS. These
+         * requirements are there to make sure both the source and the
+         * destination are legitimate.
+         * Setting any bit will enable the alt-svc engine.
          *)
-        property CookieFile : string write SetCookieFile;
+        property AltSvcCtrl : TAltSvcs write SetAltSvcCtrl;
 
         (**
-         * File name to store cookies to
+         * Ask for an HTTP GET request
          *
-         * This will make libcurl write all internally known cookies to the
-         * specified file when curl_easy_cleanup is called. If no cookies are
-         * known, no file will be created. Specify "-" as filename to instead
-         * have the cookies written to stdout. Using this option also enables
-         * cookies for this session, so if you for example follow a location it
-         * will make matching cookies get sent accordingly.
-         * Note that libcurl doesn't read any cookies from the cookie jar. If
-         * you want to read cookies from a file, use CookieFile.
-         * If the cookie jar file can't be created or written to (when the
-         * curl_easy_cleanup is called), libcurl will not and cannot report an
-         * error for this.
-         * Since 7.43.0 cookies that were imported in the Set-Cookie format
-         * without a domain name are not exported by this option.
+         * This forces the HTTP request to get back to using GET. Usable if a
+         * POST, HEAD, PUT, etc has been used previously using the same curl
+         * handle.
+         * When setting Get, it will automatically set NoBody to False and
+         * Upload to False.
          *)
-        property CookieJar : string write SetCookieJar;
-
-        (**
-         * Start a new cookie session
-         *
-         * Mark this as a new cookie "session". It will force libcurl to ignore
-         * all cookies it is about to load that are "session cookies" from the
-         * previous session. By default, libcurl always stores and loads all
-         * cookies, independent if they are session cookies or not. Session
-         * cookies are cookies without expiry date and they are meant to be
-         * alive and existing for this "session" only.
-         *)
-        property CookieNewSession : Boolean write SetCookieSession;
+        property Get : Boolean write SetGetMethod;
       end;
 
       { TIMAPProperty }
@@ -2496,10 +2625,10 @@ type
       write FUploadFunction;
   end;
 
-  { TSessionInfo }
+  { TResponse }
   { Getting information from server response. }
 
-  TSessionInfo = class
+  TResponse = class
   protected
     session : TSession;
     hasInfo : Boolean;
@@ -2551,7 +2680,7 @@ type
     function GetRTSPReceivedCSeq : Longint;
     function GetScheme : string;
   public
-    constructor Create (var s : TSession);
+    constructor Create (s : TSession);
 
     (**
      * Perform a bloking file transfer
@@ -2820,6 +2949,43 @@ type
   end;
 
 implementation
+
+{ TSession.THTTPCookie }
+
+procedure TSession.THTTPCookie.SetCookie(ACookie: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIE, PChar(ACookie));
+end;
+
+procedure TSession.THTTPCookie.SetCookieFile(AFile: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIEFILE, PChar(AFile));
+end;
+
+procedure TSession.THTTPCookie.SetCookieJar(AFile: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIEJAR, PChar(AFile));
+end;
+
+procedure TSession.THTTPCookie.SetCookieSession(ACreate: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIESESSION, Longint(ACreate));
+end;
+
+procedure TSession.THTTPCookie.SetCookieList(ACookie: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_COOKIELIST, PChar(ACookie));
+end;
+
+constructor TSession.THTTPCookie.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.THTTPCookie.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TSession.TFTPProperty }
 
@@ -3214,29 +3380,54 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_REFERER, PChar(AWhere));
 end;
 
-procedure TSession.THTTPProperty.SetCookie(ACookie: string);
+procedure TSession.THTTPProperty.SetAltSvcCacheFile(AFile: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIE, PChar(ACookie));
+  curl_easy_setopt(FHandle, CURLOPT_ALTSVC, PChar(AFile));
 end;
 
-procedure TSession.THTTPProperty.SetCookieFile(AFile: string);
+procedure TSession.THTTPProperty.SetAltSvcCtrl(AAltSvc: TAltSvcs);
+var
+  bitmask : Longint;
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIEFILE, PChar(AFile));
+  bitmask := 0;
+  if [ALTSVC_DISABLE] = AAltSvc then
+  begin
+    curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, 0);
+  end else
+  begin
+    if ALTSVC_IMMEDIATELY in AAltSvc then
+    begin
+      bitmask := bitmask or CURLALTSVC_IMMEDIATELY;
+    end;
+    if ALTSVC_READONLYFILE in AAltSvc then
+    begin
+      bitmask := bitmask or CURLALTSVC_READONLYFILE;
+    end;
+    if ALTSVC_H1 in AAltSvc then
+    begin
+      bitmask := bitmask or CURLALTSVC_H1;
+    end;
+    if ALTSVC_H2 in AAltSvc then
+    begin
+      bitmask := bitmask or CURLALTSVC_H2;
+    end;
+    if ALTSVC_H3 in AAltSvc then
+    begin
+      bitmask := bitmask or CURLALTSVC_H3;
+    end;
+    curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, bitmask);
+  end;
 end;
 
-procedure TSession.THTTPProperty.SetCookieJar(AFile: string);
+procedure TSession.THTTPProperty.SetGetMethod(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIEJAR, PChar(AFile));
-end;
-
-procedure TSession.THTTPProperty.SetCookieSession(ACreate: Boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIESESSION, Longint(ACreate));
+  curl_easy_setopt(FHandle, CURLOPT_HTTPGET, Longint(AEnable));
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
+  FCookie := THTTPCookie.Create(AHandle);
 end;
 
 destructor TSession.THTTPProperty.Destroy;
@@ -3707,9 +3898,9 @@ begin
   Result := FMicroseconds;
 end;
 
-procedure TTimeInterval.SetMicroseconds(ms: QWord);
+procedure TTimeInterval.SetMicroseconds(us: QWord);
 begin
-  FMicroseconds := ms;
+  FMicroseconds := us;
 end;
 
 constructor TTimeInterval.Create;
@@ -3742,19 +3933,19 @@ begin
   end;
 end;
 
-{ TSessionInfo }
+{ TResponse }
 
-function TSessionInfo.IsOpened: Boolean;
+function TResponse.IsOpened: Boolean;
 begin
   Result := (session.Opened and hasInfo);
 end;
 
-function TSessionInfo.CheckErrors: Boolean;
+function TResponse.CheckErrors: Boolean;
 begin
   Result := not Opened;
 end;
 
-function TSessionInfo.GetErrorMessage: string;
+function TResponse.GetErrorMessage: string;
 begin
   if HasErrors then
   begin
@@ -3762,7 +3953,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetEffectiveUrl: string;
+function TResponse.GetEffectiveUrl: string;
 var
   url : PChar;
 begin
@@ -3774,7 +3965,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRedirectUrl: string;
+function TResponse.GetRedirectUrl: string;
 var
   url : PChar;
 begin
@@ -3786,7 +3977,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetContentType: string;
+function TResponse.GetContentType: string;
 var
   content_type : PChar;
 begin
@@ -3798,7 +3989,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetPrimaryIP: string;
+function TResponse.GetPrimaryIP: string;
 var
   ip : PChar;
 begin
@@ -3810,7 +4001,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetLocalIP: string;
+function TResponse.GetLocalIP: string;
 var
   ip : PChar;
 begin
@@ -3822,7 +4013,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetResponseCode: Longint;
+function TResponse.GetResponseCode: Longint;
 var
   code : Longint;
 begin
@@ -3833,7 +4024,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetContent: string;
+function TResponse.GetContent: string;
 var
   ContentLength : Longint;
 begin
@@ -3847,7 +4038,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetVerifySSLResult: boolean;
+function TResponse.GetVerifySSLResult: boolean;
 var
   verify : Longint;
 begin
@@ -3858,7 +4049,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetVerifySSLProxyResult: boolean;
+function TResponse.GetVerifySSLProxyResult: boolean;
 var
   verify : Longint;
 begin
@@ -3869,7 +4060,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConnectResponseCode: THTTPStatusCode;
+function TResponse.GetConnectResponseCode: THTTPStatusCode;
 var
   code : Longint;
 begin
@@ -3880,7 +4071,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetHttpVersion: HTTPVersionCode;
+function TResponse.GetHttpVersion: HTTPVersionCode;
 var
   ver : Longint;
 begin
@@ -3891,7 +4082,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRedirectCount: Longint;
+function TResponse.GetRedirectCount: Longint;
 var
   count : Longint;
 begin
@@ -3902,7 +4093,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetUploaded: TDataSize;
+function TResponse.GetUploaded: TDataSize;
 var
   bytes : LongWord;
 begin
@@ -3913,7 +4104,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetDownloaded: TDataSize;
+function TResponse.GetDownloaded: TDataSize;
 var
   bytes : LongWord;
 begin
@@ -3924,7 +4115,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetDownloadSpeed: TDataSize;
+function TResponse.GetDownloadSpeed: TDataSize;
 var
   bytes : LongWord;
 begin
@@ -3935,7 +4126,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetUploadSpeed: TDataSize;
+function TResponse.GetUploadSpeed: TDataSize;
 var
   bytes : LongWord;
 begin
@@ -3946,7 +4137,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetHeaderSize: TDataSize;
+function TResponse.GetHeaderSize: TDataSize;
 var
   bytes : LongWord;
 begin
@@ -3957,7 +4148,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRequestSize: TDataSize;
+function TResponse.GetRequestSize: TDataSize;
 var
   bytes : Longint;
 begin
@@ -3968,7 +4159,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetContentLengthDownload: LongWord;
+function TResponse.GetContentLengthDownload: LongWord;
 var
   bytes : LongWord;
 begin
@@ -3979,7 +4170,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetContentLengthUpload: LongWord;
+function TResponse.GetContentLengthUpload: LongWord;
 var
   bytes : LongWord;
 begin
@@ -3990,7 +4181,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetNumConnects: Longint;
+function TResponse.GetNumConnects: Longint;
 var
   num : Longint;
 begin
@@ -4001,7 +4192,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetPrimaryPort: Longint;
+function TResponse.GetPrimaryPort: Longint;
 var
   port : Longint;
 begin
@@ -4012,7 +4203,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetLocalPort: Longint;
+function TResponse.GetLocalPort: Longint;
 var
   port : Longint;
 begin
@@ -4023,7 +4214,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetFileTime: time_t;
+function TResponse.GetFileTime: time_t;
 var
   time : LongWord;
 begin
@@ -4034,7 +4225,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetTotalTime: TTimeInterval;
+function TResponse.GetTotalTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4045,7 +4236,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetNameLookup: TTimeInterval;
+function TResponse.GetNameLookup: TTimeInterval;
 var
   time : Longword;
 begin
@@ -4056,7 +4247,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConnectTime: TTimeInterval;
+function TResponse.GetConnectTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4067,7 +4258,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetAppConnectTime: TTimeInterval;
+function TResponse.GetAppConnectTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4078,7 +4269,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetPretransferTime: TTimeInterval;
+function TResponse.GetPretransferTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4089,7 +4280,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetStartTransferTime: TTimeInterval;
+function TResponse.GetStartTransferTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4100,7 +4291,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRedirectTime: TTimeInterval;
+function TResponse.GetRedirectTime: TTimeInterval;
 var
   time : LongWord;
 begin
@@ -4111,7 +4302,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRetryAfterDelay: TTimeInterval;
+function TResponse.GetRetryAfterDelay: TTimeInterval;
 var
   delay : LongWord;
 begin
@@ -4122,7 +4313,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetOsErrno: Longint;
+function TResponse.GetOsErrno: Longint;
 begin
   if Opened then
   begin
@@ -4130,7 +4321,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetLastSocket: Longint;
+function TResponse.GetLastSocket: Longint;
 begin
   if Opened then
   begin
@@ -4138,7 +4329,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetActiveSocket: curl_socket_t;
+function TResponse.GetActiveSocket: curl_socket_t;
 begin
   if Opened then
   begin
@@ -4146,7 +4337,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetFTPEntryPath: string;
+function TResponse.GetFTPEntryPath: string;
 var
   path : PChar;
 begin
@@ -4158,7 +4349,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetConditionUnmet: Boolean;
+function TResponse.GetConditionUnmet: Boolean;
 var
   unmet : Longint;
 begin
@@ -4169,7 +4360,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRTSPSessionID: string;
+function TResponse.GetRTSPSessionID: string;
 var
   id : PChar;
 begin
@@ -4181,7 +4372,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRTSPClientCSeq: Longint;
+function TResponse.GetRTSPClientCSeq: Longint;
 begin
   if Opened then
   begin
@@ -4189,7 +4380,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRTSPServerCSeq: Longint;
+function TResponse.GetRTSPServerCSeq: Longint;
 begin
   if Opened then
   begin
@@ -4197,7 +4388,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetRTSPReceivedCSeq: Longint;
+function TResponse.GetRTSPReceivedCSeq: Longint;
 begin
   if Opened then
   begin
@@ -4205,7 +4396,7 @@ begin
   end;
 end;
 
-function TSessionInfo.GetScheme: string;
+function TResponse.GetScheme: string;
 var
   sc : PChar;
 begin
@@ -4217,7 +4408,7 @@ begin
   end;
 end;
 
-constructor TSessionInfo.Create(var s: TSession);
+constructor TResponse.Create(s: TSession);
 begin
   if s.Opened then
   begin

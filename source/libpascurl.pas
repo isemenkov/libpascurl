@@ -626,6 +626,13 @@ const
   CURLHEADER_UNIFIED = 0;
   CURLHEADER_SEPARATE = 1 shl 0;
 
+  (* CURLALTSVC_* are bits for the CURLOPT_ALTSVC_CTRL option *)
+  CURLALTSVC_IMMEDIATELY   = 1 shl 0;
+  CURLALTSVC_READONLYFILE  = 1 shl 2;
+  CURLALTSVC_H1            = 1 shl 3;
+  CURLALTSVC_H2            = 1 shl 4;
+  CURLALTSVC_H3            = 1 shl 5;
+
   (* CURLPROTO_ defines are for the CURLOPT_*PROTOCOLS options *)
   CURLPROTO_HTTP        = 1 shl 0;
   CURLPROTO_HTTPS       = 1 shl 1;

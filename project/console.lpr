@@ -14,8 +14,8 @@ type
 
   TApplication = class(TCustomApplication)
   private
-    session : TSession;
-    session_info : TSessionInfo;
+    FSession : TSession;
+    FResponse : TResponse;
   protected
     procedure DoRun; override;
   public
@@ -37,8 +37,8 @@ var
     'password:');
   protocol : TProtocol;
 begin
-  ErrorMsg:=CheckOptions(ShortOptions, LongOptions);
-  if ErrorMsg<>'' then begin
+  ErrorMsg := CheckOptions(ShortOptions, LongOptions);
+  if ErrorMsg <> '' then begin
     ShowException(Exception.Create(ErrorMsg));
     Terminate;
     Exit;
@@ -52,12 +52,12 @@ begin
 
   if HasOption('u', 'username') then
   begin
-    session.Security.Username := GetOptionValue('u', 'username');
+    FSession.Security.Username := GetOptionValue('u', 'username');
   end;
 
   if HasOption('p', 'password') then
   begin
-    session.Security.Password := GetOptionValue('p', 'password');
+    FSession.Security.Password := GetOptionValue('p', 'password');
   end;
 
   NonOptions := TStringList.Create;
@@ -68,36 +68,37 @@ begin
     FreeAndNil(NonOptions);
   end;
 
-  session_info := TSessionInfo.Create(session);
-  if session_info.Opened and not session_info.HasErrors then
+  FResponse := TResponse.Create(FSession);
+  if FResponse.Opened and not FResponse.HasErrors then
   begin
-    protocol := session.ExtractProtocol(session_info.EffectiveUrl);
+    protocol := FSession.ExtractProtocol(FResponse.EffectiveUrl);
 
-    writeln('Url: ':20,                session_info.EffectiveUrl);
+    writeln('Url: ':20,                FResponse.EffectiveUrl);
     if protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
     begin
-      writeln('Response code: ':20,      THTTPStatusCode(session_info.ResponseCode));
+      writeln('Response code: ':20,      THTTPStatusCode(FResponse.ResponseCode));
     end;
     if protocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
     begin
-      writeln('Response code: ':20,    TFTPStatusCode(session_info.ResponseCode));
+      writeln('Response code: ':20,    TFTPStatusCode(FResponse.ResponseCode));
     end;
-    writeln('Header size, kB: ':20,    session_info.HeaderSize.Format(dsKiloBytes, '0.00'));
-    writeln('Content type: ':20,       session_info.ContentType);
-    writeln('Content length, kB: ':20, session_info.Downloaded.Format(dsKiloBytes, '0.##'));
-    writeln('IP: ':20,                 session_info.PimaryIP);
-    writeln('Total time, ms: ':20,     session_info.TotalTime.Format(tiMicroseconds, '0.##'));
+    writeln('Header size, kB: ':20,    FResponse.HeaderSize.Format(dsKiloBytes, '0.00'));
+    writeln('Content type: ':20,       FResponse.ContentType);
+    writeln('Content length, kB: ':20, FResponse.Downloaded.Format(dsKiloBytes, '0.##'));
+    writeln('IP: ':20,                 FResponse.PimaryIP);
+    writeln('Total time, ms: ':20,     FResponse.TotalTime.Format(tiMicroseconds, '0.##'));
 
     if HasOption('show-content') then
     begin
       writeln('==== Content ====');
-      writeln(session_info.Content);
+      writeln(FResponse.Content);
     end;
   end else
   begin
-    writeln(session_info.ErrorMessage);
+    writeln(FResponse.ErrorMessage);
   end;
 
+  FreeAndNil(FResponse);
   Terminate;
 end;
 
@@ -105,11 +106,12 @@ constructor TApplication.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   StopOnException:=True;
-  session := TSession.Create;
+  FSession := TSession.Create;
 end;
 
 destructor TApplication.Destroy;
 begin
+  FReeAndNil(FSession);
   inherited Destroy;
 end;
 
@@ -125,7 +127,7 @@ procedure TApplication.ProcessNonOptions(AParams: TStringList);
 begin
   if AParams.Count > 0 then
   begin
-    session.Url := AParams[0];
+    FSession.Url := AParams[0];
   end;
 end;
 
