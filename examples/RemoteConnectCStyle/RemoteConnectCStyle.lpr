@@ -8,9 +8,9 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Project:         'RemoteConnect'                                           *)
-(* Functionality:   Simple example for use TSession and TResponse classes for *)
-(*                  connect to remote host                                    *)
+(* Project:         'RemoteConnectCStyle'                                     *)
+(* Functionality:   Simple example for use cURL wrapper in C-Style to connect *)
+(*                  to remote host                                            *)
 (*                                                                            *)
 (******************************************************************************)
 (*                                                                            *)
@@ -30,7 +30,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-program RemoteConnect;
+program RemoteConnectCStyle;
 
 {$mode objfpc}{$H+}
 
@@ -38,7 +38,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, pascurl;
+  Classes, SysUtils, CustApp, libpascurl, pascurl;
 
 type
 
@@ -46,8 +46,8 @@ type
 
   TApplication = class(TCustomApplication)
   protected
-    FSession : TSession;
-    FResponse : TResponse;
+    FCURL : CURL;
+    FBuffer : TMemoryStream;
 
     procedure DoRun; override;
     procedure PrintHeader;
@@ -55,6 +55,11 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
+
+    class function WriteFunctionCallback (ptr : PChar; size : LongWord;
+      nmemb : LongWord; data : Pointer) : LongWord; static; cdecl;
+    function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
+      inline;
   end;
 
 { TApplication }
@@ -68,7 +73,11 @@ var
     'password:', 'all', 'effective-url', 'redirect-url', 'response-code',
     'content-type', 'primary-ip', 'local-ip', 'http-version', 'redirect-count',
     'content-size', 'header-size', 'request-size', 'download-speed');
-  Protocol : TProtocol;
+  ErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
+  Scheme, StringParam : PChar;
+  Content : String;
+  LongintParam : Longint;
+  LongWordParam : LongWord;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -84,9 +93,11 @@ begin
     PrintHelp;
 
   if HasOption('u', 'username') then
-    FSession.Security.Username := GetOptionValue('u', 'username');
+    curl_easy_setopt(FCURL, CURLOPT_USERNAME,
+      PChar(GetOptionValue('u', 'username')));
   if HasOption('p', 'password') then
-    FSession.Security.Password := GetOptionValue('p', 'password');
+    curl_easy_setopt(FCURL, CURLOPT_PASSWORD,
+      PChar(GetOptionValue('p', 'password')));
 
   NonOptions := TStringList.Create;
   GetNonOptions(ShortOptions, LongOptions, NonOptions);
@@ -96,94 +107,137 @@ begin
     Exit;
   end;
 
-  FSession.Url := NonOptions[0];
-  FResponse := TResponse.Create(FSession);
-  if FResponse.Opened and not FResponse.HasErrors then
+  curl_easy_setopt(FCURL, CURLOPT_URL, PChar(NonOptions[0]));
+  curl_easy_setopt(FCURL, CURLOPT_FOLLOWLOCATION, Longint(1));
+  curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER, PChar(ErrorBuffer));
+  curl_easy_setopt(FCURL, CURLOPT_WRITEDATA, Pointer(Self));
+  curl_easy_setopt(FCURL, CURLOPT_WRITEFUNCTION,
+    @TApplication.WriteFunctionCallback);
+
+  New(Scheme);
+  New(StringParam);
+
+  if curl_easy_perform(FCURL) = CURLE_OK then
   begin
-    Protocol := FSession.ExtractProtocol(FResponse.EffectiveUrl);
+    curl_easy_getinfo(FCURL, CURLINFO_SCHEME, @Scheme);
 
     if HasOption('a', 'all') or HasOption('effective-url') then
-      writeln('Url: ':25, FResponse.EffectiveUrl);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_EFFECTIVE_URL, @StringParam);
+      writeln('Url: ':25, StringParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('redirect-url') then
-      writeln('Redirect url: ':25, FResponse.RedirectUrl);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_REDIRECT_URL, @StringParam);
+      writeln('Redirect url: ':25, StringParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('redirect-count') then
-      writeln('Redirect count: ':25, FResponse.RedirectCount);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_REDIRECT_COUNT, @LongintParam);
+      writeln('Redirect count: ':25, LongintParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('content-type') then
-      writeln('Content type: ':25, FResponse.ContentType);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_CONTENT_TYPE, @StringParam);
+      writeln('Content type: ':25, StringParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('request-size') then
     begin
-      if FResponse.RequestSize.KiloBytes >= 1 then
+      curl_easy_getinfo(FCURL, CURLINFO_REQUEST_SIZE, @LongWordParam);
+
+      if LongWordParam >= 1 * 1024 then
         writeln('Request size, Kb: ':25,
-          FResponse.RequestSize.Format(dsKiloBytes, '0.##'))
+          FormatFloat('0.##', Double(LongWordParam / 1024)))
       else
-        writeln('Request size, b: ':25, FResponse.RequestSize.B);
+        writeln('Request size, b: ':25, LongWordParam);
     end;
 
     if HasOption('a', 'all') or HasOption('header-size') then
     begin
-      if FResponse.HeaderSize.KiloBytes >= 1 then
+      curl_easy_getinfo(FCURL, CURLINFO_HEADER_SIZE, @LongWordParam);
+
+      if LongWordParam >= 1 * 1024 then
         writeln('Header size, Kb: ':25,
-          FResponse.HeaderSize.Format(dsKiloBytes, '0.##'))
+          FormatFloat('0.##', Double(LongWordParam / 1024)))
       else
-        writeln('Header size, b: ':25, FResponse.HeaderSize.B);
+        writeln('Header size, b: ':25, LongWordParam);
     end;
 
     if HasOption('a', 'all') or HasOption('content-size') then
     begin
-      if FResponse.Downloaded.MegaBytes >= 1 then
+      curl_easy_getinfo(FCURL, CURLINFO_SIZE_DOWNLOAD_T, @LongWordParam);
+
+      if LongWordParam >= 1 * 1024 * 1024 then
         writeln('Content size, Mb: ':25,
-          FResponse.Downloaded.Format(dsMegaBytes, '0.##'))
-      else if FResponse.Downloaded.KiloBytes >= 1 then
+          FormatFloat('0.##', Double(LongWordParam / (1024 * 1024))))
+      else if LongWordParam >= 1 * 1024 then
         writeln('Content size, Kb: ':25,
-          FResponse.Downloaded.Format(dsKiloBytes, '0.##'))
+          FormatFloat('0.##', Double(LongWordParam / 1024)))
       else
-        writeln('Content size, b: ':25, FResponse.Downloaded.B);
+        writeln('Content size, b: ':25, LongWordParam);
     end;
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
-      writeln('Primary IP: ':25, FResponse.PrimaryIP);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_PRIMARY_IP, @StringParam);
+      writeln('Primary IP: ':25, StringParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('local-ip') then
-      writeln('Local IP: ':25, FResponse.LocalIP);
+    begin
+      curl_easy_getinfo(FCURL, CURLINFO_LOCAL_IP, @StringParam);
+      writeln('Local IP: ':25, StringParam);
+    end;
 
     if HasOption('a', 'all') or HasOption('response-code') then
     begin
-      if Protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-        writeln('Response code: ':25, THTTPStatusCode(FResponse.ResponseCode))
-      else if Protocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
-        writeln('Response code: ':25, TFTPStatusCode(FResponse.ResponseCode));
+      curl_easy_getinfo(FCURL, CURLINFO_RESPONSE_CODE, @LongintParam);
+
+      if (Scheme = 'http') or (Scheme = 'https') then
+        writeln('Response code: ':25, THTTPStatusCode(LongintParam))
+      else if (Scheme = 'ftp') or (Scheme = 'ftps') then
+        writeln('Response code: ':25, TFTPStatusCode(LongintParam));
     end;
 
     if HasOption('a', 'all') or HasOption('http-version') then
     begin
-      if Protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-        writeln('HTTP version: ':25, FResponse.HttpVersion);
+      curl_easy_getinfo(FCURL, CURLINFO_HTTP_VERSION, @LongintParam);
+
+      if (Scheme = 'http') or (Scheme = 'https') then
+        writeln('HTTP version: ':25, THTTPVersion(LongintParam));
     end;
 
     if HasOption('a', 'all') or HasOption('download-speed') then
     begin
-      if FResponse.DownloadSpeed.MegaBytes >= 1 then
+      curl_easy_getinfo(FCURL, CURLINFO_SPEED_DOWNLOAD_T, @LongWordParam);
+
+      if LongWordParam >= 1 * 1024 * 1024 then
         writeln('Download speed, Mb/s: ':25,
-          FResponse.DownloadSpeed.Format(dsMegaBytes, '0.##'))
-      else if FResponse.DownloadSpeed.KiloBytes >= 1 then
+          FormatFloat('0.##', Double(LongWordParam / (1024 * 1024))))
+      else if LongWordParam >= 1 * 1024 then
         writeln('Download speed, Kb/s: ':25,
-          FResponse.DownloadSpeed.Format(dsKiloBytes, '0.##'))
+          FormatFloat('0.##', Double(LongWordParam / 1024)))
       else
-        writeln('Download speed, b/s: ':25, FResponse.DownloadSpeed.B);
+        writeln('Download speed, b/s: ':25, LongWordParam);
     end;
 
     if HasOption('s', 'show-content') then
     begin
       writeln();
       writeln('-=== Content ===-');
-      writeln(FResponse.Content);
+
+      LongintParam := Length(string(PChar(FBuffer.Memory)));
+      Content := '';
+      SetLength(Content, LongintParam);
+      Move(PChar(FBuffer.Memory^), PChar(Content)[0], LongintParam);
+      writeln(Content);
     end;
   end else
-    writeln(FResponse.ErrorMessage);
+    writeln(ErrorBuffer);
 
   FreeAndNil(NonOptions);
   Terminate;
@@ -193,13 +247,27 @@ constructor TApplication.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   StopOnException := True;
-  FSession := TSession.Create;
+  FBuffer := TMemoryStream.Create;
+  FCURL := curl_easy_init;
 end;
 
 destructor TApplication.Destroy;
 begin
-  FreeAndNil(FSession);
+  curl_easy_cleanup(FCURL);
+  FreeAndNil(FBuffer);
   inherited Destroy;
+end;
+
+class function TApplication.WriteFunctionCallback(ptr: PChar; size: LongWord;
+  nmemb: LongWord; data: Pointer): LongWord; cdecl;
+begin
+  Result := TApplication(data).Write(ptr, size, nmemb);
+end;
+
+function TApplication.Write(ptr: PChar; size: LongWord; nmemb: LongWord)
+  : LongWord;
+begin
+  Result := FBuffer.Write(ptr^, size * nmemb);
 end;
 
 procedure TApplication.PrintHeader;

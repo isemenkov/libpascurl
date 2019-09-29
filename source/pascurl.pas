@@ -297,11 +297,49 @@ type
     HTTP_NETWORK_READ_TIMEOUT_ERROR                      = 598  { UNOFFICIAL CODE }
   );
 
-  HTTPVersionCode = (
+  THTTPVersion = (
     HTTP_VERSION_UNKNOWN              = 0,
+
+    (**
+     * Enforce HTTP 1.0 requests.
+     *)
     HTTP_VERSION_1_0                  = Longint(CURL_HTTP_VERSION_1_0),
+
+    (**
+     * Enforce HTTP 1.1 requests.
+     *)
     HTTP_VERSION_1_1                  = Longint(CURL_HTTP_VERSION_1_1),
+
+    (**
+     * Attempt HTTP 2 requests. libcurl will fall back to HTTP 1.1 if HTTP 2
+     * can't be negotiated with the server.
+     *)
     HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0),
+
+    (**
+     * Attempt HTTP 2 over TLS (HTTPS) only. libcurl will fall back to HTTP 1.1
+     * if HTTP 2 can't be negotiated with the HTTPS server. For clear text HTTP
+     * servers, libcurl will use 1.1.
+     *)
+
+    HTTP_VERSION_2TLS                 = Longint(CURL_HTTP_VERSION_2TLS),
+
+    (**
+     * Issue non-TLS HTTP requests using HTTP/2 without HTTP/1.1 Upgrade. It
+     * requires prior knowledge that the server supports HTTP/2 straight away.
+     * HTTPS requests will still do HTTP/2 the standard way with negotiated
+     * protocol version in the TLS handshake.
+     *)
+    HTTP_VERSION_2_PRIOR_KNOWLEDGE    = Longint(CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE),
+
+    (**
+     * Setting this value will make libcurl attempt to use HTTP/3 directly to
+     * server given in the URL. Note that this cannot gracefully downgrade to
+     * earlier HTTP version if the server doesn't support HTTP/3.
+     * For more reliably upgrading to HTTP/3, set the preferred version to
+     * something lower and let the server announce its HTTP/3 support via
+     * Alt-Svc:. See TSession.HTTP.AltSvc.
+     *)
     HTTP_VERSION_3_0                  = Longint(CURL_HTTP_VERSION_3)
   );
 
@@ -2241,6 +2279,9 @@ type
         procedure SetAltSvcCacheFile (AFile : string);
         procedure SetAltSvcCtrl (AAltSvc : TAltSvcs);
         procedure SetGetMethod (AEnable : Boolean);
+        procedure SetRequestTarget (ATarget : string);
+        procedure SetHttpVersion (AVersion : THTTPVersion);
+        procedure SetHttp09Allowed (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -2398,6 +2439,32 @@ type
          * Upload to False.
          *)
         property Get : Boolean write SetGetMethod;
+
+        (**
+         * Specify an alternative target for this request
+         *
+         * Pass a string which libcurl uses in the upcoming request instead of
+         * the path as extracted from the URL.
+         *)
+        property RequestTarget : string write SetRequestTarget;
+
+        (**
+         * Specify HTTP protocol version to use
+         *
+         * Note that the HTTP version is just a request. libcurl will still
+         * prioritize to re-use an existing connection so it might then re-use a
+         * connection using a HTTP version you haven't asked for.
+         *)
+        property HTTPVersion : THTTPVersion write SetHttpVersion;
+
+        (**
+         * Allow HTTP/0.9 response
+         *
+         * A HTTP/0.9 response is a server response entirely without headers and
+         * only a body. You can connect to lots of random TCP services and still
+         * get a response that curl might consider to be HTTP/0.9!
+         *)
+        property HTTP09Allow : Boolean write SetHttp09Allowed;
       end;
 
       { TIMAPProperty }
@@ -2647,7 +2714,7 @@ type
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
     function GetConnectResponseCode : THTTPStatusCode;
-    function GetHttpVersion : HTTPVersionCode;
+    function GetHttpVersion : THTTPVersion;
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
     function GetDownloaded : TDataSize;
@@ -2765,7 +2832,7 @@ type
     (**
      * Get the HTTP version used in the connection
      *)
-    property HttpVersion : HttpVersionCode read GetHttpVersion;
+    property HttpVersion : THttpVersion read GetHttpVersion;
 
     (**
      * Get the number of redirects
@@ -3424,6 +3491,21 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_HTTPGET, Longint(AEnable));
 end;
 
+procedure TSession.THTTPProperty.SetRequestTarget(ATarget: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_REQUEST_TARGET, PChar(ATarget));
+end;
+
+procedure TSession.THTTPProperty.SetHttpVersion(AVersion: THTTPVersion);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HTTP_VERSION, Longint(AVersion));
+end;
+
+procedure TSession.THTTPProperty.SetHttp09Allowed(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HTTP09_ALLOWED, Longint(AEnable));
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -4071,14 +4153,14 @@ begin
   end;
 end;
 
-function TResponse.GetHttpVersion: HTTPVersionCode;
+function TResponse.GetHttpVersion: THTTPVersion;
 var
   ver : Longint;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_VERSION, @ver);
-    Result := HTTPVersionCode(ver);
+    Result := THTTPVersion(ver);
   end;
 end;
 
