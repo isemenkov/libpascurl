@@ -1,6 +1,6 @@
 
 #build file for tests
-/project/console
+/project
 
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
