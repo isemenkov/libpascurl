@@ -2726,7 +2726,7 @@ type
     (**
      * Get IP address of last connection
      *)
-    property PimaryIP : string read GetPrimaryIP;
+    property PrimaryIP : string read GetPrimaryIP;
 
     (**
      * Get local IP address of last connection

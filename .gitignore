@@ -1,6 +1,7 @@
 
 #build file for tests
 /project
+/examples/RemoteConnect/RemoteConnect
 
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
