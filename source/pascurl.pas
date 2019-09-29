@@ -38,7 +38,7 @@ unit pascurl;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, BaseUnix, math, typinfo;
+  Classes, SysUtils, libpascurl, math, typinfo;
 
 type
   TProtocol = (
@@ -2713,7 +2713,7 @@ type
     function GetContent : string;
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
-    function GetConnectResponseCode : THTTPStatusCode;
+    function GetConnectResponseCode : Longint;
     function GetHttpVersion : THTTPVersion;
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
@@ -2727,7 +2727,7 @@ type
     function GetNumConnects : Longint;
     function GetPrimaryPort : Longint;
     function GetLocalPort : Longint;
-    function GetFileTime : time_t;
+    function GetFileTime : Int64;
     function GetTotalTime : TTimeInterval;
     function GetNameLookup : TTimeInterval;
     function GetConnectTime : TTimeInterval;
@@ -2827,7 +2827,7 @@ type
      *
      * Last received HTTP proxy response code to a CONNECT request.
      *)
-    property ConnectResponseCode : THTTPStatusCode read GetConnectResponseCode;
+    property ConnectResponseCode : Longint read GetConnectResponseCode;
 
     (**
      * Get the HTTP version used in the connection
@@ -2897,7 +2897,7 @@ type
     (**
      * Get the remote time of the retrieved document
      *)
-    property FileTime : time_t read GetFileTime;
+    property FileTime : Int64 read GetFileTime;
 
     (**
      * Get total time of previous transfer
@@ -4042,6 +4042,7 @@ begin
   if Opened then
   begin
     New(url);
+    url := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_EFFECTIVE_URL, @url);
     Result := url;
   end;
@@ -4054,6 +4055,7 @@ begin
   if Opened then
   begin
     New(url);
+    url := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_URL, @url);
     Result := url;
   end;
@@ -4066,6 +4068,7 @@ begin
   if Opened then
   begin
     New(content_type);
+    content_type := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_TYPE, @content_type);
     Result := content_type;
   end;
@@ -4078,6 +4081,7 @@ begin
   if Opened then
   begin
     New(ip);
+    ip := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_PRIMARY_IP, @ip);
     Result := ip;
   end;
@@ -4090,25 +4094,24 @@ begin
   if Opened then
   begin
     New(ip);
+    ip := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_LOCAL_IP, @ip);
     Result := ip;
   end;
 end;
 
 function TResponse.GetResponseCode: Longint;
-var
-  code : Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_RESPONSE_CODE, @code);
-    Result := code;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_RESPONSE_CODE, @Result);
   end;
 end;
 
 function TResponse.GetContent: string;
 var
-  ContentLength : Longint;
+  ContentLength : Longint = 0;
 begin
   if Opened then
   begin
@@ -4122,7 +4125,7 @@ end;
 
 function TResponse.GetVerifySSLResult: boolean;
 var
-  verify : Longint;
+  verify : Longint = 1;
 begin
   if Opened then
   begin
@@ -4133,7 +4136,7 @@ end;
 
 function TResponse.GetVerifySSLProxyResult: boolean;
 var
-  verify : Longint;
+  verify : Longint = 0;
 begin
   if Opened then
   begin
@@ -4142,20 +4145,18 @@ begin
   end;
 end;
 
-function TResponse.GetConnectResponseCode: THTTPStatusCode;
-var
-  code : Longint;
+function TResponse.GetConnectResponseCode: Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_CONNECTCODE, @code);
-    Result := THTTPStatusCode(code);
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_CONNECTCODE, @Result);
   end;
 end;
 
 function TResponse.GetHttpVersion: THTTPVersion;
 var
-  ver : Longint;
+  ver : Longint = 0;
 begin
   if Opened then
   begin
@@ -4165,19 +4166,17 @@ begin
 end;
 
 function TResponse.GetRedirectCount: Longint;
-var
-  count : Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_COUNT, @count);
-    Result := count;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_COUNT, @Result);
   end;
 end;
 
 function TResponse.GetUploaded: TDataSize;
 var
-  bytes : LongWord;
+  bytes : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4188,7 +4187,7 @@ end;
 
 function TResponse.GetDownloaded: TDataSize;
 var
-  bytes : LongWord;
+  bytes : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4199,7 +4198,7 @@ end;
 
 function TResponse.GetDownloadSpeed: TDataSize;
 var
-  bytes : LongWord;
+  bytes : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4210,7 +4209,7 @@ end;
 
 function TResponse.GetUploadSpeed: TDataSize;
 var
-  bytes : LongWord;
+  bytes : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4221,7 +4220,7 @@ end;
 
 function TResponse.GetHeaderSize: TDataSize;
 var
-  bytes : LongWord;
+  bytes : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4232,7 +4231,7 @@ end;
 
 function TResponse.GetRequestSize: TDataSize;
 var
-  bytes : Longint;
+  bytes : Longint = 0;
 begin
   if Opened then
   begin
@@ -4242,74 +4241,64 @@ begin
 end;
 
 function TResponse.GetContentLengthDownload: LongWord;
-var
-  bytes : LongWord;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @bytes);
-    Result := bytes;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
+      @Result);
   end;
 end;
 
 function TResponse.GetContentLengthUpload: LongWord;
-var
-  bytes : LongWord;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD_T, @bytes);
-    Result := bytes;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD_T,
+      @Result);
   end;
 end;
 
 function TResponse.GetNumConnects: Longint;
-var
-  num : Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_NUM_CONNECTS, @num);
-    Result := num;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_NUM_CONNECTS, @Result);
   end;
 end;
 
 function TResponse.GetPrimaryPort: Longint;
-var
-  port : Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_PRIMARY_PORT, @port);
-    Result := port;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_PRIMARY_PORT, @Result);
   end;
 end;
 
 function TResponse.GetLocalPort: Longint;
-var
-  port : Longint;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_LOCAL_PORT, @port);
-    Result := port;
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_LOCAL_PORT, @Result);
   end;
 end;
 
-function TResponse.GetFileTime: time_t;
-var
-  time : LongWord;
+function TResponse.GetFileTime: Int64;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_FILETIME_T, @time);
-    Result := time_t(time);
+    Result := 0;
+    curl_easy_getinfo(session.FHandle, CURLINFO_FILETIME_T, @Result);
   end;
 end;
 
 function TResponse.GetTotalTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4320,7 +4309,7 @@ end;
 
 function TResponse.GetNameLookup: TTimeInterval;
 var
-  time : Longword;
+  time : Longword = 0;
 begin
   if Opened then
   begin
@@ -4331,7 +4320,7 @@ end;
 
 function TResponse.GetConnectTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4342,7 +4331,7 @@ end;
 
 function TResponse.GetAppConnectTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4353,7 +4342,7 @@ end;
 
 function TResponse.GetPretransferTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4364,7 +4353,7 @@ end;
 
 function TResponse.GetStartTransferTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4375,7 +4364,7 @@ end;
 
 function TResponse.GetRedirectTime: TTimeInterval;
 var
-  time : LongWord;
+  time : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4386,7 +4375,7 @@ end;
 
 function TResponse.GetRetryAfterDelay: TTimeInterval;
 var
-  delay : LongWord;
+  delay : LongWord = 0;
 begin
   if Opened then
   begin
@@ -4399,6 +4388,7 @@ function TResponse.GetOsErrno: Longint;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_OS_ERRNO, @Result);
   end;
 end;
@@ -4407,6 +4397,7 @@ function TResponse.GetLastSocket: Longint;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_LASTSOCKET, @Result);
   end;
 end;
@@ -4415,6 +4406,7 @@ function TResponse.GetActiveSocket: curl_socket_t;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_ACTIVESOCKET, @Result);
   end;
 end;
@@ -4426,6 +4418,7 @@ begin
   if Opened then
   begin
     New(path);
+    path := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_FTP_ENTRY_PATH, @path);
     Result := path;
   end;
@@ -4433,7 +4426,7 @@ end;
 
 function TResponse.GetConditionUnmet: Boolean;
 var
-  unmet : Longint;
+  unmet : Longint = 0;
 begin
   if Opened then
   begin
@@ -4449,6 +4442,7 @@ begin
   if Opened then
   begin
     New(id);
+    id := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_SESSION_ID, @id);
     Result := id;
   end;
@@ -4458,6 +4452,7 @@ function TResponse.GetRTSPClientCSeq: Longint;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_CLIENT_CSEQ, @Result);
   end;
 end;
@@ -4466,6 +4461,7 @@ function TResponse.GetRTSPServerCSeq: Longint;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_SERVER_CSEQ, @Result);
   end;
 end;
@@ -4474,6 +4470,7 @@ function TResponse.GetRTSPReceivedCSeq: Longint;
 begin
   if Opened then
   begin
+    Result := 0;
     curl_easy_getinfo(session.FHandle, CURLINFO_RTSP_CSEQ_RECV, @Result);
   end;
 end;
@@ -4485,6 +4482,7 @@ begin
   if Opened then
   begin
     New(sc);
+    sc := '';
     curl_easy_getinfo(session.FHandle, CURLINFO_SCHEME, @sc);
     Result := sc;
   end;
@@ -4533,7 +4531,7 @@ end;
 
 function TSession.Read(buf: PChar; size: LongWord; nitems: LongWord): LongWord;
 var
-  dataSize : Int64;
+  dataSize : Int64 = 0;
 begin
   Result := 0;
   if FBuffer.Size > 0 then

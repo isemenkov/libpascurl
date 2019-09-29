@@ -31,7 +31,8 @@ unit libpascurl;
 interface
 
 uses
-  Classes, SysUtils, Types, BaseUnix, Sockets;
+  Classes, SysUtils, Types, {$IFDEF LINUX}BaseUnix, {$ENDIF}
+  {$IFDEF WINDOWS}WinSock, {$ENDIF}Sockets;
 
 {$IFDEF FPC}
   {$PACKRECORDS C}
@@ -164,7 +165,7 @@ type
   curl_fileinfo = record
     filename : PChar;
     filetype : curlfiletype;
-    time : time_t;
+    time : Int64;
     perm : Cardinal;
     uid : Integer;
     gid : Integer;
@@ -2627,7 +2628,7 @@ const
    * the first argument. The time argument in the second parameter is unused
    * and should be set to NULL.
    *)
-   function curl_getdate (const p : PChar; const unused : ptime_t) : time_t;
+   function curl_getdate (const p : PChar; const unused : PInt64) : Int64;
      cdecl; external CurlLib;
 
    function curl_share_init : CURLSH; cdecl; external CurlLib;
