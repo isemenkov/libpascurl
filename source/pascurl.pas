@@ -266,7 +266,7 @@ type
      * Used in the resumable requests proposal to resume aborted PUT or POST
      * requests.
      *)
-  { HTTP_CHECKPOINT                                      = 103, { UNOFFICIAL CODE }}
+  { HTTP_CHECKPOINT                                      = 103, { UNOFFICIAL CODE } }
 
     (**
      * Standard response for successful HTTP requests. The actual response will
@@ -2899,6 +2899,14 @@ type
         procedure SetRequestTarget (ATarget : string);
         procedure SetHttpVersion (AVersion : THTTPVersion);
         procedure SetHttp09Allowed (AEnable : Boolean);
+        procedure SetIgnoreContentLength (AIgnore : Boolean);
+        procedure SetHttpContentDecoding (AEnable : Boolean);
+        procedure SetHttpTransferDecoding (AEnable : Boolean);
+        procedure SetExpect100Timeout (ATimeout : TTimeInterval);
+        procedure SetPipeWait (AEnable : Boolean);
+        procedure SetStreamDepends (ADependHandle : CURL);
+        procedure SetStreamDependsExclusive (ADependHandle : CURL);
+        procedure SetStreamWeight (AWeight : Longint);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3082,6 +3090,137 @@ type
          * get a response that curl might consider to be HTTP/0.9!
          *)
         property HTTP09Allow : Boolean write SetHttp09Allowed;
+
+        (**
+         * Ignore content length
+         *
+         * Ignore the Content-Length header in the HTTP response and ignore
+         * asking for or relying on it for FTP transfers.
+         * This is useful for HTTP with Apache 1.x (and similar servers) which
+         * will report incorrect content length for files over 2 gigabytes. If
+         * this option is used, curl will not be able to accurately report
+         * progress, and will simply stop the download when the server ends the
+         * connection.
+         * It is also useful with FTP when for example the file is growing while
+         * the transfer is in progress which otherwise will unconditionally
+         * cause libcurl to report error.
+         * Only use this option if strictly necessary.
+         *)
+        property IgnoreContentLength : Boolean write SetIgnoreContentLength
+          default False;
+
+        (**
+         * Enable/disable HTTP content decoding
+         *
+         * Libcurl has no default content decoding but requires you to use
+         * AcceptEncoding for that.
+         *)
+        property ContentDecoding : Boolean write SetHttpContentDecoding
+          default True;
+
+        (**
+         * Enable/disable HTTP transfer decoding
+         *
+         * libcurl does chunked transfer decoding by default unless this option
+         * is set False;
+         *)
+        property TransferDecoding : Boolean write SetHttpTransferDecoding
+          default True;
+
+        (**
+         * Timeout for Expect: 100 - CONTINUE response
+         *
+         * Tell libcurl the number of milliseconds to wait for a server response
+         * with the HTTP status 100 (Continue), 417 (Expectation Failed) or
+         * similar after sending an HTTP request containing an Expect:
+         * 100-continue header. If this times out before a response is received,
+         * the request body is sent anyway.
+         *)
+        property Expect100Timeout : TTimeInterval write SetExpect100Timeout;
+
+        (**
+         * Wait for pipelining/multiplexing
+         *
+         * Tell libcurl to prefer to wait for a connection to confirm or deny
+         * that it can do pipelining or multiplexing before continuing.
+         * When about to perform a new transfer that allows pipelining or
+         * multiplexing, libcurl will check for existing connections to re-use
+         * and pipeline on. If no such connection exists it will immediately
+         * continue and create a fresh new connection to use.
+         * By setting this option to True - and having CURLMOPT_PIPELINING
+         * enabled for the multi handle this transfer is associated with -
+         * libcurl will instead wait for the connection to reveal if it is
+         * possible to pipeline/multiplex on before it continues. This enables
+         * libcurl to much better keep the number of connections to a minimum
+         * when using pipelining or multiplexing protocols.
+         * The effect thus becomes that with this option set, libcurl prefers to
+         * wait and re-use an existing connection for pipelining rather than the
+         * opposite: prefer to open a new connection rather than waiting.
+         * The waiting time is as long as it takes for the connection to get up
+         * and for libcurl to get the necessary response back that informs it
+         * about its protocol and support level.
+         *)
+        property PipeWait : Boolean write SetPipeWait default False;
+
+        (**
+         * Set stream this transfer depends on
+         *
+         * Pass a CURL pointer in dephandle to identify the stream within the
+         * same connection that this stream is depending upon. This option
+         * clears the exclusive bit and is mutually exclusive to the
+         * StreamDependsExclusive option.
+         * The spec says "Including a dependency expresses a preference to
+         * allocate resources to the identified stream rather than to the
+         * dependent stream."
+         * This option can be set during transfer.
+         * dephandle must not be the same as handle, that will cause this
+         * function to return an error. It must be another easy handle, and it
+         * also needs to be a handle of a transfer that will be sent over the
+         * same HTTP/2 connection for this option to have an actual effect.
+         *)
+        property StreamDepends : CURL write SetStreamDepends;
+
+        (**
+         * Set stream this transfer depends on exclusively
+         *
+         * Pass a CURL pointer in dephandle to identify the stream within the
+         * same connection that this stream is depending upon exclusively. That
+         * means it depends on it and sets the Exclusive bit.
+         * The spec says "Including a dependency expresses a preference to
+         * allocate resources to the identified stream rather than to the
+         * dependent stream."
+         * Setting a dependency with the exclusive flag for a reprioritized
+         * stream causes all the dependencies of the new parent stream to become
+         * dependent on the reprioritized stream.
+         * This option can be set during transfer.
+         * dephandle must not be the same as handle, that will cause this
+         * function to return an error. It must be another easy handle, and it
+         * also needs to be a handle of a transfer that will be sent over the
+         * same HTTP/2 connection for this option to have an actual effect.
+         *)
+        property StreamDependsExclusive : CURL write SetStreamDependsExclusive;
+
+        (**
+         * Set numerical stream weight
+         *
+         * Set the long weight to a number between 1 and 256.
+         * When using HTTP/2, this option sets the individual weight for this
+         * particular stream used by the easy handle. Setting and using weights
+         * only makes sense and is only usable when doing multiple streams over
+         * the same connections, which thus implies that you use
+         * CURLMOPT_PIPELINING.
+         * This option can be set during transfer and will then cause the
+         * updated weight info get sent to the server the next time an HTTP/2
+         * frame is sent to the server.
+         * See section 5.3 of RFC 7540 for protocol details:
+         * https://httpwg.github.io/specs/rfc7540.html#StreamPriority
+         * Streams with the same parent should be allocated resources
+         * proportionally based on their weight. So if you have two streams
+         * going, stream A with weight 16 and stream B with weight 32, stream B
+         * will get two thirds (32/48) of the available bandwidth (assuming the
+         * server can send off the data equally for both streams).
+         *)
+        property StreamWeight : Longint write SetStreamWeight;
       end;
 
       { TIMAPProperty }
@@ -4121,6 +4260,47 @@ end;
 procedure TSession.THTTPProperty.SetHttp09Allowed(AEnable: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_HTTP09_ALLOWED, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetIgnoreContentLength(AIgnore: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH, Longint(AIgnore));
+end;
+
+procedure TSession.THTTPProperty.SetHttpContentDecoding(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HTTP_CONTENT_DECODING, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetHttpTransferDecoding(AEnable: Boolean);
+begin
+  curl_easy_setopt(Fhandle, CURLOPT_HTTP_TRANSFER_DECODING, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetExpect100Timeout(ATimeout: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_EXPECT_100_TIMEOUT_MS,
+    Longint(Ceil(ATimeout.Milliseconds)));
+end;
+
+procedure TSession.THTTPProperty.SetPipeWait(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PIPEWAIT, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetStreamDepends(ADependHandle: CURL);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS, ADependHandle);
+end;
+
+procedure TSession.THTTPProperty.SetStreamDependsExclusive(ADependHandle: CURL);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS_E, ADependHandle);
+end;
+
+procedure TSession.THTTPProperty.SetStreamWeight(AWeight: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_STREAM_WEIGHT, AWeight);
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
