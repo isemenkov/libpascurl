@@ -3294,6 +3294,86 @@ type
         destructor Destroy; override;
       end;
 
+      { TSMTPProperty }
+
+      TSMTPProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetMailFrom (AFrom : string);
+        procedure SetMailAuth (AAuth : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * SMTP sender address
+         *
+         * This should be used to specify the sender's email address when
+         * sending SMTP mail with libcurl.
+         * An originator email address should be specified with angled brackets
+         * (<>) around it, which if not specified will be added automatically.
+         * If this parameter is not specified then an empty address will be sent
+         * to the mail server which may cause the email to be rejected.
+         *)
+        property From : string write SetMailFrom;
+
+        (**
+         * SMTP authentication address
+         *
+         * This will be used to specify the authentication address (identity) of
+         * a submitted message that is being relayed to another server.
+         * This optional parameter allows co-operating agents in a trusted
+         * environment to communicate the authentication of individual messages
+         * and should only be used by the application program, using libcurl, if
+         * the application is itself a mail server acting in such an
+         * environment. If the application is operating as such and the AUTH
+         * address is not known or is invalid, then an empty string should be
+         * used for this parameter.
+         * Unlike From and Recipients, the address should not be specified
+         * within a pair of angled brackets (<>). However, if an empty string is
+         * used then a pair of brackets will be sent by libcurl as required by
+         * RFC 2554.
+         *)
+        property Auth : string write SetMailAuth;
+      end;
+
+      { TTFTPProperty }
+
+      TTFTPProperty = class
+      private
+        FHandle : CURL;
+
+        procedure SetBlockSize (ASize : Longint);
+        procedure SetNoOptions (AEnable : Boolean);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * TFTP block size
+         *
+         * Specify blocksize to use for TFTP data transmission. Valid range as
+         * per RFC 2348 is 8-65464 bytes. The default of 512 bytes will be used
+         * if this option is not specified. The specified block size will only
+         * be used pending support by the remote server. If the server does not
+         * return an option acknowledgement or returns an option acknowledgement
+         * with no blksize, the default of 512 bytes will be used.
+         *)
+        property BlockSize : Longint write SetBlockSize default 512;
+
+        (**
+         * Do not send TFTP options request.
+         *
+         * Set True to exclude all TFTP options defined in RFC 2347, RFC 2348
+         * and RFC 2349 from read and write requests (RRQs/WRQs).
+         * This option improves interop with some legacy servers that do not
+         * acknowledge or properly implement TFTP options. When this option is
+         * used BlockSize is ignored.
+         *)
+        property NoOptions : Boolean write SetNoOptions default False;
+      end;
+
   protected
     FHandle : CURL;
     FBuffer : TMemoryStream;
@@ -3307,6 +3387,8 @@ type
     FHTTP : THTTPProperty;
     FIMAP : TIMAPProperty;
     FFTP : TFTPProperty;
+    FTFTP : TTFTPProperty;
+    FSMTP : TSMTPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -3365,6 +3447,7 @@ type
     property Security : TSecurityProperty read FSecurity write FSecurity;
     property HTTP : THTTPProperty read FHTTP write FHTTP;
     property IMAP : TIMAPProperty read FIMAP write FIMAP;
+    property SMTP : TSMTPProperty read FSMTP write FSMTP;
 
     (**
      * Check if session opened and correctly
@@ -3772,6 +3855,50 @@ type
   end;
 
 implementation
+
+{ TSession.TTFTPProperty }
+
+procedure TSession.TTFTPProperty.SetBlockSize(ASize: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TFTP_BLKSIZE, ASize);
+end;
+
+procedure TSession.TTFTPProperty.SetNoOptions(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TFTP_NO_OPTIONS, Longint(AEnable));
+end;
+
+constructor TSession.TTFTPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AAHandle;
+end;
+
+destructor TSession.TTFTPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.TSMTPProperty }
+
+procedure TSession.TSMTPProperty.SetMailFrom(AFrom: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAIL_FROM, PChar(AFrom));
+end;
+
+procedure TSession.TSMTPProperty.SetMailAuth(AAuth: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAIL_AUTH, PChar(AAuth));
+end;
+
+constructor TSession.TSMTPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TSMTPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TSession.THTTPCookie }
 
@@ -5359,6 +5486,8 @@ begin
   FHTTP := THTTPProperty.Create(FHandle);
   FIMAP := TIMAPProperty.Create(FHandle);
   FFTP := TFTPProperty.Create(FHandle);
+  FTFTP := TTFTPProperty.Create(FHandle);
+  FSMTP := TSMTPProperty.Create(FHandle);
 
   if Opened then
   begin
