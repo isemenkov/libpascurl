@@ -3286,12 +3286,261 @@ type
       { TFTPProperty }
 
       TFTPProperty = class
+      public
+        type TCreateDirs = (
+          CREATE_DIR_NONE  = Longint(CURLFTP_CREATE_DIR_NONE),
+
+          (**
+           * libcurl will attempt to create any remote directory that it fails
+           * to "move" into.
+           *)
+          CREATE_DIR       = Longint(CURLFTP_CREATE_DIR),
+
+          (**
+           * Tells libcurl to retry the CWD command again if the subsequent MKD
+           * command fails.
+           *)
+          CREATE_DIR_RETRY = Longint(CURLFTP_CREATE_DIR_RETRY)
+        );
+
+        type TAuth = (
+          (**
+           * Allow libcurl to decide.
+           *)
+          AUTH_DEFAULT     = Longint(CURLFTPAUTH_DEFAULT),
+
+          (**
+           * Try "AUTH SSL" first, and only if that fails try "AUTH TLS".
+           *)
+          AUTH_SSL         = Longint(CURLFTPAUTH_SSL),
+
+          (**
+           * Try "AUTH TLS" first, and only if that fails try "AUTH SSL".
+           *)
+          AUTH_TLS         = Longint(CURLFTPAUTH_TLS)
+        );
+
+        (* Clear Command Channel *)
+        type TSSL_CCC = (
+          (**
+           * Don't attempt to use CCC.
+           *)
+          CCC_NONE         = Longint(CURLFTPSSL_CCC_NONE),
+
+          (**
+           * Do not initiate the shutdown, but wait for the server to do it. Do
+           * not send a reply.
+           *)
+          CCC_PASSIVE      = Longint(CURLFTPSSL_CCC_PASSIVE),
+
+          (**
+           * Initiate the shutdown and wait for a reply.
+           *)
+          CCC_ACTIVE       = Longint(CURLFTPSSL_CCC_ACTIVE)
+        );
+
+        type TFileMethod = (
+          (**
+           * libcurl does a single CWD operation for each path part in the given
+           * URL. For deep hierarchies this means many commands. This is how RFC
+           * 1738 says it should be done. This is the default but the slowest
+           * behavior.
+           *)
+          METHOD_MULTICWD  = Longint(CURLFTPMETHOD_MULTICWD),
+
+          (**
+           * libcurl does no CWD at all. libcurl will do SIZE, RETR, STOR etc
+           * and give a full path to the server for all these commands. This is
+           * the fastest behavior.
+           *)
+          METHOD_NOCWD     = Longint(CURLFTPMETHOD_NOCWD),
+
+          (**
+           * libcurl does one CWD with the full target directory and then
+           * operates on the file "normally" (like in the multicwd case). This
+           * is somewhat more standards compliant than 'nocwd' but without the
+           * full penalty of 'multicwd'.
+           *)
+          METHOD_SINGLECWD = Longint(CURLFTPMETHOD_SINGLECWD)
+        );
       private
         FHandle : CURL;
 
+        procedure SetFTPPort (APort : string);
+        procedure SetAppendUpload (AEnable : Boolean);
+        procedure SetUseEPRT (AEnable : Boolean);
+        procedure SetUseEPSV (AEnable : Boolean);
+        procedure SetUsePRET (AEnable : Boolean);
+        procedure SetCreateMissingDirs (ACreate : TCreateDirs);
+        procedure SetResponseTimeout (ATimeout : TTimeInterval);
+        procedure SetAlternativeToUser (ACmd : string);
+        procedure SetSkipPASVIP (AEnable : Boolean);
+        procedure SetSSLAuth (AAuth : TAuth);
+        procedure SetSSLCCC (ACCC : TSSL_CCC);
+        procedure SetAccountInfo (AAccount : string);
+        procedure SetFileMethod (AMethod : TFileMethod);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+        (**
+         * Make FTP transfer active
+         *
+         * It specifies that the FTP transfer will be made actively and the
+         * given string will be used to get the IP address to use for the FTP
+         * PORT instruction.
+         * The PORT instruction tells the remote server to connect to our
+         * specified IP address. The string may be a plain IP address, a host
+         * name, a network interface name (under Unix) or just a '-' symbol to
+         * let the library use your system's default IP address. Default FTP
+         * operations are passive, and thus won't use PORT.
+         * The address can be followed by a ':' to specify a port, optionally
+         * followed by a '-' to specify a port range. If the port specified is
+         * 0, the operating system will pick a free port. If a range is provided
+         * and all ports in the range are not available, libcurl will report
+         * CURLE_FTP_PORT_FAILED for the handle. Invalid port/range settings are
+         * ignored. IPv6 addresses followed by a port or portrange have to be in
+         * brackets. IPv6 addresses without port/range specifier can be in
+         * brackets.
+         *)
+        property Port : string write SetFTPPort;
+
+        (**
+         * Enable appending to the remote file
+         *
+         * Tells the library to append to the remote file instead of overwrite
+         * it. This is only useful when uploading to an FTP site.
+         *)
+        property UploadAppend : Boolean write SetAppendUpload;
+
+        (**
+         * Enable/disable use of EPRT with FTP
+         *
+         * It tells curl to use the EPRT command when doing active FTP downloads
+         * (which is enabled by Port). Using EPRT means that it will first
+         * attempt to use EPRT before using PORT, but if you pass zero to this
+         * option, it will not try using EPRT, only plain PORT.
+         * If the server is an IPv6 host, this option will have no effect as
+         * EPRT is necessary then.
+         *)
+        property UseEPRT : Boolean write SetUseEPRT;
+
+        (**
+         * Enable/disable use of EPSV
+         *
+         * It tells curl to use the EPSV command when doing passive FTP
+         * downloads (which it does by default). Using EPSV means that it will
+         * first attempt to use EPSV before using PASV, but if you pass zero to
+         * this option, it will not try using EPSV, only plain PASV.
+         * If the server is an IPv6 host, this option will have no effect as of
+         * 7.12.3.
+         *)
+        property UseEPSV : Boolean write SetUseEPSV;
+
+        (**
+         * Enable the PRET command
+         *
+         * It tells curl to send a PRET command before PASV (and EPSV). Certain
+         * FTP servers, mainly drftpd, require this non-standard command for
+         * directory listings as well as up and downloads in PASV mode. Has no
+         * effect when using the active FTP transfers mode.
+         *)
+        property UsePRET : Boolean write SetUsePRET;
+
+        (**
+         * Create missing dirs for FTP and SFTP
+         *
+         * Telling libcurl to create the dir. If the value is CREATE_DIR,
+         * libcurl will attempt to create any remote directory that it fails to
+         * "move" into.
+         * For FTP requests, that means a CWD command fails. CWD being the
+         * command that changes working directory.
+         * For SFTP requests, libcurl will attempt to create the remote
+         * directory if it can't obtain a handle to the target-location. The
+         * creation will fail if a file of the same name as the directory to
+         * create already exists or lack of permissions prevents creation.
+         * Setting create to CREATE_DIR_RETRY, tells libcurl to retry the CWD
+         * command again if the subsequent MKD command fails. This is especially
+         * useful if you're doing many simultaneous connections against the same
+         * server and they all have this option enabled, as then CWD may first
+         * fail but then another connection does MKD before this connection and
+         * thus MKD fails but trying CWD works!
+         *)
+        property CreateMissingDirs : TCreateDirs write SetCreateMissingDirs;
+
+        (**
+         * Time allowed to wait for FTP response
+         *
+         * Causes libcurl to set a timeout period on the amount of time that the
+         * server is allowed to take in order to send a response message for a
+         * command before the session is considered dead. While libcurl is
+         * waiting for a response, this value overrides TSession.Timeout. It is
+         * recommended that if used in conjunction with TSession.Timeout, you
+         * set ResponseTimeout to a value smaller than TSession.Timeout.
+         *)
+        property ResponseTimeout : TTimeInterval write SetResponseTimeout;
+
+        (**
+         * Command to use instead of USER with FTP
+         *
+         * Pass a string which will be used to authenticate if the usual FTP
+         * "USER user" and "PASS password" negotiation fails. This is currently
+         * only known to be required when connecting to Tumbleweed's Secure
+         * Transport FTPS server using client certificates for authentication.
+         *)
+        property AlternativeToUser : string write SetAlternativeToUser;
+
+        (**
+         * Ignore the IP address in the PASV response
+         *
+         * If skip it instructs libcurl to not use the IP address the server
+         * suggests in its 227-response to libcurl's PASV command when libcurl
+         * connects the data connection. Instead libcurl will re-use the same IP
+         * address it already uses for the control connection. But it will use
+         * the port number from the 227-response.
+         * This option thus allows libcurl to work around broken server
+         * installations that due to NATs, firewalls or incompetence report the
+         * wrong IP address back.
+         *)
+        property SkipPASVIP : Boolean write SetSkipPASVIP default False;
+
+        (**
+         * Set order in which to attempt TLS vs SSL when using FTP
+         *
+         * Pass a one of the values from TAuth, to alter how libcurl issues
+         * "AUTH TLS" or "AUTH SSL" when FTP over SSL is activated. This is only
+         * interesting if TSession.UseSSL is also set.
+         *)
+        property Auth : TAuth write SetSSLAuth;
+
+        (**
+         * Switch off SSL again with FTP after auth
+         *
+         * If enabled, this option makes libcurl use CCC (Clear Command
+         * Channel). It shuts down the SSL/TLS layer after authenticating. The
+         * rest of the control channel communication will be unencrypted. This
+         * allows NAT routers to follow the FTP transaction. Pass a long using
+         * one of the values TSSL_CCC;
+         *)
+        property SSLClearCommandChannel : TSSL_CCC write SetSSLCCC;
+
+        (**
+         * Set account info for FTP
+         *
+         * When an FTP server asks for "account data" after user name and
+         * password has been provided, this data is sent off using the ACCT
+         * command.
+         *)
+        property AccountInfo : string write SetAccountInfo;
+
+        (**
+         * Select directory traversing method for FTP
+         *
+         * This option exists because some server implementations aren't
+         * compliant to what the standards say should work.
+         *)
+        property FileMethod : TFileMethod write SetFileMethod
+          default METHOD_MULTICWD;
       end;
 
       { TSMTPProperty }
@@ -3870,7 +4119,7 @@ end;
 
 constructor TSession.TTFTPProperty.Create(AHandle: CURL);
 begin
-  FHandle := AAHandle;
+  FHandle := AHandle;
 end;
 
 destructor TSession.TTFTPProperty.Destroy;
@@ -3938,6 +4187,72 @@ begin
 end;
 
 { TSession.TFTPProperty }
+
+procedure TSession.TFTPProperty.SetFTPPort(APort: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTPPORT, PChar(APort));
+end;
+
+procedure TSession.TFTPProperty.SetAppendUpload(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_APPEND, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetUseEPRT(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPRT, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetUseEPSV(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPSV, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetUsePRET(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_PRET, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetCreateMissingDirs(ACreate: TCreateDirs);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_CREATE_MISSING_DIRS, Longint(ACreate));
+end;
+
+procedure TSession.TFTPProperty.SetResponseTimeout(ATimeout: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_RESPONSE_TIMEOUT,
+    Longint(Ceil(ATimeout.Seconds)));
+end;
+
+procedure TSession.TFTPProperty.SetAlternativeToUser(ACmd: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_ALTERNATIVE_TO_USER, PChar(ACmd));
+end;
+
+procedure TSession.TFTPProperty.SetSkipPASVIP(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_SKIP_PASV_IP, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetSSLAuth(AAuth: TAuth);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTPSSLAUTH, Longint(AAuth));
+end;
+
+procedure TSession.TFTPProperty.SetSSLCCC(ACCC: TSSL_CCC);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_SSL_CCC, Longint(ACCC));
+end;
+
+procedure TSession.TFTPProperty.SetAccountInfo(AAccount: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_ACCOUNT, PChar(AAccount));
+end;
+
+procedure TSession.TFTPProperty.SetFileMethod(AMethod: TFileMethod);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FTP_FILEMETHOD, Longint(AMethod));
+end;
 
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
 begin
