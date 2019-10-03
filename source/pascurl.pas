@@ -3623,6 +3623,113 @@ type
         property NoOptions : Boolean write SetNoOptions default False;
       end;
 
+      { TRTSPProperty }
+
+      TRTSPProperty = class
+      public
+        type RTSPRequest = (
+          (**
+           * Used to retrieve the available methods of the server. The
+           * application is responsible for parsing and obeying the response.
+           * The session ID is not needed for this method.
+           *)
+          REQUEST_OPTIONS  = Longint(CURL_RTSPREQ_OPTIONS),
+
+          (**
+           * Used to get the low level description of a stream. The application
+           * should note what formats it understands in the 'Accept:' header.
+           * Unless set manually, libcurl will automatically fill in 'Accept:
+           * application/sdp'. Time-condition headers will be added to Describe
+           * requests if the CURLOPT_TIMECONDITION option is active. (The
+           * session ID is not needed for this method)
+           *)
+          REQUEST_DESCRIBE = Longint(CURL_RTSPREQ_DESCRIBE),
+
+          (**
+           * When sent by a client, this method changes the description of the
+           * session. For example, if a client is using the server to record a
+           * meeting, the client can use Announce to inform the server of all
+           * the meta-information about the session. ANNOUNCE acts like an HTTP
+           * PUT or POST just like CURL_RTSPREQ_SET_PARAMETER
+           *)
+          REQUEST_ANNOUNCE = Longint(CURL_RTSPREQ_ANNOUNCE),
+
+          (**
+           * Setup is used to initialize the transport layer for the session.
+           * The application must set the desired Transport options for a
+           * session by using the CURLOPT_RTSP_TRANSPORT option prior to calling
+           * setup. If no session ID is currently set with
+           * TSession.RTSP.SessionId, libcurl will extract and use the session
+           * ID in the response to this request. The session ID is not needed
+           * for this method.
+           *)
+          REQUEST_SETUP = Longint(CURL_RTSPREQ_SETUP),
+
+          (**
+           * Send a Play command to the server. Use the CURLOPT_RANGE option to
+           * modify the playback time (e.g. 'npt=10-15').
+           *)
+          REQUEST_PLAY = Longint(CURL_RTSPREQ_PLAY),
+
+          (**
+           * Send a Pause command to the server. Use the CURLOPT_RANGE option
+           * with a single value to indicate when the stream should be halted.
+           * (e.g. npt='25')
+           *)
+          REQUEST_PAUSE = Longint(CURL_RTSPREQ_PAUSE),
+
+          (**
+           * This command terminates an RTSP session. Simply closing a
+           * connection does not terminate the RTSP session since it is valid to
+           * control an RTSP session over different connections.
+           *)
+          REQUEST_TEARDOWN = Longint(CURL_RTSPREQ_TEARDOWN),
+
+          (**
+           * Retrieve a parameter from the server. By default, libcurl will
+           * automatically include a Content-Type: text/parameters header on all
+           * non-empty requests unless a custom one is set. GET_PARAMETER acts
+           * just like an HTTP PUT or POST (see CURL_RTSPREQ_SET_PARAMETER).
+           * Applications wishing to send a heartbeat message (e.g. in the
+           * presence of a server-specified timeout) should send use an empty
+           * GET_PARAMETER request.
+           *)
+          REQUEST_GET_PARAMETER = Longint(CURL_RTSPREQ_GET_PARAMETER),
+
+          (**
+           * Set a parameter on the server. By default, libcurl will
+           * automatically include a Content-Type: text/parameters header unless
+           * a custom one is set. The interaction with SET_PARAMETER is much
+           * like an HTTP PUT or POST. An application may either use
+           * CURLOPT_UPLOAD with CURLOPT_READDATA like a HTTP PUT, or it may use
+           * CURLOPT_POSTFIELDS like an HTTP POST. No chunked transfers are
+           * allowed, so the application must set the CURLOPT_INFILESIZE in the
+           * former and CURLOPT_POSTFIELDSIZE in the latter. Also, there is no
+           * use of multi-part POSTs within RTSP.
+           *)
+          REQUEST_SET_PARAMETER = Longint(CURL_RTSPREQ_SET_PARAMETER),
+
+          (**
+           * Used to tell the server to record a session. Use the CURLOPT_RANGE
+           * option to modify the record time.
+           *)
+          REQUEST_RECORD = Longint(CURL_RTSPREQ_RECORD),
+
+          (**
+           * This is a special request because it does not send any data to the
+           * server. The application may call this function in order to receive
+           * interleaved RTP data. It will return after processing one read
+           * buffer of data in order to give the application a chance to run.
+           *)
+          REQUEST_RECEIVE = Longint(CURL_RTSPREQ_RECEIVE)
+        );
+      private
+        FHandle : CURL;
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+      end;
+
   protected
     FHandle : CURL;
     FBuffer : TMemoryStream;
@@ -3638,6 +3745,7 @@ type
     FFTP : TFTPProperty;
     FTFTP : TTFTPProperty;
     FSMTP : TSMTPProperty;
+    FRTSP : TRTSPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -3696,7 +3804,10 @@ type
     property Security : TSecurityProperty read FSecurity write FSecurity;
     property HTTP : THTTPProperty read FHTTP write FHTTP;
     property IMAP : TIMAPProperty read FIMAP write FIMAP;
+    property FTP : TFTPProperty read FFTP write FFTP;
+    property TFTP : TTFTPProperty read FTFTP write FTFTP;
     property SMTP : TSMTPProperty read FSMTP write FSMTP;
+    property RTSP : TRTSPProperty read FRTSP write FRTSP;
 
     (**
      * Check if session opened and correctly
@@ -4104,6 +4215,18 @@ type
   end;
 
 implementation
+
+{ TSession.TRTSPProperty }
+
+constructor TSession.TRTSPProperty.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TRTSPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TSession.TTFTPProperty }
 
@@ -5803,6 +5926,7 @@ begin
   FFTP := TFTPProperty.Create(FHandle);
   FTFTP := TTFTPProperty.Create(FHandle);
   FSMTP := TSMTPProperty.Create(FHandle);
+  FRTSP := TRTSPProperty.Create(FHandle);
 
   if Opened then
   begin
