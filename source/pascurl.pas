@@ -164,21 +164,20 @@ type
   { TSession }
   { Present cURL session to assign request params }
 
-  (**
-   * Callback for writting received data
-   *)
-  TDownloadFunction = function (buffer : PChar; size : LongWord) : LongWord
-    of object;
-
-  (**
-   * Callback for data uploads
-   *)
-  TUploadFunction = function (buffer : PChar; size : LongWord) : LongWord
-    of object;
-
   TSession = class
   public
     type
+      (**
+       * Callback for writting received data
+       *)
+      TDownloadFunction = function (buffer : PChar; size : LongWord) : LongWord
+        of object;
+
+      (**
+       * Callback for data uploads
+       *)
+      TUploadFunction = function (buffer : PChar; size : LongWord) : LongWord
+        of object;
 
       { TOptionsProperty }
 
@@ -286,79 +285,80 @@ type
       public
         type
           TAuthMethod = (
-          AUTH_NONE,
+            AUTH_NONE,
 
-          (**
-           * HTTP Basic authentication. This is the default choice, and the only
-           * method that is in wide-spread use and supported virtually
-           * everywhere. This sends the user name and password over the network
-           * in plain text, easily captured by others.
-           *)
-          AUTH_BASIC,
+           (**
+            * HTTP Basic authentication. This is the default choice, and the
+            * only method that is in wide-spread use and supported virtually
+            * everywhere. This sends the user name and password over the network
+            * in plain text, easily captured by others.
+            *)
+            AUTH_BASIC,
 
-          (**
-           * HTTP Digest authentication. Digest authentication is defined in RFC
-           * 2617 and is a more secure way to do authentication over public
-           * networks than the regular old-fashioned Basic method.
-           *)
-          AUTH_DIGEST,
+           (**
+            * HTTP Digest authentication. Digest authentication is defined in
+            * RFC 2617 and is a more secure way to do authentication over public
+            * networks than the regular old-fashioned Basic method.
+            *)
+            AUTH_DIGEST,
 
-          (**
-           * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
-           * defined in RFC 4559 and is the most secure way to perform
-           * authentication over HTTP.
-           *)
-          AUTH_NEGOTIATE,
+           (**
+            * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication
+            * is defined in RFC 4559 and is the most secure way to perform
+            * authentication over HTTP.
+            *)
+            AUTH_NEGOTIATE,
 
-          (**
-           * Same as AUTH_NEGOTIATE
-           *)
-          AUTH_GSSAPI,
+           (**
+            * Same as AUTH_NEGOTIATE
+            *)
+            AUTH_GSSAPI,
 
-          (**
-           * HTTP NTLM authentication. A proprietary protocol invented and used
-           * by Microsoft. It uses a challenge-response and hash concept similar
-           * to Digest, to prevent the password from being eavesdropped.
-           *)
-          AUTH_NTLM,
+           (**
+            * HTTP NTLM authentication. A proprietary protocol invented and used
+            * by Microsoft. It uses a challenge-response and hash concept
+            * similar to Digest, to prevent the password from being
+            * eavesdropped.
+            *)
+            AUTH_NTLM,
 
-          (**
-           * HTTP Digest authentication with an IE flavor. Digest authentication
-           * is defined in RFC 2617 and is a more secure way to do
-           * authentication over public networks than the regular old-fashioned
-           * Basic method. The IE flavor is simply that libcurl will use a
-           * special "quirk" that IE is known to have used before version 7 and
-           * that some servers require the client to use.
-           *)
-          AUTH_DIGEST_IE,
+           (**
+            * HTTP Digest authentication with an IE flavor. Digest
+            * authentication is defined in RFC 2617 and is a more secure way to
+            * do authentication over public networks than the regular
+            * old-fashioned Basic method. The IE flavor is simply that libcurl
+            * will use a special "quirk" that IE is known to have used before
+            * version 7 and that some servers require the client to use.
+            *)
+            AUTH_DIGEST_IE,
 
-          (**
-           * NTLM delegating to winbind helper. Authentication is performed by a
-           * separate binary application that is executed when needed. The name
-           * of the application is specified at compile time but is typically
-           * /usr/bin/ntlm_auth
-           *)
-          AUTH_NTLM_WB,
+           (**
+            * NTLM delegating to winbind helper. Authentication is performed by
+            * a separate binary application that is executed when needed. The
+            * name of the application is specified at compile time but is
+            * typically /usr/bin/ntlm_auth
+            *)
+            AUTH_NTLM_WB,
 
-          (**
-           * HTTP Bearer token authentication, used primarily in OAuth 2.0
-           * protocol.
-           *)
-          AUTH_BEARER,
+           (**
+            * HTTP Bearer token authentication, used primarily in OAuth 2.0
+            * protocol.
+            *)
+            AUTH_BEARER,
 
-          (**
-           * This is sets all bits and thus makes libcurl pick any it finds
-           * suitable. libcurl will automatically select the one it finds most
-           * secure.
-           *)
-          AUTH_ANY,
+           (**
+            * This is sets all bits and thus makes libcurl pick any it finds
+            * suitable. libcurl will automatically select the one it finds most
+            * secure.
+            *)
+            AUTH_ANY,
 
-          (**
-           * This is sets all bits except Basic and thus makes libcurl pick any
-           * it finds suitable. libcurl will automatically select the one it
-           * finds most secure.
-           *)
-          AUTH_ANYSAFE
+           (**
+            * This is sets all bits except Basic and thus makes libcurl pick any
+            * it finds suitable. libcurl will automatically select the one it
+            * finds most secure.
+            *)
+            AUTH_ANYSAFE
         );
 
         TAuthMethods = set of TAuthMethod;
@@ -373,18 +373,18 @@ type
         );
 
         TNETRCOption = (
-         (**
-          * The use of the ~/.netrc file is optional, and information in the URL
-          * is to be preferred. The file will be scanned for the host and user
-          * name (to find the password only) or for the host only, to find the
-          * first user name and password after that machine, which ever
-          * information is not specified.
-          *)
+          (**
+           * The use of the ~/.netrc file is optional, and information in the
+           * URL is to be preferred. The file will be scanned for the host and
+           * user name (to find the password only) or for the host only, to find
+           * the first user name and password after that machine, which ever
+           * information is not specified.
+           *)
           NETRC_OPTIONAL                    = Longint(CURL_NETRC_OPTIONAL),
 
-         (**
-          * The library will ignore the ~/.netrc file.
-          *)
+          (**
+           * The library will ignore the ~/.netrc file.
+           *)
           NETRC_IGNORED                     = Longint(CURL_NETRC_IGNORED){%H-},
 
          (**
@@ -3727,7 +3727,8 @@ type
 
       TRTSPProperty = class
       public
-        type RTSPRequest = (
+        type
+          RTSPRequest = (
           (**
            * Used to retrieve the available methods of the server. The
            * application is responsible for parsing and obeying the response.
@@ -3825,9 +3826,82 @@ type
         );
       private
         FHandle : CURL;
+
+        procedure SetRequest (AReq : Longint);
+        procedure SetSessionID (AId : string);
+        procedure SetStreamURI (AURI : string);
+        procedure SetTransport (ATransport : string);
+        procedure SetClientCSeq (ACSeq : Longint);
+        procedure SetServerCSeq (ACSeq : Longint);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+        (*
+         * Specify RTSP request
+         *
+         * Tell libcurl what kind of RTSP request to make. Pass one of the
+         * following RTSP enum values as a long in the request argument. Unless
+         * noted otherwise, commands require the Session ID to be initialized.
+         *)
+        property Request : Longint write SetRequest;
+
+        (**
+         * Set RTSP session ID
+         *
+         * Pass a string as a parameter to set the value of the current RTSP
+         * Session ID for the handle. Useful for resuming an in-progress
+         * session. Once this value is set to any non-NULL value, libcurl will
+         * return CURLE_RTSP_SESSION_ERROR if ID received from the server does
+         * not match. If unset (or set to NULL), libcurl will automatically set
+         * the ID the first time the server sets it in a response.
+         *)
+        property SessionID : string write SetSessionID;
+
+        (**
+         * Set RTSP stream URI
+         *
+         * Set the stream URI to operate on by passing a string. For example, a
+         * single session may be controlling rtsp://foo/twister/audio and
+         * rtsp://foo/twister/video and the application can switch to the
+         * appropriate stream using this option. If unset, libcurl will default
+         * to operating on generic server options by passing '*' in the place of
+         * the RTSP Stream URI. This option is distinct from TSession.Url. When
+         * working with RTSP, the StreamURI indicates what URL to send to the
+         * server in the request header while the TSession.Url indicates where
+         * to make the connection to. (e.g. the TSession.Url for the above
+         * examples might be set to rtsp://foo/twister
+         *)
+        property StreamURI : string write SetStreamURI;
+
+        (**
+         * Set RTSP Transport: header
+         *
+         * Pass a string to tell libcurl what to pass for the Transport: header
+         * for this RTSP session. This is mainly a convenience method to avoid
+         * needing to set a custom Transport: header for every SETUP request.
+         * The application must set a Transport: header before issuing a SETUP
+         * request.
+         *)
+        property Transport : string write SetTransport;
+
+        (**
+         * Set the RTSP client CSEQ number
+         *
+         * Pass a long to set the CSEQ number to issue for the next RTSP
+         * request. Useful if the application is resuming a previously broken
+         * connection. The CSEQ will increment from this new number henceforth.
+         *)
+        property ClientCSeq : Longint write SetClientCSeq default 0;
+
+        (**
+         * Set the RTSP server CSEQ number
+         *
+         * Pass a long to set the CSEQ number to expect for the next RTSP
+         * Server->Client request.
+         * NOTE: this feature (listening for Server requests) is unimplemented.
+         *)
+        property ServerCSeq : Longint write SetServerCSeq default 0;
       end;
 
   protected
@@ -4318,6 +4392,36 @@ type
 implementation
 
 { TSession.TRTSPProperty }
+
+procedure TSession.TRTSPProperty.SetRequest(AReq: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_REQUEST, AReq);
+end;
+
+procedure TSession.TRTSPProperty.SetSessionID(AId: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_SESSION_ID, PChar(AId));
+end;
+
+procedure TSession.TRTSPProperty.SetStreamURI(AURI: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_STREAM_URI, PChar(AURI));
+end;
+
+procedure TSession.TRTSPProperty.SetTransport(ATransport: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_TRANSPORT, PChar(ATransport));
+end;
+
+procedure TSession.TRTSPProperty.SetClientCSeq(ACSeq: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_CLIENT_CSEQ, ACSeq);
+end;
+
+procedure TSession.TRTSPProperty.SetServerCSeq(ACSeq: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RTSP_SERVER_CSEQ, ACSeq);
+end;
 
 constructor TSession.TRTSPProperty.Create(AHandle: CURL);
 begin
