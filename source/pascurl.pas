@@ -167,15 +167,15 @@ type
   TSession = class
   public
     type
-      (**
-       * Callback for writting received data
-       *)
+     (**
+      * Callback for writting received data
+      *)
       TDownloadFunction = function (buffer : PChar; size : LongWord) : LongWord
         of object;
 
-      (**
-       * Callback for data uploads
-       *)
+     (**
+      * Callback for data uploads
+      *)
       TUploadFunction = function (buffer : PChar; size : LongWord) : LongWord
         of object;
 
@@ -192,91 +192,100 @@ type
         procedure SetBufferSize (ASize : TDataSize);
         procedure SetFailOnError (AFailOnError : Boolean);
         procedure SetPathAsIs (ALeaveIt : Boolean);
+        procedure SetConvertCRLF (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
 
-         (**
-         * Set scope id for IPv6 addresses
-         *
-         * Pass a long specifying the scope id value to use when connecting to
-         * IPv6 addresses.
-         *)
-         property AddressScope : Longint write SetAddressScope default 0;
+       (**
+        * Set scope id for IPv6 addresses
+        *
+        * Pass a long specifying the scope id value to use when connecting to
+        * IPv6 addresses.
+        *)
+        property AddressScope : Longint write SetAddressScope default 0;
 
-         (**
-         * Source interface for outgoing trafic
-         *
-         * This sets the interface name to use as outgoing network interface.
-         * The name can be an interface name, an IP address, or a host name.
-         * If the parameter starts with "if!" then it is treated as only as
-         * interface name and no attempt will ever be named to do treat it as an
-         * IP address or to do name resolution on it. If the parameter starts
-         * with "host!" it is treated as either an IP address or a hostname.
-         * Hostnames are resolved synchronously. Using the if! format is highly
-         * recommended when using the multi interfaces to avoid allowing the
-         * code to block.
-         *)
-         property InterfaceName : string write SetInterface;
+       (**
+        * Source interface for outgoing trafic
+        *
+        * This sets the interface name to use as outgoing network interface.
+        * The name can be an interface name, an IP address, or a host name.
+        * If the parameter starts with "if!" then it is treated as only as
+        * interface name and no attempt will ever be named to do treat it as an
+        * IP address or to do name resolution on it. If the parameter starts
+        * with "host!" it is treated as either an IP address or a hostname.
+        * Hostnames are resolved synchronously. Using the if! format is highly
+        * recommended when using the multi interfaces to avoid allowing the
+        * code to block.
+        *)
+        property InterfaceName : string write SetInterface;
 
-        (**
-         * Set UNIX domain socket
-         *
-         * Enables the use of Unix domain sockets as connection endpoint and
-         * sets the path to path. If path is '' (empty string), then Unix domain
-         * sockets are disabled.
-         * When enabled, curl will connect to the Unix domain socket instead of
-         * establishing a TCP connection to a host. Since no TCP connection is
-         * created, curl does not need to resolve the DNS hostname in the URL.
-         * The maximum path length on Cygwin, Linux and Solaris is 107. On other
-         * platforms it might be even less.
-         *)
-         property UnixSocketPath : string write SetUnixSocketPath;
+       (**
+        * Set UNIX domain socket
+        *
+        * Enables the use of Unix domain sockets as connection endpoint and
+        * sets the path to path. If path is '' (empty string), then Unix domain
+        * sockets are disabled.
+        * When enabled, curl will connect to the Unix domain socket instead of
+        * establishing a TCP connection to a host. Since no TCP connection is
+        * created, curl does not need to resolve the DNS hostname in the URL.
+        * The maximum path length on Cygwin, Linux and Solaris is 107. On other
+        * platforms it might be even less.
+        *)
+        property UnixSocketPath : string write SetUnixSocketPath;
 
-        (**
-         * Set an abstract Unix domain socket
-         *
-         * Enables the use of an abstract Unix domain socket instead of
-         * establishing a TCP connection to a host.
-         *)
-         property AbstractUnixSocketPath : string
-           write SetAbstractUnixSocketPath;
+       (**
+        * Set an abstract Unix domain socket
+        *
+        * Enables the use of an abstract Unix domain socket instead of
+        * establishing a TCP connection to a host.
+        *)
+        property AbstractUnixSocketPath : string
+          write SetAbstractUnixSocketPath;
 
-        (**
-         * Set preffered receive buffer size
-         *
-         * Specifying your preferred size for the receive buffer in libcurl. The
-         * main point of this would be that the write callback gets called more
-         * often and with smaller chunks. Secondly, for some protocols, there's
-         * a benefit of having a larger buffer for performance.
-         * The minimum buffer size allowed to be set is 1024 bytes.
-         *)
-         property BufferSize : TDataSize write SetBufferSize;
+       (**
+        * Set preffered receive buffer size
+        *
+        * Specifying your preferred size for the receive buffer in libcurl. The
+        * main point of this would be that the write callback gets called more
+        * often and with smaller chunks. Secondly, for some protocols, there's
+        * a benefit of having a larger buffer for performance.
+        * The minimum buffer size allowed to be set is 1024 bytes.
+        *)
+        property BufferSize : TDataSize write SetBufferSize;
 
-        (**
-         * Request failure on HTTP response >= 400
-         *
-         * Tells the library to fail the request if the HTTP code returned is
-         * equal to or larger than 400. The default action would be to return
-         * the page normally, ignoring that code.
-         *)
+       (**
+        * Request failure on HTTP response >= 400
+        *
+        * Tells the library to fail the request if the HTTP code returned is
+        * equal to or larger than 400. The default action would be to return
+        * the page normally, ignoring that code.
+        *)
         property FailOnError : Boolean write SetFailOnError default False;
 
-        (**
-         * Do not handle dot dot sequences
-         *
-         * Tell libcurl to not alter the given path before passing it on to the
-         * server.
-         * This instructs libcurl to NOT squash sequences of "/../" or "/./"
-         * that may exist in the URL's path part and that is supposed to be
-         * removed according to RFC 3986 section 5.2.4.
-         * Some server implementations are known to (erroneously) require the
-         * dot dot sequences to remain in the path and some clients want to pass
-         * these on in order to try out server implementations.
-         * By default libcurl will merge such sequences before using the path.
-         *)
+       (**
+        * Do not handle dot dot sequences
+        *
+        * Tell libcurl to not alter the given path before passing it on to the
+        * server.
+        * This instructs libcurl to NOT squash sequences of "/../" or "/./"
+        * that may exist in the URL's path part and that is supposed to be
+        * removed according to RFC 3986 section 5.2.4.
+        * Some server implementations are known to (erroneously) require the
+        * dot dot sequences to remain in the path and some clients want to pass
+        * these on in order to try out server implementations.
+        * By default libcurl will merge such sequences before using the path.
+        *)
         property PathAsIs : Boolean write SetPathAsIs default False;
 
+       (**
+        * Enable/disable CRLF conversion
+        *
+        * If the value is set to True, libcurl converts Unix newlines to CRLF
+        * newlines on transfers. Disable this option again by setting the value
+        * to False.
+        *)
+        property ConvertCRLF : Boolean write SetConvertCRLF default False;
       end;
 
       { TSecurityProperty }
@@ -364,27 +373,27 @@ type
         TAuthMethods = set of TAuthMethod;
 
         TTLSAuthMethod = (
-          (**
-           * TLS-SRP authentication. Secure Remote Password authentication for
-           * TLS is defined in RFC 5054 and provides mutual authentication if
-           * both sides have a shared secret.
-           *)
+         (**
+          * TLS-SRP authentication. Secure Remote Password authentication for
+          * TLS is defined in RFC 5054 and provides mutual authentication if
+          * both sides have a shared secret.
+          *)
           SRP
         );
 
         TNETRCOption = (
-          (**
-           * The use of the ~/.netrc file is optional, and information in the
-           * URL is to be preferred. The file will be scanned for the host and
-           * user name (to find the password only) or for the host only, to find
-           * the first user name and password after that machine, which ever
-           * information is not specified.
-           *)
+         (**
+          * The use of the ~/.netrc file is optional, and information in the
+          * URL is to be preferred. The file will be scanned for the host and
+          * user name (to find the password only) or for the host only, to find
+          * the first user name and password after that machine, which ever
+          * information is not specified.
+          *)
           NETRC_OPTIONAL                    = Longint(CURL_NETRC_OPTIONAL),
 
-          (**
-           * The library will ignore the ~/.netrc file.
-           *)
+         (**
+          * The library will ignore the ~/.netrc file.
+          *)
           NETRC_IGNORED                     = Longint(CURL_NETRC_IGNORED){%H-},
 
          (**
@@ -414,121 +423,121 @@ type
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
 
-        (**
-         * Allow/disallow specifying user name in the url
-         *)
+       (**
+        * Allow/disallow specifying user name in the url
+        *)
         property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
           default True;
 
-        (**
-         * User name and password to use in authentification
-         *
-         * Login details string for the connection. The format of which is:
-         * [user name]:[password].
-         * When using Kerberos V5 authentication with a Windows based server,
-         * you should specify the user name part with the domain name in order
-         * for the server to successfully obtain a Kerberos Ticket. If you don't
-         * then the initial part of the authentication handshake may fail.
-         * When using NTLM, the user name can be specified simply as the user
-         * name without the domain name should the server be part of a single
-         * domain and forest.
-         * To specify the domain name use either Down-Level Logon Name or UPN
-         * (User Principal Name) formats. For example, EXAMPLE\user and
-         * user@example.com respectively.
-         * When using HTTP and FollowLocation, libcurl might perform several
-         * requests to possibly different hosts. libcurl will only send this
-         * user and password information to hosts using the initial host name,
-         * so if libcurl follows locations to other hosts it will not send the
-         * user and password to those. This is enforced to prevent accidental
-         * information leakage.
-         *)
+       (**
+        * User name and password to use in authentification
+        *
+        * Login details string for the connection. The format of which is:
+        * [user name]:[password].
+        * When using Kerberos V5 authentication with a Windows based server,
+        * you should specify the user name part with the domain name in order
+        * for the server to successfully obtain a Kerberos Ticket. If you don't
+        * then the initial part of the authentication handshake may fail.
+        * When using NTLM, the user name can be specified simply as the user
+        * name without the domain name should the server be part of a single
+        * domain and forest.
+        * To specify the domain name use either Down-Level Logon Name or UPN
+        * (User Principal Name) formats. For example, EXAMPLE\user and
+        * user@example.com respectively.
+        * When using HTTP and FollowLocation, libcurl might perform several
+        * requests to possibly different hosts. libcurl will only send this
+        * user and password information to hosts using the initial host name,
+        * so if libcurl follows locations to other hosts it will not send the
+        * user and password to those. This is enforced to prevent accidental
+        * information leakage.
+        *)
         property UserPassword : string write SetUserPassword;
 
-        (**
-         * User name to use in authentication
-         *
-         * Sets the user name to be used in protocol authentication. You should
-         * not use this option together with the (older) UserPassword option.
-         * When using Kerberos V5 authentication with a Windows based server,
-         * you should include the domain name in order for the server to
-         * successfully obtain a Kerberos Ticket. If you don't then the initial
-         * part of the authentication handshake may fail.
-         * When using NTLM, the user name can be specified simply as the user
-         * name without the domain name should the server be part of a single
-         * domain and forest.
-         * To include the domain name use either Down-Level Logon Name or UPN
-         * (User Principal Name) formats. For example, EXAMPLE\user and
-         * user@example.com respectively.
-         *)
+       (**
+        * User name to use in authentication
+        *
+        * Sets the user name to be used in protocol authentication. You should
+        * not use this option together with the (older) UserPassword option.
+        * When using Kerberos V5 authentication with a Windows based server,
+        * you should include the domain name in order for the server to
+        * successfully obtain a Kerberos Ticket. If you don't then the initial
+        * part of the authentication handshake may fail.
+        * When using NTLM, the user name can be specified simply as the user
+        * name without the domain name should the server be part of a single
+        * domain and forest.
+        * To include the domain name use either Down-Level Logon Name or UPN
+        * (User Principal Name) formats. For example, EXAMPLE\user and
+        * user@example.com respectively.
+        *)
         property Username : string write SetUsername;
 
-        (**
-         * Password to use in authentication
-         *
-         * The Password option should be used in conjunction with the Username
-         * option.
-         *)
+       (**
+        * Password to use in authentication
+        *
+        * The Password option should be used in conjunction with the Username
+        * option.
+        *)
         property Password : string write SetPassword;
 
-        (**
-         * User name to use for TLS authentication
-         *)
+       (**
+        * User name to use for TLS authentication
+        *)
         property TLSUsername : string write SetTLSUsername;
 
-        (**
-         * Password to use for TLS authentication
-         *
-         * Requires that the TLSUsername option also be set.
-         *)
+       (**
+        * Password to use for TLS authentication
+        *
+        * Requires that the TLSUsername option also be set.
+        *)
         property TLSPassword : string write SetTLSPassword;
 
-        (**
-         * Set TLS authentication methods
-         *)
+       (**
+        * Set TLS authentication methods
+        *)
         property TLSAuth : TTLSAuthMethod write SetTLSAuth;
 
-        (**
-         * Authentication service name
-         *
-         * String holding the name of the service for DIGEST-MD5, SPNEGO and
-         * Kerberos 5 authentication mechanisms. The default service names are
-         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
-         * change them.
-         *)
+       (**
+        * Authentication service name
+        *
+        * String holding the name of the service for DIGEST-MD5, SPNEGO and
+        * Kerberos 5 authentication mechanisms. The default service names are
+        * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+        * change them.
+        *)
         property AuthServiceName : string write SetAuthServiceName;
 
-        (**
-         * Request then .netrc is used
-         *
-         * This parameter controls the preference level of libcurl between using
-         * user names and passwords from your ~/.netrc file, relative to user
-         * names and passwords in the URL supplied with URL. On Windows, libcurl
-         * will use the file as %HOME%/_netrc, but you can also tell libcurl a
-         * different file name to use with NetrcFile.
-         *)
+       (**
+        * Request then .netrc is used
+        *
+        * This parameter controls the preference level of libcurl between using
+        * user names and passwords from your ~/.netrc file, relative to user
+        * names and passwords in the URL supplied with URL. On Windows, libcurl
+        * will use the file as %HOME%/_netrc, but you can also tell libcurl a
+        * different file name to use with NetrcFile.
+        *)
         property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
 
-        (**
-         * File name to read .netrc info from
-         *
-         * String containing the full path name to the file you want libcurl to
-         * use as .netrc file. If this option is omitted, and Netrc is set,
-         * libcurl will attempt to find a .netrc file in the current user's home
-         * directory.
-         *)
+       (**
+        * File name to read .netrc info from
+        *
+        * String containing the full path name to the file you want libcurl to
+        * use as .netrc file. If this option is omitted, and Netrc is set,
+        * libcurl will attempt to find a .netrc file in the current user's home
+        * directory.
+        *)
         property NetrcFile : string write SetNetrcFile;
 
-        (**
-         * Send credentials to other hosts too
-         *
-         * Set the long gohead parameter to 1L to make libcurl continue to send
-         * authentication (user+password) credentials when following locations,
-         * even when hostname changed. This option is meaningful only when
-         * setting FollowRedirect.
-         * By default, libcurl will only send given credentials to the initial
-         * host name as given in the original URL, to avoid leaking username +
-         * password to other sites.
-         *)
+       (**
+        * Send credentials to other hosts too
+        *
+        * Set the parameter to True to make libcurl continue to send
+        * authentication (user+password) credentials when following locations,
+        * even when hostname changed. This option is meaningful only when
+        * setting FollowRedirect.
+        * By default, libcurl will only send given credentials to the initial
+        * host name as given in the original URL, to avoid leaking username +
+        * password to other sites.
+        *)
         property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
           default False;
       end;
@@ -2373,6 +2382,8 @@ type
         procedure SetStreamDepends (ADependHandle : CURL);
         procedure SetStreamDependsExclusive (ADependHandle : CURL);
         procedure SetStreamWeight (AWeight : Longint);
+        procedure SetRange (ARange : string);
+        procedure SetStartTransferFrom (AFrom : curl_off_t);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -2688,6 +2699,40 @@ type
          * server can send off the data equally for both streams).
          *)
         property StreamWeight : Longint write SetStreamWeight;
+
+        (**
+         * Set byte range to request
+         *
+         * Pass a char * as parameter, which should contain the specified range
+         * you want to retrieve. It should be in the format "X-Y", where either
+         * X or Y may be left out and X and Y are byte indexes.
+         * HTTP transfers also support several intervals, separated with commas
+         * as in "X-Y,N-M". Using this kind of multiple intervals will cause the
+         * HTTP server to send the response document in pieces (using standard
+         * MIME separation techniques). Unfortunately, the HTTP standard (RFC
+         * 7233 section 3.1) allows servers to ignore range requests so even
+         * when you set Range for a request, you may end up getting the full
+         * response sent back.
+         * For HTTP PUT uploads this option should not be used, since it may
+         * conflict with other options. If you need to upload arbitrary parts of
+         * a file (like for Amazon's web services) support is limited. We
+         * suggest set resume position using CURLOPT_RESUME_FROM, set end
+         * (resume+size) position using CURLOPT_INFILESIZE and seek to the
+         * resume position before initiating the transfer for each part. For
+         * more information refer to
+         * https://curl.haxx.se/mail/lib-2019-05/0012.html
+         *)
+        property Range : string write SetRange;
+
+        (**
+         * Set a point to resume transfer from
+         *
+         * It contains the offset in number of bytes that you want the transfer
+         * to start from. Set this option to 0 to make the transfer start from
+         * the beginning (effectively disabling resume).
+         *)
+        property StartTransferFrom : curl_off_t write SetStartTransferFrom
+          default 0;
       end;
 
       { TIMAPProperty }
@@ -3479,6 +3524,10 @@ type
         procedure SetSSLCCC (ACCC : TSSL_CCC);
         procedure SetAccountInfo (AAccount : string);
         procedure SetFileMethod (AMethod : TFileMethod);
+        procedure SetTransferText (AEnable : Boolean);
+        procedure SetProxyTransferMode (AEnable : Boolean);
+        procedure SetRange (ARange : string);
+        procedure SetStartTransferFrom (AFrom : curl_off_t);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3641,6 +3690,58 @@ type
          *)
         property FileMethod : TFileMethod write SetFileMethod
           default METHOD_MULTICWD;
+
+        (**
+         * Request a text based transfer to FTP
+         *
+         * Tells the library to use ASCII mode for FTP transfers, instead of the
+         * default binary transfer. For win32 systems it does not set the stdout
+         * to binary mode. This option can be usable when transferring text data
+         * between systems with different views on certain characters, such as
+         * newlines or similar.
+         * libcurl does not do a complete ASCII conversion when doing ASCII
+         * transfers over FTP. This is a known limitation/flaw that nobody has
+         * rectified. libcurl simply sets the mode to ASCII and performs a
+         * standard transfer.
+         *)
+        property TransferText : Boolean write SetTransferText default False;
+
+        (**
+         * Append FTP transfer mode to URL for proxy
+         *
+         * Tells libcurl to set the transfer mode (binary or ASCII) for FTP
+         * transfers done via an HTTP proxy, by appending ;type=a or ;type=i to
+         * the URL. Without this setting, or it being set to 0 (zero, the
+         * default), TransferText has no effect when doing FTP via a proxy.
+         * Beware that not all proxies support this feature.
+         *)
+        property ProxyTransferMode : Boolean write SetProxyTransferMode
+          default False;
+
+        (**
+         * Set byte range to request
+         *
+         * Pass a char * as parameter, which should contain the specified range
+         * you want to retrieve. It should be in the format "X-Y", where either
+         * X or Y may be left out and X and Y are byte indexes.
+         * Pass a '' (empty string) to this option to disable the use of ranges.
+         *)
+        property Range : string write SetRange;
+
+        (**
+         * Set a point to resume transfer from
+         *
+         * It contains the offset in number of bytes that you want the transfer
+         * to start from. Set this option to 0 to make the transfer start from
+         * the beginning (effectively disabling resume). For FTP, set this
+         * option to -1 to make the transfer start from the end of the target
+         * file (useful to continue an interrupted upload).
+         * When doing uploads with FTP, the resume position is where in the
+         * local/source file libcurl should try to resume the upload from and it
+         * will then append the source file to the remote target file.
+         *)
+        property StartTransferFrom : curl_off_t write SetStartTransferFrom
+          default 0;
       end;
 
       { TSMTPProperty }
@@ -3767,13 +3868,13 @@ type
           REQUEST_SETUP = Longint(CURL_RTSPREQ_SETUP),
 
           (**
-           * Send a Play command to the server. Use the CURLOPT_RANGE option to
+           * Send a Play command to the server. Use the Range option to
            * modify the playback time (e.g. 'npt=10-15').
            *)
           REQUEST_PLAY = Longint(CURL_RTSPREQ_PLAY),
 
           (**
-           * Send a Pause command to the server. Use the CURLOPT_RANGE option
+           * Send a Pause command to the server. Use the Range option
            * with a single value to indicate when the stream should be halted.
            * (e.g. npt='25')
            *)
@@ -3811,7 +3912,7 @@ type
           REQUEST_SET_PARAMETER = Longint(CURL_RTSPREQ_SET_PARAMETER),
 
           (**
-           * Used to tell the server to record a session. Use the CURLOPT_RANGE
+           * Used to tell the server to record a session. Use the Range
            * option to modify the record time.
            *)
           REQUEST_RECORD = Longint(CURL_RTSPREQ_RECORD),
@@ -3833,6 +3934,7 @@ type
         procedure SetTransport (ATransport : string);
         procedure SetClientCSeq (ACSeq : Longint);
         procedure SetServerCSeq (ACSeq : Longint);
+        procedure SetRange (ARange : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3902,6 +4004,19 @@ type
          * NOTE: this feature (listening for Server requests) is unimplemented.
          *)
         property ServerCSeq : Longint write SetServerCSeq default 0;
+
+        (**
+         * Set byte range to request
+         *
+         * Pass a char * as parameter, which should contain the specified range
+         * you want to retrieve. It should be in the format "X-Y", where either
+         * X or Y may be left out and X and Y are byte indexes.
+         * For RTSP, the formatting of a range should follow RFC 2326 Section
+         * 12.29. For RTSP, byte ranges are not permitted. Instead, ranges
+         * should be given in npt, utc, or smpte formats.
+         * Pass a '' (empty string) to this option to disable the use of ranges.
+         *)
+        property Range : string write SetRange;
       end;
 
   protected
@@ -3971,11 +4086,11 @@ type
     destructor Destroy; override;
 
     property Options : TOptionsProperty read FOptions write FOptions;
+    property Security : TSecurityProperty read FSecurity write FSecurity;
     property Protocol : TProtocolProperty read FProtocol write FProtocol;
     property TCP : TTCPProperty read FTCP write FTCP;
     property Proxy : TProxyProperty read FProxy write FProxy;
     property DNS : TDNSProperty read FDNS write FDNS;
-    property Security : TSecurityProperty read FSecurity write FSecurity;
     property HTTP : THTTPProperty read FHTTP write FHTTP;
     property IMAP : TIMAPProperty read FIMAP write FIMAP;
     property FTP : TFTPProperty read FFTP write FFTP;
@@ -4423,6 +4538,14 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_RTSP_SERVER_CSEQ, ACSeq);
 end;
 
+procedure TSession.TRTSPProperty.SetRange(ARange: string);
+begin
+  if ARange <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+end;
+
 constructor TSession.TRTSPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -4580,6 +4703,29 @@ end;
 procedure TSession.TFTPProperty.SetFileMethod(AMethod: TFileMethod);
 begin
   curl_easy_setopt(FHandle, CURLOPT_FTP_FILEMETHOD, Longint(AMethod));
+end;
+
+procedure TSession.TFTPProperty.SetTransferText(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_TRANSFERTEXT, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetProxyTransferMode(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_TRANSFER_MODE, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetRange(ARange: string);
+begin
+  if ARange <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+end;
+
+procedure TSession.TFTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
 end;
 
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
@@ -5074,6 +5220,19 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_STREAM_WEIGHT, AWeight);
 end;
 
+procedure TSession.THTTPProperty.SetRange(ARange: string);
+begin
+  if ARange <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+end;
+
+procedure TSession.THTTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -5428,6 +5587,11 @@ end;
 procedure TSession.TOptionsProperty.SetPathAsIs(ALeaveIt: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PATH_AS_IS, Longint(ALeaveIt));
+end;
+
+procedure TSession.TOptionsProperty.SetConvertCRLF(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_CRLF, Longint(AEnable));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
