@@ -1825,7 +1825,7 @@ const
    CURL_REDIR_POST_301, CURL_REDIR_POST_302 and CURL_REDIR_POST_303
    can be bitwise ORed so that CURL_REDIR_POST_301 | CURL_REDIR_POST_302
    | CURL_REDIR_POST_303 == CURL_REDIR_POST_ALL *)
-  CURL_REDIR_GET_ALL                                                = 0,
+  CURL_REDIR_GET_ALL                                                = 0;
   CURL_REDIR_POST_301                                               = 1;
   CURL_REDIR_POST_302                                               = 2;
   CURL_REDIR_POST_303                                               = 4;
