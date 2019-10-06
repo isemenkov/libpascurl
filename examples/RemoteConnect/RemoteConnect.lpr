@@ -68,7 +68,7 @@ var
     'password:', 'all', 'effective-url', 'redirect-url', 'response-code',
     'content-type', 'primary-ip', 'local-ip', 'http-version', 'redirect-count',
     'content-size', 'header-size', 'request-size', 'download-speed');
-  Protocol : TProtocol;
+  Protocol : TSession.TProtocolProperty.TProtocol;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -153,9 +153,11 @@ begin
     if HasOption('a', 'all') or HasOption('response-code') then
     begin
       if Protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-        writeln('Response code: ':25, THTTPStatusCode(FResponse.ResponseCode))
+        writeln('Response code: ':25,
+        TSession.THTTPProperty.THTTPStatusCode(FResponse.ResponseCode))
       else if Protocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
-        writeln('Response code: ':25, TFTPStatusCode(FResponse.ResponseCode));
+        writeln('Response code: ':25,
+        TSession.TFTPProperty.TFTPStatusCode(FResponse.ResponseCode));
     end;
 
     if HasOption('a', 'all') or HasOption('http-version') then

@@ -198,9 +198,11 @@ begin
       curl_easy_getinfo(FCURL, CURLINFO_RESPONSE_CODE, @LongintParam);
 
       if (Scheme = 'http') or (Scheme = 'https') then
-        writeln('Response code: ':25, THTTPStatusCode(LongintParam))
+        writeln('Response code: ':25,
+        TSession.THTTPProperty.THTTPStatusCode(LongintParam))
       else if (Scheme = 'ftp') or (Scheme = 'ftps') then
-        writeln('Response code: ':25, TFTPStatusCode(LongintParam));
+        writeln('Response code: ':25,
+        TSession.TFTPProperty.TFTPStatusCode(LongintParam));
     end;
 
     if HasOption('a', 'all') or HasOption('http-version') then
@@ -208,7 +210,8 @@ begin
       curl_easy_getinfo(FCURL, CURLINFO_HTTP_VERSION, @LongintParam);
 
       if (Scheme = 'http') or (Scheme = 'https') then
-        writeln('HTTP version: ':25, THTTPVersion(LongintParam));
+        writeln('HTTP version: ':25,
+        TSession.THTTPProperty.THTTPVersion(LongintParam));
     end;
 
     if HasOption('a', 'all') or HasOption('download-speed') then
