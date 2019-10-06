@@ -41,1774 +41,6 @@ uses
   Classes, SysUtils, libpascurl, math, typinfo;
 
 type
-  TProtocol = (
-    (**
-     * DICT is a dictionary network protocol, it allows clients to ask
-     * dictionary servers about a meaning or explanation for words. See RFC
-     * 2229. Dict servers and clients use TCP port 2628.
-     *)
-    PROTOCOL_DICT,
-
-    (**
-     * FILE is not actually a "network" protocol. It is a URL scheme that allows
-     * you to tell curl to get a file from the local file system instead of
-     * getting it over the network from a remote server. See RFC 1738.
-     *)
-    PROTOCOL_FILE,
-
-    (**
-     * FTP stands for File Transfer Protocol and is an old (originates in the
-     * early 1970s) way to transfer files back and forth between a client and a
-     * server. See RFC 959. It has been extended greatly over the years. FTP
-     * servers and clients use TCP port 21 plus one more port, though the second
-     * one is usually dynamically established during communication.
-     *)
-    PROTOCOL_FTP,
-
-    (**
-     * FTPS stands for Secure File Transfer Protocol. It follows the tradition
-     * of appending an 'S' to the protocol name to signify that the protocol is
-     * done like normal FTP but with an added SSL/TLS security layer. See RFC
-     * 4217.
-     * This protocol is problematic to use through firewalls and other network
-     * equipment.
-     *)
-    PROTOCOL_FTPS,
-
-    (**
-     * Designed for "distributing, searching, and retrieving documents over the
-     * Internet", Gopher is somewhat of the grand father to HTTP as HTTP has
-     * mostly taken over completely for the same use cases. See RFC 1436. Gopher
-     * servers and clients use TCP port 70.
-     *)
-    PROTOCOL_GOPHER,
-
-    (**
-     * The Hypertext Transfer Protocol, HTTP, is the most widely used protocol
-     * for transferring data on the web and over the Internet. See RFC 7230 for
-     * HTTP/1.1 and RFC 7540 for HTTP/2. HTTP servers and clients use TCP port
-     * 80.
-     *)
-    PROTOCOL_HTTP,
-
-    (**
-     * Secure HTTP is HTTP done over an SSL/TLS connection. See RFC 2818. HTTPS
-     * servers and clients use TCP port 443, unless they speak HTTP/3 which then
-     * uses QUIC and is done over UDP...
-     *)
-    PROTOCOL_HTTPS,
-
-    (**
-     * The Internet Message Access Protocol, IMAP, is a protocol for accessing,
-     * controlling and "reading" email. See RFC 3501. IMAP servers and clients
-     * use TCP port 143. Whilst connections to the server start out as
-     * cleartext, SSL/TLS communication may be supported by the client
-     * explicitly requesting to upgrade the connection using the STARTTLS
-     * command. See RFC 2595.
-     *)
-    PROTOCOL_IMAP,
-
-    (**
-     * Secure IMAP is IMAP done over an SSL/TLS connection. Such connections
-     * implicitly start out using SSL/TLS and as such servers and clients use
-     * TCP port 993 to communicate with each other. See RFC 8314.
-     *)
-    PROTOCOL_IMAPS,
-
-    (**
-     * The Lightweight Directory Access Protocol, LDAP, is a protocol for
-     * accessing and maintaining distributed directory information. Basically a
-     * database lookup. See RFC 4511. LDAP servers and clients use TCP port 389.
-     *)
-    PROTOCOL_LDAP,
-
-    (**
-     * Secure LDAP is LDAP done over an SSL/TLS connection.
-     *)
-    PROTOCOL_LDAPS,
-
-    (**
-     * The Post Office Protocol version 3 (POP3) is a protocol for retrieving
-     * email from a server. See RFC 1939. POP3 servers and clients use TCP port
-     * 110. Whilst connections to the server start out as cleartext, SSL/TLS
-     * communication may be supported by the client explicitly requesting to
-     * upgrade the connection using the STLS command. See RFC 2595.
-     *)
-    PROTOCOL_POP3,
-
-    (**
-     * Secure POP3 is POP3 done over an SSL/TLS connection. Such connections
-     * implicitly start out using SSL/TLS and as such servers and clients use
-     * TCP port 995 to communicate with each other. See RFC 8314.
-     *)
-    PROTOCOL_POP3S,
-
-    (**
-     * The Real-Time Messaging Protocol (RTMP) is a protocol for streaming
-     * audio, video and data. RTMP servers and clients use TCP port 1935.
-     *)
-    PROTOCOL_RTMP,
-    PROTOCOL_RTMPE,
-    PROTOCOL_RTMPS,
-    PROTOCOL_RTMPT,
-    PROTOCOL_RTMPTE,
-    PROTOCOL_RTMPTS,
-
-    (**
-     * The Real Time Streaming Protocol (RTSP) is a network control protocol to
-     * control streaming media servers. See RFC 2326. RTSP servers and clients
-     * use TCP and UDP port 554.
-     *)
-    PROTOCOL_RTSP,
-
-    (**
-     * The Secure Copy (SCP) protocol is designed to copy files to and from a
-     * remote SSH server. SCP servers and clients use TCP port 22.
-     *)
-    PROTOCOL_SCP,
-
-    (**
-     * The SSH File Transfer Protocol (SFTP) that provides file access, file
-     * transfer, and file management over a reliable data stream. SFTP servers
-     * and clients use TCP port 22.
-     *)
-    PROTOCOL_SFTP,
-
-    (**
-     * The Server Message Block (SMB) protocol is also known as CIFS. It is an
-     * application-layer network protocol mainly used for providing shared
-     * access to files, printers, and serial ports and miscellaneous
-     * communications between nodes on a network. SMB servers and clients use
-     * TCP port 445.
-     *)
-    PROTOCOL_SMB,
-    PROTOCOL_SMBS,
-
-    (**
-     * The Simple Mail Transfer Protocol (SMTP) is a protocol for email
-     * transmission. See RFC 5321. SMTP servers and clients use TCP port 25.
-     * Whilst connections to the server start out as cleartext, SSL/TLS
-     * communication may be supported by the client explicitly requesting to
-     * upgrade the connection using the STARTTLS command. See RFC 3207.
-     *)
-    PROTOCOL_SMTP,
-
-    (**
-     * Secure SMTP, sometimes called SSMTP, is SMTP done over an SSL/TLS
-     * connection. Such connections implicitly start out using SSL/TLS and as
-     * such servers and clients use TCP port 465 to communicate with each other.
-     * See RFC 8314.
-     *)
-    PROTOCOL_SMTPS,
-
-    (**
-     * TELNET is an application layer protocol used over networks to provide a
-     * bidirectional interactive text-oriented communication facility using a
-     * virtual terminal connection. See RFC 854. TELNET servers and clients use
-     * TCP port 23.
-     *)
-    PROTOCOL_TELNET,
-
-    (**
-     * The Trivial File Transfer Protocol (TFTP) is a protocol for doing simple
-     * file transfers over UDP to get a file from or put a file onto a remote
-     * host. TFTP servers and clients use UDP port 69.
-     *)
-    PROTOCOL_TFTP
-  );
-
-  TProtocols = set of TProtocol;
-
-  THTTPStatusCode = (
-    (**
-     * Error status code, not possible as normal!
-     *)
-    HTTP_STATUS_UNKNOWN                                  = 0,
-
-    (**
-     * The server, has received the request headers and the client should
-     * proceed to send the request body (in the case of a request for which a
-     * body needs to be sent; for example, a POST request). Sending a large
-     * request body to a server after a request has been rejected for
-     * inappropriate headers would be inefficient. To have a server check the
-     * request's headers, a client must send Expect: 100-continue as a header in
-     * its initial request and receive a 100 Continue status code in response
-     * before sending the body. If the client receives an error code such as 403
-     * (Forbidden) or 405 (Method Not Allowed) then it shouldn't send the
-     * request's body. The response 417 Expectation Failed indicates that the
-     * request should be repeated without the Expect header as it indicates that
-     * the server doesn't support expectations (this is the case, for example,
-     * of HTTP/1.0 servers).
-     *)
-    HTTP_CONTINUE                                        = 100,
-
-    (**
-     * The requester has asked the server to switch protocols and the server has
-     * agreed to do so.
-     *)
-    HTTP_SWITCHING_PROTOCOL                              = 101,
-
-    (**
-     * A WebDAV request may contain many sub-requests involving file operations,
-     * requiring a long time to complete the request. This code indicates that
-     * the server has received and is processing the request, but no response is
-     * available yet. This prevents the client from timing out and assuming the
-     * request was lost.
-     *)
-    HTTP_PROCESSING                                      = 102,
-
-    (**
-     * Used to return some response headers before final HTTP message.
-     *)
-    HTTP_EARLY_HINTS                                     = 103,
-
-    (**
-     * Used in the resumable requests proposal to resume aborted PUT or POST
-     * requests.
-     *)
-  { HTTP_CHECKPOINT                                      = 103, { UNOFFICIAL CODE } }
-
-    (**
-     * Standard response for successful HTTP requests. The actual response will
-     * depend on the request method used. In a GET request, the response will
-     * contain an entity corresponding to the requested resource. In a POST
-     * request, the response will contain an entity describing or containing the
-     * result of the action.
-     *)
-    HTTP_OK                                              = 200,
-
-    (**
-     * The request has been fulfilled, resulting in the creation of a new
-     * resource.
-     *)
-    HTTP_CREATED                                         = 201,
-
-    (**
-     * The request has been accepted for processing, but the processing has not
-     * been completed. The request might or might not be eventually acted upon,
-     * and may be disallowed when processing occurs.
-     *)
-    HTTP_ACCEPTED                                        = 202,
-
-    (**
-     * The server is a transforming proxy (e.g. a Web accelerator) that received
-     * a 200 OK from its origin, but is returning a modified version of the
-     * origin's response.
-     *)
-    HTTP_NON_AUTHORITATIVE_INFORMATION                   = 203,
-
-    (**
-     * The server successfully processed the request and is not returning any
-     * content.
-     *)
-    HTTP_NO_CONTENT                                      = 204,
-
-    (**
-     * The server successfully processed the request, but is not returning any
-     * content. Unlike a 204 response, this response requires that the requester
-     * reset the document view.
-     *)
-    HTTP_RESET_CONTENT                                   = 205,
-
-    (**
-     * The server is delivering only part of the resource (byte serving) due to
-     * a range header sent by the client. The range header is used by HTTP
-     * clients to enable resuming of interrupted downloads, or split a download
-     * into multiple simultaneous streams.
-     *)
-    HTTP_PARTIAL_CONTENT                                 = 206,
-
-    (**
-     * The message body that follows is by default an XML message and can
-     * contain a number of separate response codes, depending on how many
-     * sub-requests were made.
-     *)
-    HTTP_MULTI_STATUS                                    = 207,
-
-    (**
-     * The members of a DAV binding have already been enumerated in a preceding
-     * part of the (multistatus) response, and are not being included again.
-     *)
-    HTTP_ALREADY_REPORTED                                = 208,
-
-    (**
-     * Used as a catch-all error condition for allowing response bodies to flow
-     * through Apache when ProxyErrorOverride is enabled. When
-     * ProxyErrorOverride is enabled in Apache, response bodies that contain a
-     * status code of 4xx or 5xx are automatically discarded by Apache in favor
-     * of a generic response or a custom response specified by the ErrorDocument
-     * directive.
-     *)
-    HTTP_THIS_IS_FINE__APACHE_WEB_SERVER                 = 218, { UNOFFICIAL CODE }
-
-    (**
-     * The server has fulfilled a request for the resource, and the response is
-     * a representation of the result of one or more instance-manipulations
-     * applied to the current instance.
-     *)
-    HTTP_IM_USED                                         = 226,
-
-    (**
-     * Indicates multiple options for the resource from which the client may
-     * choose (via agent-driven content negotiation). For example, this code
-     * could be used to present multiple video format options, to list files
-     * with different filename extensions, or to suggest word-sense
-     * disambiguation.
-     *)
-    HTTP_MULTIPLE_CHOICES                                = 300,
-
-    (**
-     * This and all future requests should be directed to the given URI.
-     *)
-    HTTP_MOVED_PERMANENTLY                               = 301,
-
-    (**
-     * Tells the client to look at (browse to) another URL. 302 has been
-     * superseded by 303 and 307. This is an example of industry practice
-     * contradicting the standard. The HTTP/1.0 specification (RFC 1945)
-     * required the client to perform a temporary redirect (the original
-     * describing phrase was "Moved Temporarily"), but popular browsers
-     * implemented 302 with the functionality of a 303 See Other. Therefore,
-     * HTTP/1.1 added status codes 303 and 307 to distinguish between the two
-     * behaviours. However, some Web applications and frameworks use the 302
-     * status code as if it were the 303.
-     *)
-    HTTP_FOUND                                           = 302,
-
-    (**
-     * The response to the request can be found under another URI using the GET
-     * method. When received in response to a POST (or PUT/DELETE), the client
-     * should presume that the server has received the data and should issue a
-     * new GET request to the given URI.
-     *)
-    HTTP_SEE_OTHER                                       = 303,
-
-    (**
-     * Indicates that the resource has not been modified since the version
-     * specified by the request headers If-Modified-Since or If-None-Match. In
-     * such case, there is no need to retransmit the resource since the client
-     * still has a previously-downloaded copy.
-     *)
-    HTTP_NOT_MODIFIED                                    = 304,
-
-    (**
-     * The requested resource is available only through a proxy, the address for
-     * which is provided in the response. For security reasons, many HTTP
-     * clients (such as Mozilla Firefox and Internet Explorer) do not obey this
-     * status code.
-     *)
-    HTTP_USE_PROXY                                       = 305,
-
-    (**
-     * No longer used. Originally meant "Subsequent requests should use the
-     * specified proxy."
-     *)
-    HTTP_SWITCH_PROXY                                    = 306,
-
-    (**
-     * In this case, the request should be repeated with another URI; however,
-     * future requests should still use the original URI. In contrast to how 302
-     * was historically implemented, the request method is not allowed to be
-     * changed when reissuing the original request. For example, a POST request
-     * should be repeated using another POST request.
-     *)
-    HTTP_TEMPORARY_REDIRECT                              = 307,
-
-    (**
-     * The request and all future requests should be repeated using another URI.
-     * 307 and 308 parallel the behaviors of 302 and 301, but do not allow the
-     * HTTP method to change. So, for example, submitting a form to a
-     * permanently redirected resource may continue smoothly.
-     *)
-    HTTP_PERMANENT_REDIRECT                              = 308,
-
-    (**
-     * The server cannot or will not process the request due to an apparent
-     * client error (e.g., malformed request syntax, size too large, invalid
-     * request message framing, or deceptive request routing).
-     *)
-    HTTP_BAD_REQUEST                                     = 400,
-
-    (**
-     * Similar to 403 Forbidden, but specifically for use when authentication is
-     * required and has failed or has not yet been provided. The response must
-     * include a WWW-Authenticate header field containing a challenge applicable
-     * to the requested resource. See Basic access authentication and Digest
-     * access authentication. 401 semantically means "unauthorised", the user
-     * does not have valid authentication credentials for the target resource.
-     * Note: Some sites incorrectly issue HTTP 401 when an IP address is banned
-     * from the website (usually the website domain) and that specific address
-     * is refused permission to access a website.
-     *)
-    HTTP_UNAUTHORIZED                                    = 401,
-
-    (**
-     * Reserved for future use. The original intention was that this code might
-     * be used as part of some form of digital cash or micropayment scheme, as
-     * proposed, for example, by GNU Taler, but that has not yet happened, and
-     * this code is not usually used. Google Developers API uses this status if
-     * a particular developer has exceeded the daily limit on requests. Sipgate
-     * uses this code if an account does not have sufficient funds to start a
-     * call. Shopify uses this code when the store has not paid their fees and
-     * is temporarily disabled.
-     *)
-    HTTP_PAYMENT_REQUIRED                                = 402,
-
-    (**
-     * The request contained valid data and was understood by the server, but
-     * the server is refusing action. This may be due to the user not having the
-     * necessary permissions for a resource or needing an account of some sort,
-     * or attempting a prohibited action (e.g. creating a duplicate record where
-     * only one is allowed). This code is also typically used if the request
-     * provided authentication via the WWW-Authenticate header field, but the
-     * server did not accept that authentication. The request SHOULD NOT be
-     * repeated.
-     *)
-    HTTP_FORBIDDEN                                       = 403,
-
-    (**
-     * The requested resource could not be found but may be available in the
-     * future. Subsequent requests by the client are permissible.
-     *)
-    HTTP_NOT_FOUND                                       = 404,
-
-    (**
-     * A request method is not supported for the requested resource; for
-     * example, a GET request on a form that requires data to be presented via
-     * POST, or a PUT request on a read-only resource.
-     *)
-    HTTP_METHOD_NOT_ALLOWED                              = 405,
-
-    (**
-     * The requested resource is capable of generating only content not
-     * acceptable according to the Accept headers sent in the request.
-     *)
-    HTTP_NOT_ACCEPTABLE                                  = 406,
-
-    (**
-     * The client must first authenticate itself with the proxy.
-     *)
-    HTTP_PROXY_AUTHENTIFICATION_REQUIRED                 = 407,
-
-    (**
-     * The server timed out waiting for the request. According to HTTP
-     * specifications: "The client did not produce a request within the time
-     * that the server was prepared to wait. The client MAY repeat the request
-     * without modifications at any later time."
-     *)
-    HTTP_REQUEST_TIMEOUT                                 = 408,
-
-    (**
-     * Indicates that the request could not be processed because of conflict in
-     * the current state of the resource, such as an edit conflict between
-     * multiple simultaneous updates.
-     *)
-    HTTP_CONFLICT                                        = 409,
-
-    (**
-     * Indicates that the resource requested is no longer available and will not
-     * be available again. This should be used when a resource has been
-     * intentionally removed and the resource should be purged. Upon receiving a
-     * 410 status code, the client should not request the resource in the
-     * future. Clients such as search engines should remove the resource from
-     * their indices. Most use cases do not require clients and search engines
-     * to purge the resource, and a "404 Not Found" may be used instead.
-     *)
-    HTTP_GONE                                            = 410,
-
-    (**
-     * The request did not specify the length of its content, which is required
-     * by the requested resource.
-     *)
-    HTTP_LENGTH_REQUIRED                                 = 411,
-
-    (**
-     * The server does not meet one of the preconditions that the requester put
-     * on the request header fields.
-     *)
-    HTTP_PRECONDITION_FAILED                             = 412,
-
-    (**
-     * The request is larger than the server is willing or able to process.
-     * Previously called "Request Entity Too Large".
-     *)
-    HTTP_PAYLOAD_TOO_LARGE                               = 413,
-
-    (**
-     * The URI provided was too long for the server to process. Often the result
-     * of too much data being encoded as a query-string of a GET request, in
-     * which case it should be converted to a POST request. Called "Request-URI
-     * Too Long" previously.
-     *)
-    HTTP_URI_TOO_LONG                                    = 414,
-
-    (**
-     * The request entity has a media type which the server or resource does not
-     * support. For example, the client uploads an image as image/svg+xml, but
-     * the server requires that images use a different format.
-     *)
-    HTTP_UNSUPPORTED_MEDIA_TYPE                          = 415,
-
-    (**
-     * The client has asked for a portion of the file (byte serving), but the
-     * server cannot supply that portion. For example, if the client asked for a
-     * part of the file that lies beyond the end of the file. Called "Requested
-     * Range Not Satisfiable" previously.
-     *)
-    HTTP_RANGE_NOT_SATISFIABLE                           = 416,
-
-    (**
-     * The server cannot meet the requirements of the Expect request-header
-     * field.
-     *)
-    HTTP_EXPECTATION_FAILED                              = 417,
-
-    (**
-     * This code was defined in 1998 as one of the traditional IETF April Fools'
-     * jokes, in RFC 2324, Hyper Text Coffee Pot Control Protocol, and is not
-     * expected to be implemented by actual HTTP servers. The RFC specifies this
-     * code should be returned by teapots requested to brew coffee. This HTTP
-     * status is used as an Easter egg in some websites, including Google.com.
-     *)
-    HTTP_IM_A_TEAPOT                                     = 418,
-
-    (**
-     * Not a part of the HTTP standard, 419 Authentication Timeout denotes that
-     * previously valid authentication has expired. It is used as an alternative
-     * to 401 Unauthorized in order to differentiate from otherwise
-     * authenticated clients being denied access to specific server resources.
-     *)
-  { HTTP_AUTHENTICATION_TIMEOUT                          = 419, { UNOFFICIAL CODE } }
-
-    (**
-     * Used by the Laravel Framework when a CSRF Token is missing or expired.
-     *)
-    HTTP_PAGE_EXPIRED__LARAVEL_FRAMEWORK                 = 419, { UNOFFICIAL CODE }
-
-    (**
-     * Not part of the HTTP standard, but defined by Spring in the HttpStatus
-     * class to be used when a method failed. This status code is deprecated by
-     * Spring.
-     *)
-    HTTP_METHOD_FAILURE__SPRING_FRAMEWORK                = 420, { UNOFFICIAL CODE }
-
-    (**
-     * Not part of the HTTP standard, but returned by version 1 of the Twitter
-     * Search and Trends API when the client is being rate limited. Other
-     * services may wish to implement the 429 Too Many Requests response code
-     * instead.
-     *)
-  { HTTP_ENHANCE_YOUR_CALM__TWITTER                      = 420, { UNOFFICIAL CODE } }
-
-    (**
-     * The request was directed at a server that is not able to produce a
-     * response (for example because of connection reuse).
-     *)
-    HTTP_MISDIRECTED_REQUEST                             = 421,
-
-    (**
-     * The request was well-formed but was unable to be followed due to semantic
-     * errors.
-     *)
-    HTTP_UNPROCESSABLE_ENTITY                            = 422,
-
-    (**
-     * The resource that is being accessed is locked.
-     *)
-    HTTP_LOCKED                                          = 423,
-
-    (**
-     * The request failed because it depended on another request and that
-     * request failed (e.g., a PROPPATCH).
-     *)
-    HTTP_FAILED_DEPENDENCY                               = 424,
-
-    (**
-     * Indicates that the server is unwilling to risk processing a request that
-     * might be replayed.
-     *)
-    HTTP_TOO_EARLY                                       = 425,
-
-    (**
-     * The client should switch to a different protocol such as TLS/1.0, given
-     * in the Upgrade header field.
-     *)
-    HTTP_UPGRADE_REQUIRED                                = 426,
-
-    (**
-     * The origin server requires the request to be conditional. Intended to
-     * prevent the 'lost update' problem, where a client GETs a resource's
-     * state, modifies it, and PUTs it back to the server, when meanwhile a
-     * third party has modified the state on the server, leading to a conflict.
-     *)
-    HTTP_PRECONDITION_REQUIRED                           = 428,
-
-    (**
-     * The user has sent too many requests in a given amount of time. Intended
-     * for use with rate-limiting schemes.
-     *)
-    HTTP_TOO_MANY_REQUESTS                               = 429,
-
-    (**
-     * Used by Shopify, instead of the 429 Too Many Requests response code, when
-     * too many URLs are requested within a certain time frame.
-     *)
-    HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE__SHOPIFY        = 430, { UNOFFICIAL CODE }
-
-    (**
-     * The server is unwilling to process the request because either an
-     * individual header field, or all the header fields collectively, are too
-     * large.
-     *)
-    HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE                 = 431,
-
-    (**
-     * A Microsoft extension. The client's session has expired and must log in
-     * again.
-     *)
-    HTTP_LOGIN_TIMEOUT__MICROSOFT                        = 440, { UNOFFICIAL CODE }
-
-    (**
-     * A non-standard status code used to instruct nginx to close the connection
-     * without sending a response to the client, most commonly used to deny
-     * malicious or malformed requests.
-     *)
-    HTTP_CONNECTION_CLOSED_WITHOUT_RESPONSE__NGINX       = 444, { UNOFFICIAL CODE }
-
-    (**
-     * A Microsoft extension. The request should be retried after performing the
-     * appropriate action. Often search-engines or custom applications will
-     * ignore required parameters. Where no default action is appropriate, the
-     * Aviongoo website sends a "HTTP/1.1 Retry with valid parameters: param1,
-     * param2, . . ." response. The applications may choose to learn, or not.
-     *)
-    HTTP_RETRY_WITH__MICROSOFT                           = 449, { UNOFFICIAL CODE }
-
-    (**
-     * A Microsoft extension. This error is given when Windows Parental Controls
-     * are turned on and are blocking access to the given webpage.
-     *)
-    HTTP_BLOCKED_BY_WINDOWS_PARENTAL_CONTROLS__MICROSOFT = 450, { UNOFFICIAL CODE }
-
-    (**
-     * A server operator has received a legal demand to deny access to a
-     * resource or to a set of resources that includes the requested resource.
-     * The code 451 was chosen as a reference to the novel Fahrenheit 451 (see
-     * the Acknowledgements in the RFC).
-     *)
-    HTTP_UNAVAILABLE_FOR_LEGAL_REASONS                   = 451,
-
-    (**
-     * Client closed the connection with the load balancer before the idle
-     * timeout period elapsed. Typically when client timeout is sooner than the
-     * Elastic Load Balancer's timeout.
-     *)
-    HTTP_460__AWS_ELASTIC_LOAD_BALANCER                  = 460,
-
-    (**
-     * The load balancer received an X-Forwarded-For request header with more
-     * than 30 IP addresses.
-     *)
-    HTTP_463__AWS_ELASTIC_LOAD_BALANCER                  = 463,
-
-    (**
-     * Nginx internal code similar to 431 but it was introduced earlier in
-     * version 0.9.4 (on January 21, 2011).
-     *)
-    HTTP_REQUEST_HEADER_TOO_LARGE__NGINX                 = 494, { UNOFFICIAL CODE }
-
-    (**
-     * An expansion of the 400 Bad Request response code, used when the client
-     * has provided an invalid client certificate.
-     *)
-    HTTP_SSL_SERTIFICATE_ERROR__NGINX                    = 495, { UNOFFICIAL CODE }
-
-    (**
-     * An expansion of the 400 Bad Request response code, used when a client
-     * certificate is required but not provided.
-     *)
-    HTTP_SSL_SERTIFICATE_REQUIRED__NGINX                 = 496, { UNOFFICIAL CODE }
-
-    (**
-     * An expansion of the 400 Bad Request response code, used when the client
-     * has made a HTTP request to a port listening for HTTPS requests.
-     *)
-    HTTP_REQUEST_SENT_TO_HTTPS_PORT__NGINX               = 497, { UNOFFICIAL CODE }
-
-    (**
-     * Returned by ArcGIS for Server. A code of 498 indicates an expired or
-     * otherwise invalid token.
-     *)
-    HTTP_INVALID_TOKEN__ESRI                             = 498, { UNOFFICIAL CODE }
-
-    (**
-     * Returned by ArcGIS for Server. Code 499 indicates that a token is
-     * required but was not submitted.
-     *)
-    HTTP_TOKEN_REQUIRED__ESRI                            = 499, { UNOFFICIAL CODE }
-
-    (**
-     * Used when the client has closed the request before the server could send
-     * a response.
-     *)
-  { HTTP_CLIENT_CLOSED_REQUEST__NGINX                    = 499, { UNOFFICIAL CODE } }
-
-    (**
-     * A generic error message, given when an unexpected condition was
-     * encountered and no more specific message is suitable.
-     *)
-    HTTP_INTERNAL_SERVER_ERROR                           = 500,
-
-    (**
-     * The server either does not recognize the request method, or it lacks the
-     * ability to fulfil the request. Usually this implies future availability
-     * (e.g., a new feature of a web-service API).
-     *)
-    HTTP_NOT_IMPLEMENTED                                 = 501,
-
-    (**
-     * The server was acting as a gateway or proxy and received an invalid
-     * response from the upstream server.
-     *)
-    HTTP_BAD_GETEWAY                                     = 502,
-
-    (**
-     * The server cannot handle the request (because it is overloaded or down
-     * for maintenance). Generally, this is a temporary state.
-     *)
-    HTTP_SERVICE_UNAVAIBLE                               = 503,
-
-    (**
-     * The server was acting as a gateway or proxy and did not receive a timely
-     * response from the upstream server.
-     *)
-    HTTP_GATEWAY_TIMEOUT                                 = 504,
-
-    (**
-     * The server does not support the HTTP protocol version used in the
-     * request.
-     *)
-    HTTP_VERSION_NOT_SUPPORTED                           = 505,
-
-    (**
-     * Transparent content negotiation for the request results in a circular
-     * reference.
-     *)
-    HTTP_VARIANT_ALSO_NEGOTIATES                         = 506,
-
-    (**
-     * The server is unable to store the representation needed to complete the
-     * request.
-     *)
-    HTTP_INSUFFICIENT_STORAGE                            = 507,
-
-    (**
-     * The server detected an infinite loop while processing the request (sent
-     * instead of 208 Already Reported).
-     *)
-    HTTP_LOOP_DETECTED                                   = 508,
-
-    (**
-     * The server has exceeded the bandwidth specified by the server
-     * administrator; this is often used by shared hosting providers to limit
-     * the bandwidth of customers.
-     *)
-    HTTP_BANDWIDTH_LIMIT_EXCEEDED__APACHE_WEB_SERVER     = 509, { UNOFFICIAL CODE }
-
-    (**
-     * Further extensions to the request are required for the server to fulfil
-     * it.
-     *)
-    HTTP_NOT_EXTENDED                                    = 510,
-
-    (**
-     * The client needs to authenticate to gain network access. Intended for use
-     * by intercepting proxies used to control access to the network (e.g.,
-     * "captive portals" used to require agreement to Terms of Service before
-     * granting full Internet access via a Wi-Fi hotspot).
-     *)
-    HTTP_NETWORK_AUTHENTICATION_REQUIRED                 = 511,
-
-    (**
-     * This status code is not specified in any RFCs, but is used by
-     * CloudFlare's reverse proxies to signal an "unknown connection issue
-     * between CloudFlare and the origin web server" to a client in front of the
-     * proxy.
-     *)
-    HTTP_ORIGIN_ERROR__CLOUDFLARE                        = 520, { UNOFFICIAL CODE }
-
-    (**
-     * This status code is not specified in any RFCs, but is used by
-     * CloudFlare's reverse proxies to indicate that the origin webserver
-     * refused the connection.
-     *)
-    HTTP_WEB_SERVER_IS_DOWN__CLOUDFLARE                  = 521, { UNOFFICIAL CODE }
-
-    (**
-     * This status code is not specified in any RFCs, but is used by
-     * CloudFlare's reverse proxies to signal that a server connection timed
-     * out.
-     *)
-    HTTP_CONNECTION_TIMED_OUT__CLOUDFLARE                = 522, { UNOFFICIAL CODE }
-
-    (**
-     * This status code is not specified in any RFCs, but is used by
-     * CloudFlare's reverse proxies to signal a resource that has been blocked
-     * by the administrator of the website or proxy itself.
-     *)
-    HTTP_PROXY_DECLINED_REQUEST__CLOUDFLARE              = 523, { UNOFFICIAL CODE }
-
-    (**
-     * This status code is not specified in any RFCs, but is used by
-     * CloudFlare's reverse proxies to signal a network read timeout behind the
-     * proxy to a client in front of the proxy.
-     *)
-    HTTP_A_TIMEOUT_OCCURED__CLOUDFLARE                   = 524, { UNOFFICIAL CODE }
-
-    (**
-     * Cloudflare could not negotiate a SSL/TLS handshake with the origin
-     * server.
-     *)
-    HTTP_SSL_HANDSHAKE_FAILED__CLOUDFLARE                = 525, { UNOFFICIAL CODE }
-
-    (**
-     * Used by Cloudflare and Cloud Foundry's gorouter to indicate failure to
-     * validate the SSL/TLS certificate that the origin server presented.
-     *)
-    HTTP_INVALID_SSL_CERTIFICATE__CLOUDFLARE             = 526, { UNOFFICIAL CODE }
-
-    (**
-     * Error 527 indicates that the request timed out or failed after the WAN
-     * connection had been established.
-     *)
-    HTTP_RAILGUN_ERROR__CLOUDFLARE                       = 527, { UNOFFICIAL CODE }
-
-    (**
-     * Used by the Pantheon web platform to indicate a site that has been frozen
-     * due to inactivity.
-     *)
-    HTTP_SITE_IS_FROZEN__PATHEON                         = 530, { UNOFFICIAL CODE }
-
-    (**
-     * Error 530 indicates that the requested host name could not be resolved on
-     * the Cloudflare network to an origin server.
-     *)
-  { HTTP_ORIGIN_DNS_ERROR__CLOUDFLARE                    = 530, { UNOFFICIAL CODE } }
-
-    (**
-     * Used by some HTTP proxies to signal a network read timeout behind the
-     * proxy to a client in front of the proxy.
-     *)
-    HTTP_NETWORK_READ_TIMEOUT_ERROR                      = 598, { UNOFFICIAL CODE }
-
-    (**
-     * This status code is not specified in any RFCs, but is used by some HTTP
-     * proxies to signal a network connect timeout behind the proxy to a client
-     * in front of the proxy.
-     *)
-    HTTP_NETWORK_CONNECT_TIMEOUT_ERROR                   = 599  { UNOFFICIAL CODE }
-  );
-
-  THTTPVersion = (
-    HTTP_VERSION_UNKNOWN              = 0,
-
-    (**
-     * Enforce HTTP 1.0 requests.
-     *)
-    HTTP_VERSION_1_0                  = Longint(CURL_HTTP_VERSION_1_0),
-
-    (**
-     * Enforce HTTP 1.1 requests.
-     *)
-    HTTP_VERSION_1_1                  = Longint(CURL_HTTP_VERSION_1_1),
-
-    (**
-     * Attempt HTTP 2 requests. libcurl will fall back to HTTP 1.1 if HTTP 2
-     * can't be negotiated with the server.
-     *)
-    HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0),
-
-    (**
-     * Attempt HTTP 2 over TLS (HTTPS) only. libcurl will fall back to HTTP 1.1
-     * if HTTP 2 can't be negotiated with the HTTPS server. For clear text HTTP
-     * servers, libcurl will use 1.1.
-     *)
-
-    HTTP_VERSION_2TLS                 = Longint(CURL_HTTP_VERSION_2TLS),
-
-    (**
-     * Issue non-TLS HTTP requests using HTTP/2 without HTTP/1.1 Upgrade. It
-     * requires prior knowledge that the server supports HTTP/2 straight away.
-     * HTTPS requests will still do HTTP/2 the standard way with negotiated
-     * protocol version in the TLS handshake.
-     *)
-    HTTP_VERSION_2_PRIOR_KNOWLEDGE    = Longint(CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE),
-
-    (**
-     * Setting this value will make libcurl attempt to use HTTP/3 directly to
-     * server given in the URL. Note that this cannot gracefully downgrade to
-     * earlier HTTP version if the server doesn't support HTTP/3.
-     * For more reliably upgrading to HTTP/3, set the preferred version to
-     * something lower and let the server announce its HTTP/3 support via
-     * Alt-Svc:. See TSession.HTTP.AltSvc.
-     *)
-    HTTP_VERSION_3_0                  = Longint(CURL_HTTP_VERSION_3)
-  );
-
-  TFTPStatusCode = (
-    (**
-     * Error status code, not possible as normal!
-     *)
-    FTP_STATUS_UNKNOWN                                   = 0,
-
-    (**
-     * 1xx Positive Preliminary reply
-     *
-     * The requested action is being initiated; expect another reply before
-     * proceeding with a new command. (The user-process sending another command
-     * before the completion reply would be in violation of protocol; but
-     * server-FTP processes should queue any commands that arrive while a
-     * preceding command is in progress.) This type of reply can be used to
-     * indicate that the command was accepted and the user-process may now pay
-     * attention to the data connections, for implementations where simultaneous
-     * monitoring is difficult. The server-FTP process may send at most, one 1xx
-     * reply per command.
-     *)
-
-     (**
-      * The requested action is being initiated, expect another reply before
-      * proceeding with a new command.
-      *)
-    FTP_REQUEST_INIT_WAIT_NEXT_RESPONSE                  = 100,
-
-    (**
-     * Restart marker replay. In this case, the text is exact and not left to
-     * the particular implementation; it must read: MARK yyyy = mmmm where yyyy
-     * is User-process data stream marker, and mmmm server's equivalent marker
-     * (note the spaces between markers and "=").
-     *)
-    FTP_RESTART_MARKER_REPLY                             = 110,
-
-    (**
-     * Service ready in nnn minutes.
-     *
-     * This indicates that the server accepted and has begun the processing of
-     * the command. The client should wait until another response is received
-     * before proceeding.
-     *)
-    FTP_BEGUN_PROCESSING_WAIT_NEXT_RESPONSE              = 120,
-
-    (**
-     * Data connection already open; transfer starting.
-     *
-     * The server may use this code in response to a command initiating a file
-     * transfer if the data connection is already established. After sending or
-     * receiving this response, the server or client may begin sending data over
-     * the data connection.
-     *)
-     FTP_DATA_CONNECTION_ALREADY_OPENED                  = 125,
-
-    (**
-     * File status okay; about to open data connection.
-     *
-     * The server may use this reply code in response to a command initiating a
-     * file transfer before establishing the data connection over which the file
-     * transfer will occur. A PASV or PORT command should have been issued prior
-     * to the command receiving the 150 response code. After sending or
-     * receiving this response, the server/client may begin sending data over
-     * the data connection.
-     *)
-    FTP_INIT_FILE_TRANSFER                               = 150,
-
-    (**
-     * 2xx Positive Completion reply
-     *
-     * The requested action has been successfully completed. A new request may
-     * be initiated.
-     *)
-
-    (**
-     * The requested action has been successfully completed.
-     *
-     * A server issues a 200 response code if a command is accepted and
-     * successfully processed.
-     *)
-    FTP_SUCCESS_COMPLETE                                 = 200,
-
-    (**
-     * Command not implemented, superfluous at this site.
-     *
-     * A 202 response is meant to indicate that the command is recognized but
-     * not implemented by the server because it has no use or meaning to the
-     * server. It is considered a successful reply because the client can
-     * continue its FTP transaction as if the command was successfully completed
-     * on the server.
-     *)
-    FTP_COMMAND_NOT_IMPLEMENTED                          = 202,
-
-    (**
-     * System status, or system help reply.
-     *
-     * A 211 code is given in response to commands asking for status or help
-     * from the server. The information contained along with the response is
-     * intended for user consumption and rarely has a meaning to the client
-     * process itself.
-     *)
-    FTP_SYSTEM_STATUS                                    = 211,
-
-    (**
-     * Directory status.
-     *
-     * A 212 code is given in response to a command asking for directory status
-     * information. A STAT command that includes a path parameter is one command
-     * where a 212 response would be expected.
-     *)
-    FTP_DIRECTORY_STATUS_INFORMATION                     = 212,
-
-    (**
-     * File status.
-     *
-     * A 213 code may be given in response to a command asking for status
-     * information on a file transfer. A STAT command issued during a file
-     * transfer is one command where a 213 response code would be expected.
-     *)
-    FTP_FILE_TRANSFER_STATUS_INFORMATION                 = 213,
-
-    (**
-     * Help message. Explains how to use the server or the meaning of a
-     * particular non-standard command. This reply is useful only to the human
-     * user.
-     *
-     * A 214 code is used in response to the HELP command to provide information
-     * on how to use the server or the meaning of a particular non-standard
-     * command. This response is useful only to the human user and commonly
-     * contains a list of commands recognized by the server.
-     *)
-    FTP_HELP_INFORMATION                                 = 214,
-
-    (**
-     * NAME system type. Where NAME is an official system name from the registry
-     * kept by IANA.
-     *
-     * A 215 code is given in response to the SYST command. The response should
-     * contain an official system name from the list in the Assigned Numbers
-     *)
-    FTP_SYSTEM_NAME                                      = 215,
-
-    (**
-     * Service ready for new user.
-     *
-     * A 220 code is sent in response to a new user connecting to the FTP server
-     * to indicate that the server is ready for the new client. It can also be
-     * sent in response to a REIN command, which is meant to reset the
-     * connection to the moment the client first connected to the server.
-     *)
-    FTP_SERVER_READY                                     = 220,
-
-    (**
-     * Service closing control connection.
-     *
-     * A 221 code is sent over the control connection in response to the
-     * client's QUIT command. It is sent immediately before the control
-     * connection is closed by the server.
-     *)
-    FTP_DATA_CONNECTION_CLOSED                           = 221,
-
-    (**
-     * Data connection open; no transfer in progress.
-     *
-     * A 225 code is sent in response to the ABOR command when the data
-     * connection is still open but there is no file transfer in progress to
-     * abort.
-     *)
-    FTP_DATA_CONNECTION_OPEN_NO_TRANSFER                 = 225,
-
-    (**
-     * Closing data connection. Requested file action successful (for example,
-     * file transfer or file abort).
-     *
-     * A 226 reply code is sent by the server before closing the data connection
-     * after successfully processing the previous client command affecting the
-     * data connection. In most cases, it signals the completion of a file
-     * transfer. It can also be sent in response to the ABOR command, which
-     * signals that the current file transfer was successfully terminated.
-     *)
-    FTP_DATA_CONNECTION_CLOSE                            = 226,
-
-    (**
-     * Entering Passive Mode (h1,h2,h3,h4,p1,p2).
-     *
-     * A 227 code is the response given by the server to the PASV command. It
-     * indicates that the server is ready for the client to connect to it for
-     * the purpose of establishing a data connection. The format of this
-     * response is important because the client software must be capable of
-     * parsing out the connection information it contains. The values h1 to h4
-     * are the IP addresses that the server is listening on.
-     *)
-    FTP_ENTERING_PASSIVE_MODE                            = 227,
-
-    (**
-     * Entering Long Passive Mode (long address, port).
-     *)
-    FTP_ENTERING_LONG_PASSIVE_MODE                       = 228,
-
-    (**
-     * Entering Extended Passive Mode (|||port|).
-     *)
-    FTP_ENTERING_EXTENDED_PASSIVE_MODE                   = 229,
-
-    (**
-     * User logged in, proceed. Logged out if appropriate.
-     *
-     * The server sends a 230 code in response to a command that has provided
-     * sufficient credentials to the server to grant the user access to the FTP
-     * server.
-     *)
-    FTP_USER_LOGGEDIN                                    = 230,
-
-    (**
-     * User logged out; service terminated.
-     *)
-    FTP_USER_LOGGEDOUT                                   = 231,
-
-    (**
-     * Logout command noted, will complete when transfer done.
-     *
-     * A 232 code may be sent in response to a USER command if the server is
-     * willing to allow the user access based on previously exchanged security
-     * data.
-     *)
-    FTP_LOGOUT_NOTED                                     = 232,
-
-    (**
-     * Specifies that the server accepts the authentication mechanism specified
-     * by the client, and the exchange of security data is complete. A higher
-     * level nonstandard code created by Microsoft.
-     *
-     * A 234 code is sent in response to the AUTH command when the requested
-     * security mechanism is accepted and negotiation of the secured connection
-     * can begin.
-     *)
-    FTP_SECURITY_ACCEPTED_NEGOTIATION_CONNECTION_BEGIN   = 234,
-
-    (**
-     * Requested file action okay, completed.
-     *
-     * A 250 code is sent in response to the successful completion of a file
-     * related command or user working directory related command.
-     *)
-    FTP_RESPONSE_SUCCESSFUL_COMPLETION                   = 250,
-
-    (**
-     * "PATHNAME" created.
-     *
-     * A 257 code is used as a successful response to the creation of a new
-     * directory from the MKD command or in response to a PWD command.
-     *)
-    FTP_DIRECTORY_CREATE_SUCCESSFUL                      = 257,
-
-    (**
-     * 3xx Positive Intermediate reply
-     *
-     * The command has been accepted, but the requested action is being held in
-     * abeyance, pending receipt of further information. The user should send
-     * another command specifying this information. This reply is used in command
-     * sequence groups.
-     *)
-
-    (**
-     * The command has been accepted, but the requested action is on hold,
-     * pending receipt of further information.
-     *)
-    FTP_ACCEPTED_REQUEST_HOLD                            = 300,
-
-    (**
-     * User name okay, need password.
-     *
-     * A 331 code is sent in response to the USER command when a password is
-     * required for the login to continue. It is considered as a positive
-     * intermediate response and the client should immediately respond with a
-     * PASS command.
-     *)
-    FTP_USERNAME_OK                                      = 331,
-
-    (**
-     * Need account for login.
-     *
-     * A 332 code is sent in response to a login-related command where an
-     * account is required to continue the login process. It is considered as a
-     * positive intermediate response and the client should immediately follow
-     * with an ACCT command.
-     *)
-    FTP_NEED_ACCOUNT_TO_LOGIN                            = 332,
-
-    (**
-     * Requested file action pending further information
-     *
-     * A 350 response code is sent by the server in response to a file-related
-     * command that requires further commands in order for the operation to be
-     * completed. The original FTP specification identifies two instances where
-     * this reply code can be used. The first is in response to a REST command,
-     * which would indicate that the server has received the restart marker and
-     * is pending the initiation of file transfer to resume the transfer at the
-     * marker point. The second is in positive response to the RNFR command
-     * where the server is waiting for an RNTOcommand to complete the file
-     * rename operation.
-     *)
-    FTP_NEED_INFORMATION                                 = 350,
-
-    (**
-     * 4xx Transient Negative Completion reply
-     *
-     * The command was not accepted and the requested action did not take place,
-     * but the error condition is temporary and the action may be requested
-     * again. The user should return to the beginning of the command sequence,
-     * if any. It is difficult to assign a meaning to "transient", particularly
-     * when two distinct sites (Server- and User-processes) have to agree on the
-     * interpretation. Each reply in the 4xx category might have a slightly
-     * different time value, but the intent is that the user-process is
-     * encouraged to try again. A rule of thumb in determining if a reply fits
-     * into the 4xx or the 5xx (Permanent Negative) category is that replies are
-     * 4xx if the commands can be repeated without any change in command form or
-     * in properties of the User or Server (e.g., the command is spelled the
-     * same with the same arguments used; the user does not change his file
-     * access or user name; the server does not put up a new implementation.)
-     *)
-
-    (**
-     * The command was not accepted and the requested action did not take place,
-     * but the error condition is temporary and the action may be requested
-     * again.
-     *)
-    FTP_NOT_ACCEPTED                                     = 400,
-
-    (**
-     * Service not available, closing control connection. This may be a reply to
-     * any command if the service knows it must shut down.
-     *
-     * A 421 response code indicates that while the service is still running,
-     * the service is unavailable at the time of connection. It indicates that
-     * the server will be restarting as soon as it finishes processing pending
-     * operations (usually any file transfers currently in progress). It is
-     * considered a transient negative response, which means the client is
-     * encouraged to issue the same command again at a later time when it can be
-     * accepted.
-     *)
-    FTP_SERVICE_NOT_AVAILABLE                            = 421,
-
-    (**
-     * Can't open data connection.
-     *
-     * A 425 response code may be sent in response to any command requiring the
-     * usage of a data connection if the server is unable to open a data
-     * connection. This is considered a transient negative reply as it is
-     * considered to be a temporary condition. It may indicate that the server
-     * does not immediately have the resources available to open a data
-     * connection. In this case, the client is encouraged to restart the FTP
-     * transaction and try again.
-     *)
-    FTP_DATA_CONNECTION_NOT_AVAILABLE                    = 425,
-
-    (**
-     * Connection closed; transfer aborted.
-     *
-     * A 426 response code may be sent in response to any command requiring the
-     * usage of a data connection. It is considered a transient negative reply
-     * as it is considered to be a temporary condition. It is usually sent when
-     * the data connection is unexpectedly closed before the completion of a
-     * data transfer. In this case, the client is encouraged to restart the FTP
-     * transaction and try again.
-     *)
-    FTP_TRANSFER_ABORTED                                 = 426,
-
-    (**
-     * Invalid username or password
-     *)
-    FTP_INVALID_USERNAME_OR_PASSWORD                     = 430,
-
-    (**
-     * Requested host unavailable.
-     *)
-    FTP_HOST_UNAVAILABLE                                 = 434,
-
-    (**
-     * Requested file action not taken.
-     *
-     * A 450 response code may be sent in response to any command requiring the
-     * server to access a local file. It is a transient negative response as the
-     * error is considered a temporary one. It is usually sent when the server
-     * is unable to gain access to a required file at the time the command is
-     * received. In this case, the client is encouraged to restart the FTP
-     * transaction and try again.
-     *)
-    FTP_FILE_ACTION_ABORTED                              = 450,
-
-    (**
-     * Requested action aborted. Local error in processing.
-     *
-     * A 451 response code may be sent in response to any command initiating a
-     * file transfer. It is a transient negative response, which means the error
-     * condition is a temporary one. It is usually sent in response to the
-     * server encountering an unexpected local error when processing data it is
-     * transferring or receiving. In this case, the client is encouraged to
-     * restart the FTP transaction and try again.
-     *)
-    FTP_LOCAL_ERROR                                      = 451,
-
-    (**
-     * Requested action not taken. Insufficient storage space in system. File
-     * unavailable (e.g., file busy).
-     *
-     * A 452 response code may be given in response to any command requiring the
-     * server to store transferred data it receives from the client (a file
-     * upload). It is a transient negative response as the error is considered a
-     * temporary one. It is usually sent because the server does not have
-     * storage space to save the received data. In this case, the client is
-     * encouraged to restart the FTP transaction and try again.
-     *)
-    FTP_INSUFFICIENT_STORAGE_SPACE                       = 452,
-
-    (**
-     * 5xx Permanent Negative Completion reply
-     *
-     * The command was not accepted and the requested action did not take place.
-     * The User-process is discouraged from repeating the exact request (in the
-     * same sequence). Even some "permanent" error conditions can be corrected, so
-     * the human user may want to direct his User-process to reinitiate the
-     * command sequence by direct action at some point in the future (e.g., after
-     * the spelling has been changed, or the user has altered his directory
-     * status.)
-     *)
-
-    (**
-     * Syntax error, command unrecognized and the requested action did not take
-     * place. This may include errors such as command line too long.
-     *
-     * A 500 response code may be sent in response to any command that the
-     * server is unable to recognize. It is a permanent negative response, which
-     * means the client is discouraged from sending the command again since the
-     * server will respond with the same reply code. It usually means that the
-     * client has sent a command to the server that the server does not
-     * recognize. This may be due to an error in the spelling or formatting of
-     * the command itself or that the command is newer than the FTP
-     * implementation in place on the server or is a proprietary command of
-     * another server implementation.
-     *)
-    FTP_COMMAND_UNRECOGNIZED                             = 500,
-
-    (**
-     * Syntax error in parameters or arguments.
-     *
-     * A 501 response code may be sent in response to any command that requires
-     * or supports the optional use of a parameter or argument. It is a
-     * permanent negative response, which means the client is discouraged from
-     * sending the exact command and parameter(s) again since the server will
-     * respond with the same response code. It differs from the 500 response
-     * code in that the server recognizes the command present but is unable to
-     * take the requested action due to a syntax error in the parameter(s)
-     * present with the command. Sending the same command to the server with a
-     * corrected parameter may result in a different response code.
-     *)
-    FTP_PARAMETERS_SYNTAX_ERROR                          = 501,
-
-    (**
-     * Command not implemented.
-     *
-     * A 502 code may be sent in response to any FTP command that the server
-     * does not support. It is a permanent negative reply, which means the
-     * client is discouraged from sending the command again since the server
-     * will respond with the same reply code. The original FTP specification
-     * dictates a minimum implementation for all FTP servers with a list of
-     * required commands. Because of this, a 502 reply code should not be sent
-     * in response to a required command.
-     *)
-    FTP_COMMAND_NOT_SUPPORT                              = 502,
-
-    (**
-     * Bad sequence of commands.
-     *
-     * A 503 response code may be sent in response to any command that requires
-     * the successful processing of previous commands first. It is a permanent
-     * negative reply, which means the client is discouraged from immediately
-     * sending the command again since the server will respond with the same
-     * reply code. For example, a file rename requires a successful RNFR command
-     * before the RNTO command can be sent. Sending the RNTOcommand first will
-     * result in a 503 response code.
-     *)
-    FTP_COMMAND_BAD_SEQUENCE                             = 503,
-
-    (**
-     * Command not implemented for that parameter.
-     *
-     * A 504 response code can be sent in response to any command using a
-     * parameter that is not supported by the server. It is a permanent negative
-     * response, which means the client is discouraged from sending the command
-     * again since the server will respond with the same response code. Issuing
-     * the same command with a different parameter may result in a different
-     * response code.
-     *)
-    FTP_PARAMETER_NOT_SUPPORTED_BY_SERVER                = 504,
-
-    (**
-     * Not logged in.
-     *
-     * A 530 response code may be sent in response to any command that requires
-     * a user to log in before the command is processed. Some servers may reply
-     * to all commands with a 530 response code until the client logs in.
-     *)
-    FTP_NEED_LOGIN                                       = 530,
-
-    (**
-     * Need account for storing files.
-     *
-     * A 532 response code may be sent in response to any command involving the
-     * storage or manipulation of files on the server. It is a permanent
-     * negative response, which means the client is discouraged from sending the
-     * command again since the server will respond with the same response code.
-     * Providing account information first and sending the command again can
-     * result in a different response code.
-     *)
-    FTP_NEED_ACCOUNT_FOR_STORIG_FILES                    = 532,
-
-    (**
-     * Could Not Connect to Server - Policy Requires SSL
-     *
-     * A 534 response code can be issued in response to any command that the
-     * server is unwilling to process due to its security policy. It is a
-     * permanent negative response, which means the client is discouraged from
-     * sending the command again since the server will respond with the same
-     * response code. It usually means that the server requires a certain level
-     * of security to exist on the connection before processing the command or
-     * that it is unwilling to process a command that would provide for
-     * decreased security.
-     *)
-    FTP_REQUIRE_HIGHER_SECURITY_LEVEL                    = 534,
-
-    (**
-     * Requested action not taken. File unavailable (e.g., file not found, no
-     * access).
-     *
-     * A 550 response code may be sent in response to any command requiring the
-     * server to access a local file. It is a permanent negative response, which
-     * means the client is discouraged from sending the command again since the
-     * server will respond with the same response code. It is usually due to a
-     * command requiring access to a file that does not exist or that the user
-     * does not have access rights to.
-     *)
-    FTP_FILE_UNAVAILABLE                                 = 550,
-
-    (**
-     * Requested action aborted. Page type unknown.
-     *
-     * A 551 response code may be sent in response to any command requiring the
-     * server to store information locally. It is a permanent negative reply,
-     * which means the client is discouraged from sending the command again
-     * since the server will respond with the same response code. It is only
-     * applicable when the page file structure is being used (through a STRU P
-     * command).
-     *)
-    FTP_PAGE_FILE_STRUCTURE_UNKNOWN                      = 551,
-
-    (**
-     * Requested file action aborted. Exceeded storage allocation (for current
-     * directory or dataset).
-     *
-     * A 552 response code may be sent in response to any command requiring the
-     * server to store received information locally. It is a permanent negative
-     * response, which means the client is discouraged from sending the command
-     * again since the server will respond with the same reply code. It usually
-     * indicates that the logged in user has exceeded the storage space
-     * allocated to their user account by the administrator.
-     *)
-    FTP_STORAGE_SPACE_EXCEEDED                           = 552,
-
-    (**
-     * Requested action not taken. File name not allowed.
-     *
-     * A 553 response code may be given in response to any command requiring or
-     * supporting the use of a file name as a parameter. It is a permanent
-     * negative reply, which means the client is discouraged from sending the
-     * command again since the server will respond with the same reply code. It
-     * is usually due to the file name contained as a parameter violating the
-     * file naming policies existing on the server. Issuing the command again
-     * with a different file name may result in a different reply code.
-     *)
-    FTP_FILENAME_NOT_ALLOWED                             = 553,
-
-    (**
-     * 6xx Protected reply
-     *
-     * The RFC 2228 introduced the concept of protected replies to increase
-     * security over the FTP communications. The 6xx replies are Base64 encoded
-     * protected messages that serves as responses to secure commands. When
-     * properly decoded, these replies fall into the above categories.
-     *)
-
-    (**
-     * Replies regarding confidentiality and integrity
-     *)
-    FTP_CONFIDENTIALITY_AND_INTEGRITY                    = 600,
-
-    (**
-     * Integrity protected reply.
-     *)
-    FTP_INTEGRITY_PROTECTED_REPLY                        = 631,
-
-    (**
-     * Confidentiality and integrity protected reply.
-     *)
-    FTP_CONFIDENTIALITY_AND_INTEGRITY_REPLY              = 632,
-
-    (**
-     * Confidentiality protected reply.
-     *)
-    FTP_CONFIDENTIALITY_REPLY                            = 633
-  );
-
-  (**
-   * Proxy protocol type
-   *)
-  TProxyType = (
-    (**
-     * HTTP Proxy
-     *)
-    PROXY_HTTP                        = Longint(CURLPROXY_HTTP),
-
-    (**
-     * HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it uses
-     * HTTP/1.0 for any CONNECT tunnelling. It does not change the HTTP version
-     * of the actual HTTP requests
-     *)
-    PROXY_HTTP_1_0                    = Longint(CURLPROXY_HTTP_1_0),
-
-    (**
-     * HTTPS Proxy
-     *)
-    PROXY_HTTPS                       = Longint(CURLPROXY_HTTPS),
-
-    (**
-     * SOCKS4 Proxy
-     *)
-    PROXY_SOCKS4                      = Longint(CURLPROXY_SOCKS4),
-
-    (**
-     * SOCKS5 Proxy
-     *)
-    PROXY_SOCKS5                      = Longint(CURLPROXY_SOCKS5),
-
-    (**
-     * SOCKS4a Proxy. Proxy resolves URL hostname
-     *)
-    PROXY_SOCKS4A                     = Longint(CURLPROXY_SOCKS4A),
-
-    (**
-     * SOCKS5 Proxy. Proxy resolves URL hostname.
-     *)
-    PROXY_SOCKS5_HOSTNAME             = Longint(CURLPROXY_SOCKS5_HOSTNAME)
-  );
-
-  TAuthMethod = (
-    AUTH_NONE,
-
-    (**
-     * HTTP Basic authentication. This is the default choice, and the only
-     * method that is in wide-spread use and supported virtually everywhere.
-     * This sends the user name and password over the network in plain text,
-     * easily captured by others.
-     *)
-    AUTH_BASIC,
-
-    (**
-     * HTTP Digest authentication. Digest authentication is defined in RFC 2617
-     * and is a more secure way to do authentication over public networks than
-     * the regular old-fashioned Basic method.
-     *)
-    AUTH_DIGEST,
-
-    (**
-     * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
-     * defined in RFC 4559 and is the most secure way to perform authentication
-     * over HTTP.
-     *)
-    AUTH_NEGOTIATE,
-
-    (**
-     * Same as AUTH_NEGOTIATE
-     *)
-    AUTH_GSSAPI,
-
-    (**
-     * HTTP NTLM authentication. A proprietary protocol invented and used by
-     * Microsoft. It uses a challenge-response and hash concept similar to
-     * Digest, to prevent the password from being eavesdropped.
-     *)
-    AUTH_NTLM,
-
-    (**
-     * HTTP Digest authentication with an IE flavor. Digest authentication is
-     * defined in RFC 2617 and is a more secure way to do authentication over
-     * public networks than the regular old-fashioned Basic method. The IE
-     * flavor is simply that libcurl will use a special "quirk" that IE is known
-     * to have used before version 7 and that some servers require the client to
-     * use.
-     *)
-    AUTH_DIGEST_IE,
-
-    (**
-     * NTLM delegating to winbind helper. Authentication is performed by a
-     * separate binary application that is executed when needed. The name of the
-     * application is specified at compile time but is typically
-     * /usr/bin/ntlm_auth
-     *)
-    AUTH_NTLM_WB,
-
-    (**
-     * HTTP Bearer token authentication, used primarily in OAuth 2.0 protocol.
-     *)
-    AUTH_BEARER,
-
-    (**
-     * This is sets all bits and thus makes libcurl pick any it finds suitable.
-     * libcurl will automatically select the one it finds most secure.
-     *)
-    AUTH_ANY,
-
-    (**
-     * This is sets all bits except Basic and thus makes libcurl pick any it
-     * finds suitable. libcurl will automatically select the one it finds most
-     * secure.
-     *)
-    AUTH_ANYSAFE
-  );
-
-  TAuthMethods = set of TAuthMethod;
-
-  TTLSAuthMethod = (
-    (**
-     * TLS-SRP authentication. Secure Remote Password authentication for TLS is
-     * defined in RFC 5054 and provides mutual authentication if both sides have
-     * a shared secret.
-     *)
-    SRP
-  );
-
-  TPostRedirect = (
-    REDIRECT_POST_NONE,
-
-    (**
-     * Tells the library to respect RFC 7231 (section 6.4.2 to 6.4.4) and not
-     * convert POST requests into GET requests when following a 301 redirection
-     *)
-    REDIRECT_POST_301,
-
-    (**
-     * Makes libcurl maintain the request method after a 302 redirect
-     *)
-    REDIRECT_POST_302,
-
-    (**
-     * Makes libcurl maintain the request method after a 303 redirect
-     *)
-    REDIRECT_POST_303,
-
-    REDIRECT_POST_ALL
-  );
-
-  TPostRedirects = set of TPostRedirect;
-
-  TNETRCOption = (
-   (**
-    * The use of the ~/.netrc file is optional, and information in the URL is to
-    * be preferred. The file will be scanned for the host and user name (to find
-    * the password only) or for the host only, to find the first user name and
-    * password after that machine, which ever information is not specified.
-    *)
-    NETRC_OPTIONAL                    = Longint(CURL_NETRC_OPTIONAL),
-
-   (**
-    * The library will ignore the ~/.netrc file.
-    *)
-    NETRC_IGNORED                     = Longint(CURL_NETRC_IGNORED),
-
-   (**
-    * The use of the ~/.netrc file is required, and information in the URL is to
-    * be ignored. The file will be scanned for the host and user name (to find
-    * the password only) or for the host only, to find the first user name and
-    * password after that machine, which ever information is not specified.
-    *)
-    NETRC_REQUIRED                    = Longint(CURL_NETRC_REQUIRED)
-  );
-
-  TEncoding = (
-   (**
-    * Non-compressed
-    *)
-    ENCODE_NONE,
-
-    (**
-     * Requests the server to compress its response using the zlib algorithm
-     *)
-    ENCODE_DEFLATE,
-
-   (**
-    * Requests the gzip algorithm
-    *)
-    ENCODE_GZIP,
-
-   (**
-    * Requests the brotli algorithm
-    *)
-    ENCODE_BR
-  );
-
-  TEncodings = set of TEncoding;
-
-  { TAltSvc }
-  (**
-   * Setting for the alt-svc engine
-   *)
-  TAltSvc = (
-    (**
-     * No Alt-Svc treatment.
-     *)
-    ALTSVC_DISABLE                 = 0,
-
-    (**
-     * If an Alt-Svc: header is received, this instructs libcurl to switch to
-     * one of those alternatives asap rather than to save it and use for the
-     * next request. (Not currently supported).
-     *)
-    ALTSVC_IMMEDIATELY             = Longint(CURLALTSVC_IMMEDIATELY),
-
-    (**
-     * Do not write the alt-svc cache back to the file specified with
-     * TSession.HTTP.AltSvcCacheFile even if it gets updated. By default a file
-     * specified with that option will be read and written to as deemed
-     * necessary.
-     *)
-    ALTSVC_READONLYFILE            = Longint(CURLALTSVC_READONLYFILE),
-
-    (**
-     * Accept alternative services offered over HTTP/1.1.
-     *)
-    ALTSVC_H1                      = Longint(CURLALTSVC_H1),
-
-    (**
-     * Accept alternative services offered over HTTP/2. This will only be used
-     * if libcurl was also built to actually support HTTP/2, otherwise this bit
-     * will be ignored.
-     *)
-    ALTSVC_H2                      = Longint(CURLALTSVC_H2),
-
-    (**
-     * Accept alternative services offered over HTTP/3. This will only be used
-     * if libcurl was also built to actually support HTTP/3, otherwise this bit
-     * will be ignored.
-     *)
-    ALTSVC_H3                      = Longint(CURLALTSVC_H3)
-  );
-
-  TAltSvcs = set of TAltSvc;
 
   { TTimeInterval }
 
@@ -2048,9 +280,448 @@ type
 
       end;
 
+      { TSecurityProperty }
+
+      TSecurityProperty = class
+      public
+        type
+          TAuthMethod = (
+          AUTH_NONE,
+
+          (**
+           * HTTP Basic authentication. This is the default choice, and the only
+           * method that is in wide-spread use and supported virtually
+           * everywhere. This sends the user name and password over the network
+           * in plain text, easily captured by others.
+           *)
+          AUTH_BASIC,
+
+          (**
+           * HTTP Digest authentication. Digest authentication is defined in RFC
+           * 2617 and is a more secure way to do authentication over public
+           * networks than the regular old-fashioned Basic method.
+           *)
+          AUTH_DIGEST,
+
+          (**
+           * HTTP Negotiate (SPNEGO) authentication. Negotiate authentication is
+           * defined in RFC 4559 and is the most secure way to perform
+           * authentication over HTTP.
+           *)
+          AUTH_NEGOTIATE,
+
+          (**
+           * Same as AUTH_NEGOTIATE
+           *)
+          AUTH_GSSAPI,
+
+          (**
+           * HTTP NTLM authentication. A proprietary protocol invented and used
+           * by Microsoft. It uses a challenge-response and hash concept similar
+           * to Digest, to prevent the password from being eavesdropped.
+           *)
+          AUTH_NTLM,
+
+          (**
+           * HTTP Digest authentication with an IE flavor. Digest authentication
+           * is defined in RFC 2617 and is a more secure way to do
+           * authentication over public networks than the regular old-fashioned
+           * Basic method. The IE flavor is simply that libcurl will use a
+           * special "quirk" that IE is known to have used before version 7 and
+           * that some servers require the client to use.
+           *)
+          AUTH_DIGEST_IE,
+
+          (**
+           * NTLM delegating to winbind helper. Authentication is performed by a
+           * separate binary application that is executed when needed. The name
+           * of the application is specified at compile time but is typically
+           * /usr/bin/ntlm_auth
+           *)
+          AUTH_NTLM_WB,
+
+          (**
+           * HTTP Bearer token authentication, used primarily in OAuth 2.0
+           * protocol.
+           *)
+          AUTH_BEARER,
+
+          (**
+           * This is sets all bits and thus makes libcurl pick any it finds
+           * suitable. libcurl will automatically select the one it finds most
+           * secure.
+           *)
+          AUTH_ANY,
+
+          (**
+           * This is sets all bits except Basic and thus makes libcurl pick any
+           * it finds suitable. libcurl will automatically select the one it
+           * finds most secure.
+           *)
+          AUTH_ANYSAFE
+        );
+
+        TAuthMethods = set of TAuthMethod;
+
+        TTLSAuthMethod = (
+          (**
+           * TLS-SRP authentication. Secure Remote Password authentication for
+           * TLS is defined in RFC 5054 and provides mutual authentication if
+           * both sides have a shared secret.
+           *)
+          SRP
+        );
+
+        TNETRCOption = (
+         (**
+          * The use of the ~/.netrc file is optional, and information in the URL
+          * is to be preferred. The file will be scanned for the host and user
+          * name (to find the password only) or for the host only, to find the
+          * first user name and password after that machine, which ever
+          * information is not specified.
+          *)
+          NETRC_OPTIONAL                    = Longint(CURL_NETRC_OPTIONAL),
+
+         (**
+          * The library will ignore the ~/.netrc file.
+          *)
+          NETRC_IGNORED                     = Longint(CURL_NETRC_IGNORED){%H-},
+
+         (**
+          * The use of the ~/.netrc file is required, and information in the URL
+          * is to be ignored. The file will be scanned for the host and user
+          * name (to find the password only) or for the host only, to find the
+          * first user name and password after that machine, which ever
+          * information is not specified.
+          *)
+          NETRC_REQUIRED                    = Longint(CURL_NETRC_REQUIRED)
+        );
+      private
+        FHandle : CURL;
+
+        procedure SetUserPassword (AUserpwd : string);
+        procedure SetUsername (AName : string);
+        procedure SetPassword (APassword : string);
+        procedure SetTLSUsername (AName : string);
+        procedure SetTLSPassword (APassword : string);
+        procedure SetTLSAuth (AMethod : TTLSAuthMethod);
+        procedure SetAllowUsernameInURL (AAllow : Boolean);
+        procedure SetAuthServiceName (AName : string);
+        procedure SetNetrc (AOption : TNETRCOption);
+        procedure SetNetrcFile (AFile : string);
+        procedure SetUnrestrictedAuth (AEnable : Boolean);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+        (**
+         * Allow/disallow specifying user name in the url
+         *)
+        property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
+          default True;
+
+        (**
+         * User name and password to use in authentification
+         *
+         * Login details string for the connection. The format of which is:
+         * [user name]:[password].
+         * When using Kerberos V5 authentication with a Windows based server,
+         * you should specify the user name part with the domain name in order
+         * for the server to successfully obtain a Kerberos Ticket. If you don't
+         * then the initial part of the authentication handshake may fail.
+         * When using NTLM, the user name can be specified simply as the user
+         * name without the domain name should the server be part of a single
+         * domain and forest.
+         * To specify the domain name use either Down-Level Logon Name or UPN
+         * (User Principal Name) formats. For example, EXAMPLE\user and
+         * user@example.com respectively.
+         * When using HTTP and FollowLocation, libcurl might perform several
+         * requests to possibly different hosts. libcurl will only send this
+         * user and password information to hosts using the initial host name,
+         * so if libcurl follows locations to other hosts it will not send the
+         * user and password to those. This is enforced to prevent accidental
+         * information leakage.
+         *)
+        property UserPassword : string write SetUserPassword;
+
+        (**
+         * User name to use in authentication
+         *
+         * Sets the user name to be used in protocol authentication. You should
+         * not use this option together with the (older) UserPassword option.
+         * When using Kerberos V5 authentication with a Windows based server,
+         * you should include the domain name in order for the server to
+         * successfully obtain a Kerberos Ticket. If you don't then the initial
+         * part of the authentication handshake may fail.
+         * When using NTLM, the user name can be specified simply as the user
+         * name without the domain name should the server be part of a single
+         * domain and forest.
+         * To include the domain name use either Down-Level Logon Name or UPN
+         * (User Principal Name) formats. For example, EXAMPLE\user and
+         * user@example.com respectively.
+         *)
+        property Username : string write SetUsername;
+
+        (**
+         * Password to use in authentication
+         *
+         * The Password option should be used in conjunction with the Username
+         * option.
+         *)
+        property Password : string write SetPassword;
+
+        (**
+         * User name to use for TLS authentication
+         *)
+        property TLSUsername : string write SetTLSUsername;
+
+        (**
+         * Password to use for TLS authentication
+         *
+         * Requires that the TLSUsername option also be set.
+         *)
+        property TLSPassword : string write SetTLSPassword;
+
+        (**
+         * Set TLS authentication methods
+         *)
+        property TLSAuth : TTLSAuthMethod write SetTLSAuth;
+
+        (**
+         * Authentication service name
+         *
+         * String holding the name of the service for DIGEST-MD5, SPNEGO and
+         * Kerberos 5 authentication mechanisms. The default service names are
+         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+         * change them.
+         *)
+        property AuthServiceName : string write SetAuthServiceName;
+
+        (**
+         * Request then .netrc is used
+         *
+         * This parameter controls the preference level of libcurl between using
+         * user names and passwords from your ~/.netrc file, relative to user
+         * names and passwords in the URL supplied with URL. On Windows, libcurl
+         * will use the file as %HOME%/_netrc, but you can also tell libcurl a
+         * different file name to use with NetrcFile.
+         *)
+        property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
+
+        (**
+         * File name to read .netrc info from
+         *
+         * String containing the full path name to the file you want libcurl to
+         * use as .netrc file. If this option is omitted, and Netrc is set,
+         * libcurl will attempt to find a .netrc file in the current user's home
+         * directory.
+         *)
+        property NetrcFile : string write SetNetrcFile;
+
+        (**
+         * Send credentials to other hosts too
+         *
+         * Set the long gohead parameter to 1L to make libcurl continue to send
+         * authentication (user+password) credentials when following locations,
+         * even when hostname changed. This option is meaningful only when
+         * setting FollowRedirect.
+         * By default, libcurl will only send given credentials to the initial
+         * host name as given in the original URL, to avoid leaking username +
+         * password to other sites.
+         *)
+        property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
+          default False;
+      end;
+
       { TProtocolProperty }
 
       TProtocolProperty = class
+      public
+        type
+          TProtocol = (
+          (**
+           * DICT is a dictionary network protocol, it allows clients to ask
+           * dictionary servers about a meaning or explanation for words. See
+           * RFC 2229. Dict servers and clients use TCP port 2628.
+           *)
+          PROTOCOL_DICT,
+
+          (**
+           * FILE is not actually a "network" protocol. It is a URL scheme that
+           * allows you to tell curl to get a file from the local file system
+           * instead of getting it over the network from a remote server. See
+           * RFC 1738.
+           *)
+          PROTOCOL_FILE,
+
+          (**
+           * FTP stands for File Transfer Protocol and is an old (originates in
+           * the early 1970s) way to transfer files back and forth between a
+           * client and a server. See RFC 959. It has been extended greatly over
+           * the years. FTP servers and clients use TCP port 21 plus one more
+           * port, though the second one is usually dynamically established
+           * during communication.
+           *)
+          PROTOCOL_FTP,
+
+          (**
+           * FTPS stands for Secure File Transfer Protocol. It follows the
+           * tradition of appending an 'S' to the protocol name to signify that
+           * the protocol is done like normal FTP but with an added SSL/TLS
+           * security layer. See RFC 4217.
+           * This protocol is problematic to use through firewalls and other
+           * network equipment.
+           *)
+          PROTOCOL_FTPS,
+
+          (**
+           * Designed for "distributing, searching, and retrieving documents
+           * over the Internet", Gopher is somewhat of the grand father to HTTP
+           * as HTTP has mostly taken over completely for the same use cases.
+           * See RFC 1436. Gopher servers and clients use TCP port 70.
+           *)
+          PROTOCOL_GOPHER,
+
+          (**
+           * The Hypertext Transfer Protocol, HTTP, is the most widely used
+           * protocol for transferring data on the web and over the Internet.
+           * See RFC 7230 for HTTP/1.1 and RFC 7540 for HTTP/2. HTTP servers and
+           * clients use TCP port 80.
+           *)
+          PROTOCOL_HTTP,
+
+          (**
+           * Secure HTTP is HTTP done over an SSL/TLS connection. See RFC 2818.
+           * HTTPS servers and clients use TCP port 443, unless they speak
+           * HTTP/3 which then uses QUIC and is done over UDP...
+           *)
+          PROTOCOL_HTTPS,
+
+          (**
+           * The Internet Message Access Protocol, IMAP, is a protocol for
+           * accessing, controlling and "reading" email. See RFC 3501. IMAP
+           * servers and clients use TCP port 143. Whilst connections to the
+           * server start out as cleartext, SSL/TLS communication may be
+           * supported by the client explicitly requesting to upgrade the
+           * connection using the STARTTLS command. See RFC 2595.
+           *)
+          PROTOCOL_IMAP,
+
+          (**
+           * Secure IMAP is IMAP done over an SSL/TLS connection. Such
+           * connections implicitly start out using SSL/TLS and as such servers
+           * and clients use TCP port 993 to communicate with each other. See
+           * RFC 8314.
+           *)
+          PROTOCOL_IMAPS,
+
+          (**
+           * The Lightweight Directory Access Protocol, LDAP, is a protocol for
+           * accessing and maintaining distributed directory information.
+           * Basically a database lookup. See RFC 4511. LDAP servers and clients
+           * use TCP port 389.
+           *)
+          PROTOCOL_LDAP,
+
+          (**
+           * Secure LDAP is LDAP done over an SSL/TLS connection.
+           *)
+          PROTOCOL_LDAPS,
+
+          (**
+           * The Post Office Protocol version 3 (POP3) is a protocol for
+           * retrieving email from a server. See RFC 1939. POP3 servers and
+           * clients use TCP port 110. Whilst connections to the server start
+           * out as cleartext, SSL/TLS communication may be supported by the
+           * client explicitly requesting to upgrade the connection using the
+           * STLS command. See RFC 2595.
+           *)
+          PROTOCOL_POP3,
+
+          (**
+           * Secure POP3 is POP3 done over an SSL/TLS connection. Such
+           * connections implicitly start out using SSL/TLS and as such servers
+           * and clients use TCP port 995 to communicate with each other. See
+           * RFC 8314.
+           *)
+          PROTOCOL_POP3S,
+
+          (**
+           * The Real-Time Messaging Protocol (RTMP) is a protocol for streaming
+           * audio, video and data. RTMP servers and clients use TCP port 1935.
+           *)
+          PROTOCOL_RTMP,
+          PROTOCOL_RTMPE,
+          PROTOCOL_RTMPS,
+          PROTOCOL_RTMPT,
+          PROTOCOL_RTMPTE,
+          PROTOCOL_RTMPTS,
+
+          (**
+           * The Real Time Streaming Protocol (RTSP) is a network control
+           * protocol to control streaming media servers. See RFC 2326. RTSP
+           * servers and clients use TCP and UDP port 554.
+           *)
+          PROTOCOL_RTSP,
+
+          (**
+           * The Secure Copy (SCP) protocol is designed to copy files to and
+           * from a remote SSH server. SCP servers and clients use TCP port 22.
+           *)
+          PROTOCOL_SCP,
+
+          (**
+           * The SSH File Transfer Protocol (SFTP) that provides file access,
+           * file transfer, and file management over a reliable data stream.
+           * SFTP servers and clients use TCP port 22.
+           *)
+          PROTOCOL_SFTP,
+
+          (**
+           * The Server Message Block (SMB) protocol is also known as CIFS. It
+           * is an application-layer network protocol mainly used for providing
+           * shared access to files, printers, and serial ports and
+           * miscellaneous communications between nodes on a network. SMB
+           * servers and clients use TCP port 445.
+           *)
+          PROTOCOL_SMB,
+          PROTOCOL_SMBS,
+
+          (**
+           * The Simple Mail Transfer Protocol (SMTP) is a protocol for email
+           * transmission. See RFC 5321. SMTP servers and clients use TCP port
+           * 25. Whilst connections to the server start out as cleartext,
+           * SSL/TLS communication may be supported by the client explicitly
+           * requesting to upgrade the connection using the STARTTLS command.
+           * See RFC 3207.
+           *)
+          PROTOCOL_SMTP,
+
+          (**
+           * Secure SMTP, sometimes called SSMTP, is SMTP done over an SSL/TLS
+           * connection. Such connections implicitly start out using SSL/TLS and
+           * as such servers and clients use TCP port 465 to communicate with
+           * each other. See RFC 8314.
+           *)
+          PROTOCOL_SMTPS,
+
+          (**
+           * TELNET is an application layer protocol used over networks to
+           * provide a bidirectional interactive text-oriented communication
+           * facility using a virtual terminal connection. See RFC 854. TELNET
+           * servers and clients use TCP port 23.
+           *)
+          PROTOCOL_TELNET,
+
+          (**
+           * The Trivial File Transfer Protocol (TFTP) is a protocol for doing
+           * simple file transfers over UDP to get a file from or put a file
+           * onto a remote host. TFTP servers and clients use UDP port 69.
+           *)
+          PROTOCOL_TFTP
+        );
+
+        TProtocols = set of TProtocol;
       private
         FHandle : CURL;
 
@@ -2311,13 +982,15 @@ type
          property KeepInterval : TTimeInterval write SetTCPKeepInterval;
       end;
 
+      TProxyProperty = class;
+
       { TSOCKS5Property }
 
       TSOCKS5Property = class
       private
         FHandle : CURL;
 
-        procedure SetSOCKS5Auth (AMethod : TAuthMethods);
+        procedure SetSOCKS5Auth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetSOCKS5GSSAPIServiceName (AName : string);
         procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
       public
@@ -2333,7 +1006,7 @@ type
          * GSS-API authentication, and AUTH_NONE, which allows no
          * authentication.
          *)
-        property Auth : TAuthMethods write SetSOCKS5Auth
+        property Auth : TSecurityProperty.TAuthMethods write SetSOCKS5Auth
           default [AUTH_BASIC, AUTH_GSSAPI];
 
         (**
@@ -2358,6 +1031,50 @@ type
       { TProxyProperty }
 
       TProxyProperty = class
+      public
+        type
+          (**
+           * Proxy protocol type
+           *)
+          TProxyType = (
+            (**
+             * HTTP Proxy
+             *)
+            PROXY_HTTP                        = Longint(CURLPROXY_HTTP),
+
+            (**
+             * HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it
+             * uses HTTP/1.0 for any CONNECT tunnelling. It does not change the
+             * HTTP version of the actual HTTP requests
+             *)
+            PROXY_HTTP_1_0                    = Longint(CURLPROXY_HTTP_1_0),
+
+            (**
+             * HTTPS Proxy
+             *)
+            PROXY_HTTPS                       = Longint(CURLPROXY_HTTPS),
+
+            (**
+             * SOCKS4 Proxy
+             *)
+            PROXY_SOCKS4                      = Longint(CURLPROXY_SOCKS4),
+
+            (**
+             * SOCKS5 Proxy
+             *)
+            PROXY_SOCKS5                      = Longint(CURLPROXY_SOCKS5),
+
+            (**
+             * SOCKS4a Proxy. Proxy resolves URL hostname
+             *)
+            PROXY_SOCKS4A                     = Longint(CURLPROXY_SOCKS4A),
+
+            (**
+             * SOCKS5 Proxy. Proxy resolves URL hostname.
+             *)
+            PROXY_SOCKS5_HOSTNAME
+              = Longint(CURLPROXY_SOCKS5_HOSTNAME)
+          );
       private
         FHandle : CURL;
         FSOCKS5 : TSOCKS5Property;
@@ -2374,8 +1091,8 @@ type
         procedure SetProxyPassword (APassword : string);
         procedure SetProxyTLSUsername (AName : string);
         procedure SetProxyTLSPassword (APassword : string);
-        procedure SetProxyTLSAuth (AMethod : TTLSAuthMethod);
-        procedure SetProxyHTTPAuth (AMethod : TAuthMethods);
+        procedure SetProxyTLSAuth (AMethod : TSecurityProperty.TTLSAuthMethod);
+        procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetHAProxyHeader (ASend : Boolean);
       public
         constructor Create (AHandle : CURL);
@@ -2534,7 +1251,8 @@ type
         (**
          * Set proxy TLS authentication methods
          *)
-        property TLSAuth : TTLSAuthMethod write SetProxyTLSAuth;
+        property TLSAuth : TSecurityProperty.TTLSAuthMethod
+          write SetProxyTLSAuth;
 
         (**
          * Set HTTP proxy authentication methods to try
@@ -2545,8 +1263,8 @@ type
          * supports and then pick the best one you allow it to use. For some
          * methods, this will induce an extra network round-trip.
          *)
-        property HTTPAuth : TAuthMethods write SetProxyHTTPAuth
-          default [AUTH_BASIC];
+        property HTTPAuth : TSecurityProperty.TAuthMethods
+          write SetProxyHTTPAuth default [AUTH_BASIC];
 
         (**
          * Send HAProxy PROXY protocol v.1 header
@@ -2596,155 +1314,17 @@ type
         (**
          * Provide the DNS-over-HTTPS URL
          *
-         * Pass in a string to a URL for the DOH server to use for name resolving.
-         * The parameter should be a string which must be URL-encoded in the
-         * following format: "https://host:port/path". It MUST specify a HTTPS URL.
-         * Disable DOH use again by setting this option to '' (empty string).
+         * Pass in a string to a URL for the DOH server to use for name
+         * resolving. The parameter should be a string which must be URL-encoded
+         * in the following format: "https://host:port/path". It MUST specify a
+         * HTTPS URL. Disable DOH use again by setting this option to '' (empty
+         * string).
          *)
         property DNSoverHTTPS : string write SetDNSoverHTTPS;
       end;
 
-      { TSecurityProperty }
-
-      TSecurityProperty = class
-      private
-        FHandle : CURL;
-
-        procedure SetUserPassword (AUserpwd : string);
-        procedure SetUsername (AName : string);
-        procedure SetPassword (APassword : string);
-        procedure SetTLSUsername (AName : string);
-        procedure SetTLSPassword (APassword : string);
-        procedure SetTLSAuth (AMethod : TTLSAuthMethod);
-        procedure SetAllowUsernameInURL (AAllow : Boolean);
-        procedure SetAuthServiceName (AName : string);
-        procedure SetNetrc (AOption : TNETRCOption);
-        procedure SetNetrcFile (AFile : string);
-        procedure SetUnrestrictedAuth (AEnable : Boolean);
-      public
-        constructor Create (AHandle : CURL);
-        destructor Destroy; override;
-
-        (**
-         * Allow/disallow specifying user name in the url
-         *)
-        property AllowUsernameInURL : Boolean write SetAllowUsernameInURL
-          default True;
-
-        (**
-         * User name and password to use in authentification
-         *
-         * Login details string for the connection. The format of which is:
-         * [user name]:[password].
-         * When using Kerberos V5 authentication with a Windows based server,
-         * you should specify the user name part with the domain name in order
-         * for the server to successfully obtain a Kerberos Ticket. If you don't
-         * then the initial part of the authentication handshake may fail.
-         * When using NTLM, the user name can be specified simply as the user
-         * name without the domain name should the server be part of a single
-         * domain and forest.
-         * To specify the domain name use either Down-Level Logon Name or UPN
-         * (User Principal Name) formats. For example, EXAMPLE\user and
-         * user@example.com respectively.
-         * When using HTTP and FollowLocation, libcurl might perform several
-         * requests to possibly different hosts. libcurl will only send this
-         * user and password information to hosts using the initial host name,
-         * so if libcurl follows locations to other hosts it will not send the
-         * user and password to those. This is enforced to prevent accidental
-         * information leakage.
-         *)
-        property UserPassword : string write SetUserPassword;
-
-        (**
-         * User name to use in authentication
-         *
-         * Sets the user name to be used in protocol authentication. You should
-         * not use this option together with the (older) UserPassword option.
-         * When using Kerberos V5 authentication with a Windows based server,
-         * you should include the domain name in order for the server to
-         * successfully obtain a Kerberos Ticket. If you don't then the initial
-         * part of the authentication handshake may fail.
-         * When using NTLM, the user name can be specified simply as the user
-         * name without the domain name should the server be part of a single
-         * domain and forest.
-         * To include the domain name use either Down-Level Logon Name or UPN
-         * (User Principal Name) formats. For example, EXAMPLE\user and
-         * user@example.com respectively.
-         *)
-        property Username : string write SetUsername;
-
-        (**
-         * Password to use in authentication
-         *
-         * The Password option should be used in conjunction with the Username
-         * option.
-         *)
-        property Password : string write SetPassword;
-
-        (**
-         * User name to use for TLS authentication
-         *)
-        property TLSUsername : string write SetTLSUsername;
-
-        (**
-         * Password to use for TLS authentication
-         *
-         * Requires that the TLSUsername option also be set.
-         *)
-        property TLSPassword : string write SetTLSPassword;
-
-        (**
-         * Set TLS authentication methods
-         *)
-        property TLSAuth : TTLSAuthMethod write SetTLSAuth;
-
-        (**
-         * Authentication service name
-         *
-         * String holding the name of the service for DIGEST-MD5, SPNEGO and
-         * Kerberos 5 authentication mechanisms. The default service names are
-         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
-         * change them.
-         *)
-        property AuthServiceName : string write SetAuthServiceName;
-
-        (**
-         * Request then .netrc is used
-         *
-         * This parameter controls the preference level of libcurl between using
-         * user names and passwords from your ~/.netrc file, relative to user
-         * names and passwords in the URL supplied with URL. On Windows, libcurl
-         * will use the file as %HOME%/_netrc, but you can also tell libcurl a
-         * different file name to use with NetrcFile.
-         *)
-        property Netrc : TNETRCOption write SetNetrc default NETRC_IGNORED;
-
-        (**
-         * File name to read .netrc info from
-         *
-         * String containing the full path name to the file you want libcurl to
-         * use as .netrc file. If this option is omitted, and Netrc is set,
-         * libcurl will attempt to find a .netrc file in the current user's home
-         * directory.
-         *)
-        property NetrcFile : string write SetNetrcFile;
-
-        (**
-         * Send credentials to other hosts too
-         *
-         * Set the long gohead parameter to 1L to make libcurl continue to send
-         * authentication (user+password) credentials when following locations,
-         * even when hostname changed. This option is meaningful only when
-         * setting FollowRedirect.
-         * By default, libcurl will only send given credentials to the initial
-         * host name as given in the original URL, to avoid leaking username +
-         * password to other sites.
-         *)
-        property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
-          default False;
-      end;
-
       { THTTPCookie }
+
       THTTPCookie = class
       private
         FHandle : CURL;
@@ -2877,13 +1457,899 @@ type
       { THTTPProperty }
 
       THTTPProperty = class
+      public
+        type
+          THTTPStatusCode = (
+          (**
+           * Error status code, not possible as normal!
+           *)
+          HTTP_STATUS_UNKNOWN                                  = 0,
+
+          (**
+           * The server, has received the request headers and the client should
+           * proceed to send the request body (in the case of a request for
+           * which a body needs to be sent; for example, a POST request).
+           * Sending a large request body to a server after a request has been
+           * rejected for inappropriate headers would be inefficient. To have a
+           * server check the request's headers, a client must send Expect:
+           * 100-continue as a header in its initial request and receive a 100
+           * Continue status code in response before sending the body. If the
+           * client receives an error code such as 403 (Forbidden) or 405
+           * (Method Not Allowed) then it shouldn't send the request's body. The
+           * response 417 Expectation Failed indicates that the request should
+           * be repeated without the Expect header as it indicates that the
+           * server doesn't support expectations (this is the case, for example,
+           * of HTTP/1.0 servers).
+           *)
+          HTTP_CONTINUE                                        = 100,
+
+          (**
+           * The requester has asked the server to switch protocols and the
+           * server has agreed to do so.
+           *)
+          HTTP_SWITCHING_PROTOCOL                              = 101,
+
+          (**
+           * A WebDAV request may contain many sub-requests involving file
+           * operations, requiring a long time to complete the request. This
+           * code indicates that the server has received and is processing the
+           * request, but no response is available yet. This prevents the client
+           * from timing out and assuming the request was lost.
+           *)
+          HTTP_PROCESSING                                      = 102,
+
+          (**
+           * Used to return some response headers before final HTTP message.
+           *)
+          HTTP_EARLY_HINTS                                     = 103,
+
+          (**
+           * Used in the resumable requests proposal to resume aborted PUT or
+           * POST requests.
+           *)
+          { UNOFFICIAL CODE }
+        { HTTP_CHECKPOINT                                      = 103, }
+
+          (**
+           * Standard response for successful HTTP requests. The actual response
+           * will depend on the request method used. In a GET request, the
+           * response will contain an entity corresponding to the requested
+           * resource. In a POST request, the response will contain an entity
+           * describing or containing the result of the action.
+           *)
+          HTTP_OK                                              = 200,
+
+          (**
+           * The request has been fulfilled, resulting in the creation of a new
+           * resource.
+           *)
+          HTTP_CREATED                                         = 201,
+
+          (**
+           * The request has been accepted for processing, but the processing
+           * has not been completed. The request might or might not be
+           * eventually acted upon, and may be disallowed when processing
+           * occurs.
+           *)
+          HTTP_ACCEPTED                                        = 202,
+
+          (**
+           * The server is a transforming proxy (e.g. a Web accelerator) that
+           * received a 200 OK from its origin, but is returning a modified
+           * version of the origin's response.
+           *)
+          HTTP_NON_AUTHORITATIVE_INFORMATION                   = 203,
+
+          (**
+           * The server successfully processed the request and is not returning
+           * any content.
+           *)
+          HTTP_NO_CONTENT                                      = 204,
+
+          (**
+           * The server successfully processed the request, but is not returning
+           * any content. Unlike a 204 response, this response requires that the
+           * requester reset the document view.
+           *)
+          HTTP_RESET_CONTENT                                   = 205,
+
+          (**
+           * The server is delivering only part of the resource (byte serving)
+           * due to a range header sent by the client. The range header is used
+           * by HTTP clients to enable resuming of interrupted downloads, or
+           * split a download into multiple simultaneous streams.
+           *)
+          HTTP_PARTIAL_CONTENT                                 = 206,
+
+          (**
+           * The message body that follows is by default an XML message and can
+           * contain a number of separate response codes, depending on how many
+           * sub-requests were made.
+           *)
+          HTTP_MULTI_STATUS                                    = 207,
+
+          (**
+           * The members of a DAV binding have already been enumerated in a
+           * preceding part of the (multistatus) response, and are not being
+           * included again.
+           *)
+          HTTP_ALREADY_REPORTED                                = 208,
+
+          (**
+           * Used as a catch-all error condition for allowing response bodies to
+           * flow through Apache when ProxyErrorOverride is enabled. When
+           * ProxyErrorOverride is enabled in Apache, response bodies that
+           * contain a status code of 4xx or 5xx are automatically discarded by
+           * Apache in favor of a generic response or a custom response
+           * specified by the ErrorDocument directive.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_THIS_IS_FINE__APACHE_WEB_SERVER                 = 218,
+
+          (**
+           * The server has fulfilled a request for the resource, and the
+           * response is a representation of the result of one or more
+           * instance-manipulations applied to the current instance.
+           *)
+          HTTP_IM_USED                                         = 226,
+
+          (**
+           * Indicates multiple options for the resource from which the client
+           * may choose (via agent-driven content negotiation). For example,
+           * this code could be used to present multiple video format options,
+           * to list files with different filename extensions, or to suggest
+           * word-sense disambiguation.
+           *)
+          HTTP_MULTIPLE_CHOICES                                = 300,
+
+          (**
+           * This and all future requests should be directed to the given URI.
+           *)
+          HTTP_MOVED_PERMANENTLY                               = 301,
+
+          (**
+           * Tells the client to look at (browse to) another URL. 302 has been
+           * superseded by 303 and 307. This is an example of industry practice
+           * contradicting the standard. The HTTP/1.0 specification (RFC 1945)
+           * required the client to perform a temporary redirect (the original
+           * describing phrase was "Moved Temporarily"), but popular browsers
+           * implemented 302 with the functionality of a 303 See Other.
+           * Therefore, HTTP/1.1 added status codes 303 and 307 to distinguish
+           * between the two behaviours. However, some Web applications and
+           * frameworks use the 302 status code as if it were the 303.
+           *)
+          HTTP_FOUND                                           = 302,
+
+          (**
+           * The response to the request can be found under another URI using
+           * the GET method. When received in response to a POST
+           * (or PUT/DELETE), the client should presume that the server has
+           * received the data and should issue a new GET request to the given
+           * URI.
+           *)
+          HTTP_SEE_OTHER                                       = 303,
+
+          (**
+           * Indicates that the resource has not been modified since the version
+           * specified by the request headers If-Modified-Since or
+           * If-None-Match. In such case, there is no need to retransmit the
+           * resource since the client still has a previously-downloaded copy.
+           *)
+          HTTP_NOT_MODIFIED                                    = 304,
+
+          (**
+           * The requested resource is available only through a proxy, the
+           * address for which is provided in the response. For security
+           * reasons, many HTTP clients (such as Mozilla Firefox and Internet
+           * Explorer) do not obey this status code.
+           *)
+          HTTP_USE_PROXY                                       = 305,
+
+          (**
+           * No longer used. Originally meant "Subsequent requests should use
+           * the specified proxy."
+           *)
+          HTTP_SWITCH_PROXY                                    = 306,
+
+          (**
+           * In this case, the request should be repeated with another URI;
+           * however, future requests should still use the original URI. In
+           * contrast to how 302 was historically implemented, the request
+           * method is not allowed to be changed when reissuing the original
+           * request. For example, a POST request should be repeated using
+           * another POST request.
+           *)
+          HTTP_TEMPORARY_REDIRECT                              = 307,
+
+          (**
+           * The request and all future requests should be repeated using
+           * another URI. 307 and 308 parallel the behaviors of 302 and 301, but
+           * do not allow the HTTP method to change. So, for example, submitting
+           * a form to a permanently redirected resource may continue smoothly.
+           *)
+          HTTP_PERMANENT_REDIRECT                              = 308,
+
+          (**
+           * The server cannot or will not process the request due to an
+           * apparent client error (e.g., malformed request syntax, size too
+           * large, invalid request message framing, or deceptive request
+           * routing).
+           *)
+          HTTP_BAD_REQUEST                                     = 400,
+
+          (**
+           * Similar to 403 Forbidden, but specifically for use when
+           * authentication is required and has failed or has not yet been
+           * provided. The response must include a WWW-Authenticate header field
+           * containing a challenge applicable to the requested resource. See
+           * Basic access authentication and Digest access authentication. 401
+           * semantically means "unauthorised", the user does not have valid
+           * authentication credentials for the target resource.
+           * Note: Some sites incorrectly issue HTTP 401 when an IP address is
+           * banned from the website (usually the website domain) and that
+           * specific address is refused permission to access a website.
+           *)
+          HTTP_UNAUTHORIZED                                    = 401,
+
+          (**
+           * Reserved for future use. The original intention was that this code
+           * might be used as part of some form of digital cash or micropayment
+           * scheme, as proposed, for example, by GNU Taler, but that has not
+           * yet happened, and this code is not usually used. Google Developers
+           * API uses this status if a particular developer has exceeded the
+           * daily limit on requests. Sipgate uses this code if an account does
+           * not have sufficient funds to start a call. Shopify uses this code
+           * when the store has not paid their fees and is temporarily disabled.
+           *)
+          HTTP_PAYMENT_REQUIRED                                = 402,
+
+          (**
+           * The request contained valid data and was understood by the server,
+           * but the server is refusing action. This may be due to the user not
+           * having the necessary permissions for a resource or needing an
+           * account of some sort, or attempting a prohibited action (e.g.
+           * creating a duplicate record where only one is allowed). This code
+           * is also typically used if the request provided authentication via
+           * the WWW-Authenticate header field, but the server did not accept
+           * that authentication. The request SHOULD NOT be repeated.
+           *)
+          HTTP_FORBIDDEN                                       = 403,
+
+          (**
+           * The requested resource could not be found but may be available in
+           * the future. Subsequent requests by the client are permissible.
+           *)
+          HTTP_NOT_FOUND                                       = 404,
+
+          (**
+           * A request method is not supported for the requested resource; for
+           * example, a GET request on a form that requires data to be presented
+           * via POST, or a PUT request on a read-only resource.
+           *)
+          HTTP_METHOD_NOT_ALLOWED                              = 405,
+
+          (**
+           * The requested resource is capable of generating only content not
+           * acceptable according to the Accept headers sent in the request.
+           *)
+          HTTP_NOT_ACCEPTABLE                                  = 406,
+
+          (**
+           * The client must first authenticate itself with the proxy.
+           *)
+          HTTP_PROXY_AUTHENTIFICATION_REQUIRED                 = 407,
+
+          (**
+           * The server timed out waiting for the request. According to HTTP
+           * specifications: "The client did not produce a request within the
+           * time that the server was prepared to wait. The client MAY repeat
+           * the request without modifications at any later time."
+           *)
+          HTTP_REQUEST_TIMEOUT                                 = 408,
+
+          (**
+           * Indicates that the request could not be processed because of
+           * conflict in the current state of the resource, such as an edit
+           * conflict between multiple simultaneous updates.
+           *)
+          HTTP_CONFLICT                                        = 409,
+
+          (**
+           * Indicates that the resource requested is no longer available and
+           * will not be available again. This should be used when a resource
+           * has been intentionally removed and the resource should be purged.
+           * Upon receiving a 410 status code, the client should not request the
+           * resource in the future. Clients such as search engines should
+           * remove the resource from their indices. Most use cases do not
+           * require clients and search engines to purge the resource, and a
+           * "404 Not Found" may be used instead.
+           *)
+          HTTP_GONE                                            = 410,
+
+          (**
+           * The request did not specify the length of its content, which is
+           * required by the requested resource.
+           *)
+          HTTP_LENGTH_REQUIRED                                 = 411,
+
+          (**
+           * The server does not meet one of the preconditions that the
+           * requester put on the request header fields.
+           *)
+          HTTP_PRECONDITION_FAILED                             = 412,
+
+          (**
+           * The request is larger than the server is willing or able to
+           * process. Previously called "Request Entity Too Large".
+           *)
+          HTTP_PAYLOAD_TOO_LARGE                               = 413,
+
+          (**
+           * The URI provided was too long for the server to process. Often the
+           * result of too much data being encoded as a query-string of a GET
+           * request, in which case it should be converted to a POST request.
+           * Called "Request-URI Too Long" previously.
+           *)
+          HTTP_URI_TOO_LONG                                    = 414,
+
+          (**
+           * The request entity has a media type which the server or resource
+           * does not support. For example, the client uploads an image as
+           * image/svg+xml, but the server requires that images use a different
+           * format.
+           *)
+          HTTP_UNSUPPORTED_MEDIA_TYPE                          = 415,
+
+          (**
+           * The client has asked for a portion of the file (byte serving), but
+           * the server cannot supply that portion. For example, if the client
+           * asked for a part of the file that lies beyond the end of the file.
+           * Called "Requested Range Not Satisfiable" previously.
+           *)
+          HTTP_RANGE_NOT_SATISFIABLE                           = 416,
+
+          (**
+           * The server cannot meet the requirements of the Expect
+           * request-header field.
+           *)
+          HTTP_EXPECTATION_FAILED                              = 417,
+
+          (**
+           * This code was defined in 1998 as one of the traditional IETF April
+           * Fools' jokes, in RFC 2324, Hyper Text Coffee Pot Control Protocol,
+           * and is not expected to be implemented by actual HTTP servers. The
+           * RFC specifies this code should be returned by teapots requested to
+           * brew coffee. This HTTP status is used as an Easter egg in some
+           * websites, including Google.com.
+           *)
+          HTTP_IM_A_TEAPOT                                     = 418,
+
+          (**
+           * Not a part of the HTTP standard, 419 Authentication Timeout denotes
+           * that previously valid authentication has expired. It is used as an
+           * alternative to 401 Unauthorized in order to differentiate from
+           * otherwise authenticated clients being denied access to specific
+           * server resources.
+           *)
+          { UNOFFICIAL CODE }
+        { HTTP_AUTHENTICATION_TIMEOUT                          = 419, }
+
+          (**
+           * Used by the Laravel Framework when a CSRF Token is missing or
+           * expired.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_PAGE_EXPIRED__LARAVEL_FRAMEWORK                 = 419,
+
+          (**
+           * Not part of the HTTP standard, but defined by Spring in the
+           * HttpStatus class to be used when a method failed. This status code
+           * is deprecated by Spring.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_METHOD_FAILURE__SPRING_FRAMEWORK                = 420,
+
+          (**
+           * Not part of the HTTP standard, but returned by version 1 of the
+           * Twitter Search and Trends API when the client is being rate
+           * limited. Other services may wish to implement the 429 Too Many
+           * Requests response code instead.
+           *)
+          { UNOFFICIAL CODE }
+        { HTTP_ENHANCE_YOUR_CALM__TWITTER                      = 420, }
+
+          (**
+           * The request was directed at a server that is not able to produce a
+           * response (for example because of connection reuse).
+           *)
+          HTTP_MISDIRECTED_REQUEST                             = 421,
+
+          (**
+           * The request was well-formed but was unable to be followed due to
+           * semantic errors.
+           *)
+          HTTP_UNPROCESSABLE_ENTITY                            = 422,
+
+          (**
+           * The resource that is being accessed is locked.
+           *)
+          HTTP_LOCKED                                          = 423,
+
+          (**
+           * The request failed because it depended on another request and that
+           * request failed (e.g., a PROPPATCH).
+           *)
+          HTTP_FAILED_DEPENDENCY                               = 424,
+
+          (**
+           * Indicates that the server is unwilling to risk processing a request
+           * that might be replayed.
+           *)
+          HTTP_TOO_EARLY                                       = 425,
+
+          (**
+           * The client should switch to a different protocol such as TLS/1.0,
+           * given in the Upgrade header field.
+           *)
+          HTTP_UPGRADE_REQUIRED                                = 426,
+
+          (**
+           * The origin server requires the request to be conditional. Intended
+           * to prevent the 'lost update' problem, where a client GETs a
+           * resource's state, modifies it, and PUTs it back to the server, when
+           * meanwhile a third party has modified the state on the server,
+           * leading to a conflict.
+           *)
+          HTTP_PRECONDITION_REQUIRED                           = 428,
+
+          (**
+           * The user has sent too many requests in a given amount of time.
+           * Intended for use with rate-limiting schemes.
+           *)
+          HTTP_TOO_MANY_REQUESTS                               = 429,
+
+          (**
+           * Used by Shopify, instead of the 429 Too Many Requests response
+           * code, when too many URLs are requested within a certain time frame.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE__SHOPIFY        = 430,
+
+          (**
+           * The server is unwilling to process the request because either an
+           * individual header field, or all the header fields collectively, are
+           * too large.
+           *)
+          HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE                 = 431,
+
+          (**
+           * A Microsoft extension. The client's session has expired and must
+           * log in again.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_LOGIN_TIMEOUT__MICROSOFT                        = 440,
+
+          (**
+           * A non-standard status code used to instruct nginx to close the
+           * connection without sending a response to the client, most commonly
+           * used to deny malicious or malformed requests.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_CONNECTION_CLOSED_WITHOUT_RESPONSE__NGINX       = 444,
+
+          (**
+           * A Microsoft extension. The request should be retried after
+           * performing the appropriate action. Often search-engines or custom
+           * applications will ignore required parameters. Where no default
+           * action is appropriate, the Aviongoo website sends a "HTTP/1.1 Retry
+           * with valid parameters: param1, param2, . . ." response. The
+           * applications may choose to learn, or not.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_RETRY_WITH__MICROSOFT                           = 449,
+
+          (**
+           * A Microsoft extension. This error is given when Windows Parental
+           * Controls are turned on and are blocking access to the given
+           * webpage.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_BLOCKED_BY_WINDOWS_PARENTAL_CONTROLS__MICROSOFT = 450,
+
+          (**
+           * A server operator has received a legal demand to deny access to a
+           * resource or to a set of resources that includes the requested
+           * resource. The code 451 was chosen as a reference to the novel
+           * Fahrenheit 451 (see the Acknowledgements in the RFC).
+           *)
+          HTTP_UNAVAILABLE_FOR_LEGAL_REASONS                   = 451,
+
+          (**
+           * Client closed the connection with the load balancer before the idle
+           * timeout period elapsed. Typically when client timeout is sooner
+           * than the Elastic Load Balancer's timeout.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_460__AWS_ELASTIC_LOAD_BALANCER                  = 460,
+
+          (**
+           * The load balancer received an X-Forwarded-For request header with
+           * more than 30 IP addresses.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_463__AWS_ELASTIC_LOAD_BALANCER                  = 463,
+
+          (**
+           * Nginx internal code similar to 431 but it was introduced earlier in
+           * version 0.9.4 (on January 21, 2011).
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_REQUEST_HEADER_TOO_LARGE__NGINX                 = 494,
+
+          (**
+           * An expansion of the 400 Bad Request response code, used when the
+           * client has provided an invalid client certificate.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_SSL_SERTIFICATE_ERROR__NGINX                    = 495,
+
+          (**
+           * An expansion of the 400 Bad Request response code, used when a
+           * client  certificate is required but not provided.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_SSL_SERTIFICATE_REQUIRED__NGINX                 = 496,
+
+          (**
+           * An expansion of the 400 Bad Request response code, used when the
+           * client has made a HTTP request to a port listening for HTTPS
+           * requests.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_REQUEST_SENT_TO_HTTPS_PORT__NGINX               = 497,
+
+          (**
+           * Returned by ArcGIS for Server. A code of 498 indicates an expired
+           * or otherwise invalid token.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_INVALID_TOKEN__ESRI                             = 498,
+
+          (**
+           * Returned by ArcGIS for Server. Code 499 indicates that a token is
+           * required but was not submitted.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_TOKEN_REQUIRED__ESRI                            = 499,
+
+          (**
+           * Used when the client has closed the request before the server could
+           * send a response.
+           *)
+          { UNOFFICIAL CODE }
+        { HTTP_CLIENT_CLOSED_REQUEST__NGINX                    = 499, }
+
+          (**
+           * A generic error message, given when an unexpected condition was
+           * encountered and no more specific message is suitable.
+           *)
+          HTTP_INTERNAL_SERVER_ERROR                           = 500,
+
+          (**
+           * The server either does not recognize the request method, or it
+           * lacks the ability to fulfil the request. Usually this implies
+           * future availability (e.g., a new feature of a web-service API).
+           *)
+          HTTP_NOT_IMPLEMENTED                                 = 501,
+
+          (**
+           * The server was acting as a gateway or proxy and received an invalid
+           * response from the upstream server.
+           *)
+          HTTP_BAD_GETEWAY                                     = 502,
+
+          (**
+           * The server cannot handle the request (because it is overloaded or
+           * down for maintenance). Generally, this is a temporary state.
+           *)
+          HTTP_SERVICE_UNAVAIBLE                               = 503,
+
+          (**
+           * The server was acting as a gateway or proxy and did not receive a
+           * timely response from the upstream server.
+           *)
+          HTTP_GATEWAY_TIMEOUT                                 = 504,
+
+          (**
+           * The server does not support the HTTP protocol version used in the
+           * request.
+           *)
+          HTTP_VERSION_NOT_SUPPORTED                           = 505,
+
+          (**
+           * Transparent content negotiation for the request results in a
+           * circular reference.
+           *)
+          HTTP_VARIANT_ALSO_NEGOTIATES                         = 506,
+
+          (**
+           * The server is unable to store the representation needed to complete
+           * the request.
+           *)
+          HTTP_INSUFFICIENT_STORAGE                            = 507,
+
+          (**
+           * The server detected an infinite loop while processing the request
+           * (sent instead of 208 Already Reported).
+           *)
+          HTTP_LOOP_DETECTED                                   = 508,
+
+          (**
+           * The server has exceeded the bandwidth specified by the server
+           * administrator; this is often used by shared hosting providers to
+           * limit the bandwidth of customers.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_BANDWIDTH_LIMIT_EXCEEDED__APACHE_WEB_SERVER     = 509,
+
+          (**
+           * Further extensions to the request are required for the server to
+           * fulfil it.
+           *)
+          HTTP_NOT_EXTENDED                                    = 510,
+
+          (**
+           * The client needs to authenticate to gain network access. Intended
+           * for use by intercepting proxies used to control access to the
+           * network (e.g., "captive portals" used to require agreement to Terms
+           * of Service before granting full Internet access via a Wi-Fi
+           * hotspot).
+           *)
+          HTTP_NETWORK_AUTHENTICATION_REQUIRED                 = 511,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by
+           * CloudFlare's reverse proxies to signal an "unknown connection issue
+           * between CloudFlare and the origin web server" to a client in front
+           * of the proxy.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_ORIGIN_ERROR__CLOUDFLARE                        = 520,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by
+           * CloudFlare's reverse proxies to indicate that the origin webserver
+           * refused the connection.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_WEB_SERVER_IS_DOWN__CLOUDFLARE                  = 521,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by
+           * CloudFlare's reverse proxies to signal that a server connection
+           * timed out.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_CONNECTION_TIMED_OUT__CLOUDFLARE                = 522,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by
+           * CloudFlare's reverse proxies to signal a resource that has been
+           * blocked by the administrator of the website or proxy itself.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_PROXY_DECLINED_REQUEST__CLOUDFLARE              = 523,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by
+           * CloudFlare's reverse proxies to signal a network read timeout
+           * behind the proxy to a client in front of the proxy.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_A_TIMEOUT_OCCURED__CLOUDFLARE                   = 524,
+
+          (**
+           * Cloudflare could not negotiate a SSL/TLS handshake with the origin
+           * server.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_SSL_HANDSHAKE_FAILED__CLOUDFLARE                = 525,
+
+          (**
+           * Used by Cloudflare and Cloud Foundry's gorouter to indicate failure
+           * to validate the SSL/TLS certificate that the origin server
+           * presented.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_INVALID_SSL_CERTIFICATE__CLOUDFLARE             = 526,
+
+          (**
+           * Error 527 indicates that the request timed out or failed after the
+           * WAN connection had been established.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_RAILGUN_ERROR__CLOUDFLARE                       = 527,
+
+          (**
+           * Used by the Pantheon web platform to indicate a site that has been
+           * frozen due to inactivity.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_SITE_IS_FROZEN__PATHEON                         = 530,
+
+          (**
+           * Error 530 indicates that the requested host name could not be  on
+           * resolved the Cloudflare network to an origin server.
+           *)
+          { UNOFFICIAL CODE }
+        { HTTP_ORIGIN_DNS_ERROR__CLOUDFLARE                    = 530, }
+
+          (**
+           * Used by some HTTP proxies to signal a network read timeout behind
+           * the proxy to a client in front of the proxy.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_NETWORK_READ_TIMEOUT_ERROR                      = 598,
+
+          (**
+           * This status code is not specified in any RFCs, but is used by some
+           * HTTP proxies to signal a network connect timeout behind the proxy
+           * to a client in front of the proxy.
+           *)
+          { UNOFFICIAL CODE }
+          HTTP_NETWORK_CONNECT_TIMEOUT_ERROR                   = 599
+        );
+
+        THTTPVersion = (
+          HTTP_VERSION_UNKNOWN                                 = 0,
+
+          (**
+           * Enforce HTTP 1.0 requests.
+           *)
+          HTTP_VERSION_1_0                  = Longint(CURL_HTTP_VERSION_1_0),
+
+          (**
+           * Enforce HTTP 1.1 requests.
+           *)
+          HTTP_VERSION_1_1                  = Longint(CURL_HTTP_VERSION_1_1),
+
+          (**
+           * Attempt HTTP 2 requests. libcurl will fall back to HTTP 1.1 if
+           * HTTP 2 can't be negotiated with the server.
+           *)
+          HTTP_VERSION_2_0                  = Longint(CURL_HTTP_VERSION_2_0),
+
+          (**
+           * Attempt HTTP 2 over TLS (HTTPS) only. libcurl will fall back to
+           * HTTP 1.1 if HTTP 2 can't be negotiated with the HTTPS server. For
+           * clear text HTTP servers, libcurl will use 1.1.
+           *)
+
+          HTTP_VERSION_2TLS                 = Longint(CURL_HTTP_VERSION_2TLS),
+
+          (**
+           * Issue non-TLS HTTP requests using HTTP/2 without HTTP/1.1 Upgrade.
+           * It requires prior knowledge that the server supports HTTP/2
+           * straight away. HTTPS requests will still do HTTP/2 the standard way
+           * with negotiated protocol version in the TLS handshake.
+           *)
+          HTTP_VERSION_2_PRIOR_KNOWLEDGE
+            = Longint(CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE),
+
+          (**
+           * Setting this value will make libcurl attempt to use HTTP/3 directly
+           * to server given in the URL. Note that this cannot gracefully
+           * downgrade to earlier HTTP version if the server doesn't support
+           * HTTP/3. For more reliably upgrading to HTTP/3, set the preferred
+           * version to something lower and let the server announce its HTTP/3
+           * support via Alt-Svc:. See TSession.HTTP.AltSvc.
+           *)
+          HTTP_VERSION_3_0                  = Longint(CURL_HTTP_VERSION_3)
+        );
+
+      TPostRedirect = (
+        REDIRECT_POST_NONE,
+
+        (**
+         * Tells the library to respect RFC 7231 (section 6.4.2 to 6.4.4) and
+         * not convert POST requests into GET requests when following a 301
+         * redirection
+         *)
+        REDIRECT_POST_301,
+
+        (**
+         * Makes libcurl maintain the request method after a 302 redirect
+         *)
+        REDIRECT_POST_302,
+
+        (**
+         * Makes libcurl maintain the request method after a 303 redirect
+         *)
+        REDIRECT_POST_303,
+
+        REDIRECT_POST_ALL
+      );
+
+      TPostRedirects = set of TPostRedirect;
+
+      TEncoding = (
+       (**
+        * Non-compressed
+        *)
+        ENCODE_NONE,
+
+        (**
+         * Requests the server to compress its response using the zlib algorithm
+         *)
+        ENCODE_DEFLATE,
+
+       (**
+        * Requests the gzip algorithm
+        *)
+        ENCODE_GZIP,
+
+       (**
+        * Requests the brotli algorithm
+        *)
+        ENCODE_BR
+      );
+
+      TEncodings = set of TEncoding;
+
+      { TAltSvc }
+      (**
+       * Setting for the alt-svc engine
+       *)
+      TAltSvc = (
+        (**
+         * No Alt-Svc treatment.
+         *)
+        ALTSVC_DISABLE                 = 0,
+
+        (**
+         * If an Alt-Svc: header is received, this instructs libcurl to switch
+         * to one of those alternatives asap rather than to save it and use for
+         * the next request. (Not currently supported).
+         *)
+        ALTSVC_IMMEDIATELY             = Longint(CURLALTSVC_IMMEDIATELY),
+
+        (**
+         * Do not write the alt-svc cache back to the file specified with
+         * TSession.HTTP.AltSvcCacheFile even if it gets updated. By default a
+         * file specified with that option will be read and written to as deemed
+         * necessary.
+         *)
+        ALTSVC_READONLYFILE            = Longint(CURLALTSVC_READONLYFILE),
+
+        (**
+         * Accept alternative services offered over HTTP/1.1.
+         *)
+        ALTSVC_H1                      = Longint(CURLALTSVC_H1),
+
+        (**
+         * Accept alternative services offered over HTTP/2. This will only be
+         * used if libcurl was also built to actually support HTTP/2, otherwise
+         * this bit will be ignored.
+         *)
+        ALTSVC_H2                      = Longint(CURLALTSVC_H2),
+
+        (**
+         * Accept alternative services offered over HTTP/3. This will only be
+         * used if libcurl was also built to actually support HTTP/3, otherwise
+         * this bit will be ignored.
+         *)
+        ALTSVC_H3                      = Longint(CURLALTSVC_H3)
+      );
+
+      TAltSvcs = set of TAltSvc;
+
       private
         FHandle : CURL;
         FCookie : THTTPCookie;
 
         procedure SetUserAgent (AAgent : string);
         procedure SetAutoReferer (AUpdateHeaders : Boolean);
-        procedure SetHTTPAuth (AMethod : TAuthMethods);
+        procedure SetHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetUnrestrictedAuth (ASend : Boolean);
         procedure SetPostRedirect (ARedirect : TPostRedirects);
         procedure SetPutMethod (AEnable : Boolean);
@@ -2934,7 +2400,8 @@ type
          * Tell libcurl which authentication method(s) you want it to use
          * speaking to the remote server.
          *)
-        property HTTPAuth : TAuthMethods write SetHTTPAuth default [AUTH_BASIC];
+        property HTTPAuth : TSecurityProperty.TAuthMethods
+          write SetHTTPAuth default [AUTH_BASIC];
 
         (**
          * Send credentials to other hosts too
@@ -3287,7 +2754,640 @@ type
 
       TFTPProperty = class
       public
-        type TCreateDirs = (
+        type
+          TFTPStatusCode = (
+          (**
+           * Error status code, not possible as normal!
+           *)
+          FTP_STATUS_UNKNOWN                                   = 0,
+
+          (**
+           * 1xx Positive Preliminary reply
+           *
+           * The requested action is being initiated; expect another reply
+           * before proceeding with a new command. (The user-process sending
+           * another command before the completion reply would be in violation
+           * of protocol; but server-FTP processes should queue any commands
+           * that arrive while a preceding command is in progress.) This type of
+           * reply can be used to indicate that the command was accepted and the
+           * user-process may now pay attention to the data connections, for
+           * implementations where simultaneous monitoring is difficult. The
+           * server-FTP process may send at most, one 1xx reply per command.
+           *)
+
+           (**
+            * The requested action is being initiated, expect another reply
+            * before proceeding with a new command.
+            *)
+          FTP_REQUEST_INIT_WAIT_NEXT_RESPONSE                  = 100,
+
+          (**
+           * Restart marker replay. In this case, the text is exact and not left
+           * to the particular implementation; it must read: MARK yyyy = mmmm
+           * where yyyy is User-process data stream marker, and mmmm server's
+           * equivalent marker (note the spaces between markers and "=").
+           *)
+          FTP_RESTART_MARKER_REPLY                             = 110,
+
+          (**
+           * Service ready in nnn minutes.
+           *
+           * This indicates that the server accepted and has begun the
+           * processing of the command. The client should wait until another
+           * response is received before proceeding.
+           *)
+          FTP_BEGUN_PROCESSING_WAIT_NEXT_RESPONSE              = 120,
+
+          (**
+           * Data connection already open; transfer starting.
+           *
+           * The server may use this code in response to a command initiating a
+           * file transfer if the data connection is already established. After
+           * sending or receiving this response, the server or client may begin
+           * sending data over the data connection.
+           *)
+           FTP_DATA_CONNECTION_ALREADY_OPENED                  = 125,
+
+          (**
+           * File status okay; about to open data connection.
+           *
+           * The server may use this reply code in response to a command
+           * initiating a file transfer before establishing the data connection
+           * over which the file transfer will occur. A PASV or PORT command
+           * should have been issued prior to the command receiving the 150
+           * response code. After sending or receiving this response, the
+           * server/client may begin sending data over the data connection.
+           *)
+          FTP_INIT_FILE_TRANSFER                               = 150,
+
+          (**
+           * 2xx Positive Completion reply
+           *
+           * The requested action has been successfully completed. A new request
+           * may be initiated.
+           *)
+
+          (**
+           * The requested action has been successfully completed.
+           *
+           * A server issues a 200 response code if a command is accepted and
+           * successfully processed.
+           *)
+          FTP_SUCCESS_COMPLETE                                 = 200,
+
+          (**
+           * Command not implemented, superfluous at this site.
+           *
+           * A 202 response is meant to indicate that the command is recognized
+           * but not implemented by the server because it has no use or meaning
+           * to the server. It is considered a successful reply because the
+           * client can continue its FTP transaction as if the command was
+           * successfully completed on the server.
+           *)
+          FTP_COMMAND_NOT_IMPLEMENTED                          = 202,
+
+          (**
+           * System status, or system help reply.
+           *
+           * A 211 code is given in response to commands asking for status or
+           * help from the server. The information contained along with the
+           * response is intended for user consumption and rarely has a meaning
+           * to the client process itself.
+           *)
+          FTP_SYSTEM_STATUS                                    = 211,
+
+          (**
+           * Directory status.
+           *
+           * A 212 code is given in response to a command asking for directory
+           * status information. A STAT command that includes a path parameter
+           * is one command where a 212 response would be expected.
+           *)
+          FTP_DIRECTORY_STATUS_INFORMATION                     = 212,
+
+          (**
+           * File status.
+           *
+           * A 213 code may be given in response to a command asking for status
+           * information on a file transfer. A STAT command issued during a file
+           * transfer is one command where a 213 response code would be
+           * expected.
+           *)
+          FTP_FILE_TRANSFER_STATUS_INFORMATION                 = 213,
+
+          (**
+           * Help message. Explains how to use the server or the meaning of a
+           * particular non-standard command. This reply is useful only to the
+           * human user.
+           *
+           * A 214 code is used in response to the HELP command to provide
+           * information on how to use the server or the meaning of a particular
+           * non-standard command. This response is useful only to the human
+           * user and commonly contains a list of commands recognized by the
+           * server.
+           *)
+          FTP_HELP_INFORMATION                                 = 214,
+
+          (**
+           * NAME system type. Where NAME is an official system name from the
+           * registry kept by IANA.
+           *
+           * A 215 code is given in response to the SYST command. The response
+           * should contain an official system name from the list in the
+           * Assigned Numbers
+           *)
+          FTP_SYSTEM_NAME                                      = 215,
+
+          (**
+           * Service ready for new user.
+           *
+           * A 220 code is sent in response to a new user connecting to the FTP
+           * server to indicate that the server is ready for the new client. It
+           * can also be sent in response to a REIN command, which is meant to
+           * reset the connection to the moment the client first connected to
+           * the server.
+           *)
+          FTP_SERVER_READY                                     = 220,
+
+          (**
+           * Service closing control connection.
+           *
+           * A 221 code is sent over the control connection in response to the
+           * client's QUIT command. It is sent immediately before the control
+           * connection is closed by the server.
+           *)
+          FTP_DATA_CONNECTION_CLOSED                           = 221,
+
+          (**
+           * Data connection open; no transfer in progress.
+           *
+           * A 225 code is sent in response to the ABOR command when the data
+           * connection is still open but there is no file transfer in progress
+           * to abort.
+           *)
+          FTP_DATA_CONNECTION_OPEN_NO_TRANSFER                 = 225,
+
+          (**
+           * Closing data connection. Requested file action successful (for
+           * example, file transfer or file abort).
+           *
+           * A 226 reply code is sent by the server before closing the data
+           * connection after successfully processing the previous client
+           * command affecting the data connection. In most cases, it signals
+           * the completion of a file transfer. It can also be sent in response
+           * to the ABOR command, which signals that the current file transfer
+           * was successfully terminated.
+           *)
+          FTP_DATA_CONNECTION_CLOSE                            = 226,
+
+          (**
+           * Entering Passive Mode (h1,h2,h3,h4,p1,p2).
+           *
+           * A 227 code is the response given by the server to the PASV command.
+           * It indicates that the server is ready for the client to connect to
+           * it for the purpose of establishing a data connection. The format of
+           * this response is important because the client software must be
+           * capable of parsing out the connection information it contains. The
+           * values h1 to h4 are the IP addresses that the server is listening
+           * on.
+           *)
+          FTP_ENTERING_PASSIVE_MODE                            = 227,
+
+          (**
+           * Entering Long Passive Mode (long address, port).
+           *)
+          FTP_ENTERING_LONG_PASSIVE_MODE                       = 228,
+
+          (**
+           * Entering Extended Passive Mode (|||port|).
+           *)
+          FTP_ENTERING_EXTENDED_PASSIVE_MODE                   = 229,
+
+          (**
+           * User logged in, proceed. Logged out if appropriate.
+           *
+           * The server sends a 230 code in response to a command that has
+           * provided sufficient credentials to the server to grant the user
+           * access to the FTP server.
+           *)
+          FTP_USER_LOGGEDIN                                    = 230,
+
+          (**
+           * User logged out; service terminated.
+           *)
+          FTP_USER_LOGGEDOUT                                   = 231,
+
+          (**
+           * Logout command noted, will complete when transfer done.
+           *
+           * A 232 code may be sent in response to a USER command if the server
+           * is willing to allow the user access based on previously exchanged
+           * security data.
+           *)
+          FTP_LOGOUT_NOTED                                     = 232,
+
+          (**
+           * Specifies that the server accepts the authentication mechanism
+           * specified by the client, and the exchange of security data is
+           * complete. A higher level nonstandard code created by Microsoft.
+           *
+           * A 234 code is sent in response to the AUTH command when the
+           * requested security mechanism is accepted and negotiation of the
+           * secured connection can begin.
+           *)
+          FTP_SECURITY_ACCEPTED_NEGOTIATION_CONNECTION_BEGIN   = 234,
+
+          (**
+           * Requested file action okay, completed.
+           *
+           * A 250 code is sent in response to the successful completion of a
+           * file related command or user working directory related command.
+           *)
+          FTP_RESPONSE_SUCCESSFUL_COMPLETION                   = 250,
+
+          (**
+           * "PATHNAME" created.
+           *
+           * A 257 code is used as a successful response to the creation of a
+           * new directory from the MKD command or in response to a PWD command.
+           *)
+          FTP_DIRECTORY_CREATE_SUCCESSFUL                      = 257,
+
+          (**
+           * 3xx Positive Intermediate reply
+           *
+           * The command has been accepted, but the requested action is being
+           * held in abeyance, pending receipt of further information. The user
+           * should send another command specifying this information. This reply
+           * is used in command sequence groups.
+           *)
+
+          (**
+           * The command has been accepted, but the requested action is on hold,
+           * pending receipt of further information.
+           *)
+          FTP_ACCEPTED_REQUEST_HOLD                            = 300,
+
+          (**
+           * User name okay, need password.
+           *
+           * A 331 code is sent in response to the USER command when a password
+           * is required for the login to continue. It is considered as a
+           * positive intermediate response and the client should immediately
+           * respond with a PASS command.
+           *)
+          FTP_USERNAME_OK                                      = 331,
+
+          (**
+           * Need account for login.
+           *
+           * A 332 code is sent in response to a login-related command where an
+           * account is required to continue the login process. It is considered
+           * as a positive intermediate response and the client should
+           * immediately follow with an ACCT command.
+           *)
+          FTP_NEED_ACCOUNT_TO_LOGIN                            = 332,
+
+          (**
+           * Requested file action pending further information
+           *
+           * A 350 response code is sent by the server in response to a
+           * file-related command that requires further commands in order for
+           * the operation to be completed. The original FTP specification
+           * identifies two instances where this reply code can be used. The
+           * first is in response to a REST command, which would indicate that
+           * the server has received the restart marker and is pending the
+           * initiation of file transfer to resume the transfer at the marker
+           * point. The second is in positive response to the RNFR command where
+           * the server is waiting for an RNTOcommand to complete the file
+           * rename operation.
+           *)
+          FTP_NEED_INFORMATION                                 = 350,
+
+          (**
+           * 4xx Transient Negative Completion reply
+           *
+           * The command was not accepted and the requested action did not take
+           * place, but the error condition is temporary and the action may be
+           * requested again. The user should return to the beginning of the
+           * command sequence, if any. It is difficult to assign a meaning to
+           * "transient", particularly when two distinct sites (Server- and
+           * User-processes) have to agree on the interpretation. Each reply in
+           * the 4xx category might have a slightly different time value, but
+           * the intent is that the user-process is encouraged to try again. A
+           * rule of thumb in determining if a reply fits into the 4xx or the
+           * 5xx (Permanent Negative) category is that replies are 4xx if the
+           * commands can be repeated without any change in command form or in
+           * properties of the User or Server (e.g., the command is spelled the
+           * same with the same arguments used; the user does not change his
+           * file access or user name; the server does not put up a new
+           * implementation.)
+           *)
+
+          (**
+           * The command was not accepted and the requested action did not take
+           * place, but the error condition is temporary and the action may be
+           * requested again.
+           *)
+          FTP_NOT_ACCEPTED                                     = 400,
+
+          (**
+           * Service not available, closing control connection. This may be a
+           * reply to any command if the service knows it must shut down.
+           *
+           * A 421 response code indicates that while the service is still
+           * running, the service is unavailable at the time of connection. It
+           * indicates that the server will be restarting as soon as it finishes
+           * processing pending operations (usually any file transfers currently
+           * in progress). It is considered a transient negative response, which
+           * means the client is encouraged to issue the same command again at a
+           * later time when it can be accepted.
+           *)
+          FTP_SERVICE_NOT_AVAILABLE                            = 421,
+
+          (**
+           * Can't open data connection.
+           *
+           * A 425 response code may be sent in response to any command
+           * requiring the usage of a data connection if the server is unable to
+           * open a data connection. This is considered a transient negative
+           * reply as it is considered to be a temporary condition. It may
+           * indicate that the server does not immediately have the resources
+           * available to open a data connection. In this case, the client is
+           * encouraged to restart the FTP transaction and try again.
+           *)
+          FTP_DATA_CONNECTION_NOT_AVAILABLE                    = 425,
+
+          (**
+           * Connection closed; transfer aborted.
+           *
+           * A 426 response code may be sent in response to any command
+           * requiring the usage of a data connection. It is considered a
+           * transient negative reply as it is considered to be a temporary
+           * condition. It is usually sent when the data connection is
+           * unexpectedly closed before the completion of a data transfer. In
+           * this case, the client is encouraged to restart the FTP transaction
+           * and try again.
+           *)
+          FTP_TRANSFER_ABORTED                                 = 426,
+
+          (**
+           * Invalid username or password
+           *)
+          FTP_INVALID_USERNAME_OR_PASSWORD                     = 430,
+
+          (**
+           * Requested host unavailable.
+           *)
+          FTP_HOST_UNAVAILABLE                                 = 434,
+
+          (**
+           * Requested file action not taken.
+           *
+           * A 450 response code may be sent in response to any command
+           * requiring the server to access a local file. It is a transient
+           * negative response as the error is considered a temporary one. It is
+           * usually sent when the server is unable to gain access to a required
+           * file at the time the command is received. In this case, the client
+           * is encouraged to restart the FTP transaction and try again.
+           *)
+          FTP_FILE_ACTION_ABORTED                              = 450,
+
+          (**
+           * Requested action aborted. Local error in processing.
+           *
+           * A 451 response code may be sent in response to any command
+           * initiating a file transfer. It is a transient negative response,
+           * which means the error condition is a temporary one. It is usually
+           * sent in response to the server encountering an unexpected local
+           * error when processing data it is transferring or receiving. In this
+           * case, the client is encouraged to restart the FTP transaction and
+           * try again.
+           *)
+          FTP_LOCAL_ERROR                                      = 451,
+
+          (**
+           * Requested action not taken. Insufficient storage space in system.
+           * File unavailable (e.g., file busy).
+           *
+           * A 452 response code may be given in response to any command
+           * requiring the server to store transferred data it receives from the
+           * client (a file upload). It is a transient negative response as the
+           * error is considered a temporary one. It is usually sent because the
+           * server does not have storage space to save the received data. In
+           * this case, the client is encouraged to restart the FTP transaction
+           * and try again.
+           *)
+          FTP_INSUFFICIENT_STORAGE_SPACE                       = 452,
+
+          (**
+           * 5xx Permanent Negative Completion reply
+           *
+           * The command was not accepted and the requested action did not take
+           * place. The User-process is discouraged from repeating the exact
+           * request (in the same sequence). Even some "permanent" error
+           * conditions can be corrected, so the human user may want to direct
+           * his User-process to reinitiate the command sequence by direct
+           * action at some point in the future (e.g., after the spelling has
+           * been changed, or the user has altered his directory
+           * status.)
+           *)
+
+          (**
+           * Syntax error, command unrecognized and the requested action did not
+           * take place. This may include errors such as command line too long.
+           *
+           * A 500 response code may be sent in response to any command that the
+           * server is unable to recognize. It is a permanent negative response,
+           * which means the client is discouraged from sending the command
+           * again since the server will respond with the same reply code. It
+           * usually means that the client has sent a command to the server that
+           * the server does not recognize. This may be due to an error in the
+           * spelling or formatting of the command itself or that the command is
+           * newer than the FTP implementation in place on the server or is a
+           * proprietary command of another server implementation.
+           *)
+          FTP_COMMAND_UNRECOGNIZED                             = 500,
+
+          (**
+           * Syntax error in parameters or arguments.
+           *
+           * A 501 response code may be sent in response to any command that
+           * requires or supports the optional use of a parameter or argument.
+           * It is a permanent negative response, which means the client is
+           * discouraged from sending the exact command and parameter(s) again
+           * since the server will respond with the same response code. It
+           * differs from the 500 response code in that the server recognizes
+           * the command present but is unable to take the requested action due
+           * to a syntax error in the parameter(s) present with the command.
+           * Sending the same command to the server with a corrected parameter
+           * may result in a different response code.
+           *)
+          FTP_PARAMETERS_SYNTAX_ERROR                          = 501,
+
+          (**
+           * Command not implemented.
+           *
+           * A 502 code may be sent in response to any FTP command that the
+           * server does not support. It is a permanent negative reply, which
+           * means the client is discouraged from sending the command again
+           * since the server will respond with the same reply code. The
+           * original FTP specification dictates a minimum implementation for
+           * all FTP servers with a list of required commands. Because of this,
+           * a 502 reply code should not be sent in response to a required
+           * command.
+           *)
+          FTP_COMMAND_NOT_SUPPORT                              = 502,
+
+          (**
+           * Bad sequence of commands.
+           *
+           * A 503 response code may be sent in response to any command that
+           * requires the successful processing of previous commands first. It
+           * is a permanent negative reply, which means the client is
+           * discouraged from immediately sending the command again since the
+           * server will respond with the same reply code. For example, a file
+           * rename requires a successful RNFR command before the RNTO command
+           * can be sent. Sending the RNTOcommand first will result in a 503
+           * response code.
+           *)
+          FTP_COMMAND_BAD_SEQUENCE                             = 503,
+
+          (**
+           * Command not implemented for that parameter.
+           *
+           * A 504 response code can be sent in response to any command using a
+           * parameter that is not supported by the server. It is a permanent
+           * negative response, which means the client is discouraged from
+           * sending the command again since the server will respond with the
+           * same response code. Issuing the same command with a different
+           * parameter may result in a different response code.
+           *)
+          FTP_PARAMETER_NOT_SUPPORTED_BY_SERVER                = 504,
+
+          (**
+           * Not logged in.
+           *
+           * A 530 response code may be sent in response to any command that
+           * requires a user to log in before the command is processed. Some
+           * servers may reply to all commands with a 530 response code until
+           * the client logs in.
+           *)
+          FTP_NEED_LOGIN                                       = 530,
+
+          (**
+           * Need account for storing files.
+           *
+           * A 532 response code may be sent in response to any command
+           * involving the storage or manipulation of files on the server. It is
+           * a permanent negative response, which means the client is
+           * discouraged from sending the command again since the server will
+           * respond with the same response code. Providing account information
+           * first and sending the command again can result in a different
+           * response code.
+           *)
+          FTP_NEED_ACCOUNT_FOR_STORIG_FILES                    = 532,
+
+          (**
+           * Could Not Connect to Server - Policy Requires SSL
+           *
+           * A 534 response code can be issued in response to any command that
+           * the server is unwilling to process due to its security policy. It
+           * is a permanent negative response, which means the client is
+           * discouraged from sending the command again since the server will
+           * respond with the same response code. It usually means that the
+           * server requires a certain level of security to exist on the
+           * connection before processing the command or that it is unwilling to
+           * process a command that would provide for decreased security.
+           *)
+          FTP_REQUIRE_HIGHER_SECURITY_LEVEL                    = 534,
+
+          (**
+           * Requested action not taken. File unavailable (e.g., file not found,
+           * no access).
+           *
+           * A 550 response code may be sent in response to any command
+           * requiring the server to access a local file. It is a permanent
+           * negative response, which means the client is discouraged from
+           * sending the command again since the server will respond with the
+           * same response code. It is usually due to a command requiring access
+           * to a file that does not exist or that the user does not have access
+           * rights to.
+           *)
+          FTP_FILE_UNAVAILABLE                                 = 550,
+
+          (**
+           * Requested action aborted. Page type unknown.
+           *
+           * A 551 response code may be sent in response to any command
+           * requiring the server to store information locally. It is a
+           * permanent negative reply, which means the client is discouraged
+           * from sending the command again since the server will respond with
+           * the same response code. It is only applicable when the page file
+           * structure is being used (through a STRU P command).
+           *)
+          FTP_PAGE_FILE_STRUCTURE_UNKNOWN                      = 551,
+
+          (**
+           * Requested file action aborted. Exceeded storage allocation (for
+           * current directory or dataset).
+           *
+           * A 552 response code may be sent in response to any command
+           * requiring the server to store received information locally. It is a
+           * permanent negative response, which means the client is discouraged
+           * from sending the command again since the server will respond with
+           * the same reply code. It usually indicates that the logged in user
+           * has exceeded the storage space allocated to their user account by
+           * the administrator.
+           *)
+          FTP_STORAGE_SPACE_EXCEEDED                           = 552,
+
+          (**
+           * Requested action not taken. File name not allowed.
+           *
+           * A 553 response code may be given in response to any command
+           * requiring or supporting the use of a file name as a parameter. It
+           * is a permanent negative reply, which means the client is
+           * discouraged from sending the command again since the server will
+           * respond with the same reply code. It is usually due to the file
+           * name contained as a parameter violating the file naming policies
+           * existing on the server. Issuing the command again with a different
+           * file name may result in a different reply code.
+           *)
+          FTP_FILENAME_NOT_ALLOWED                             = 553,
+
+          (**
+           * 6xx Protected reply
+           *
+           * The RFC 2228 introduced the concept of protected replies to
+           * increase security over the FTP communications. The 6xx replies are
+           * Base64 encoded protected messages that serves as responses to
+           * secure commands. When properly decoded, these replies fall into the
+           * above categories.
+           *)
+
+          (**
+           * Replies regarding confidentiality and integrity
+           *)
+          FTP_CONFIDENTIALITY_AND_INTEGRITY                    = 600,
+
+          (**
+           * Integrity protected reply.
+           *)
+          FTP_INTEGRITY_PROTECTED_REPLY                        = 631,
+
+          (**
+           * Confidentiality and integrity protected reply.
+           *)
+          FTP_CONFIDENTIALITY_AND_INTEGRITY_REPLY              = 632,
+
+          (**
+           * Confidentiality protected reply.
+           *)
+          FTP_CONFIDENTIALITY_REPLY                            = 633
+        );
+
+        TCreateDirs = (
           CREATE_DIR_NONE  = Longint(CURLFTP_CREATE_DIR_NONE),
 
           (**
@@ -3303,7 +3403,7 @@ type
           CREATE_DIR_RETRY = Longint(CURLFTP_CREATE_DIR_RETRY)
         );
 
-        type TAuth = (
+        TAuth = (
           (**
            * Allow libcurl to decide.
            *)
@@ -3321,7 +3421,7 @@ type
         );
 
         (* Clear Command Channel *)
-        type TSSL_CCC = (
+        TSSL_CCC = (
           (**
            * Don't attempt to use CCC.
            *)
@@ -3339,7 +3439,7 @@ type
           CCC_ACTIVE       = Longint(CURLFTPSSL_CCC_ACTIVE)
         );
 
-        type TFileMethod = (
+        TFileMethod = (
           (**
            * libcurl does a single CWD operation for each path part in the given
            * URL. For deep hierarchies this means many commands. This is how RFC
@@ -3791,7 +3891,7 @@ type
     procedure SetLocalPort (APort : Word);
     procedure SetLocalPortRange (ARange : Longint);
   public
-    function ExtractProtocol (AUrl : string) : TProtocol;
+    function ExtractProtocol (AUrl : string) : TProtocolProperty.TProtocol;
   public
     constructor Create;
     destructor Destroy; override;
@@ -3913,7 +4013,7 @@ type
     function GetVerifySSLResult : boolean;
     function GetVerifySSLProxyResult : boolean;
     function GetConnectResponseCode : Longint;
-    function GetHttpVersion : THTTPVersion;
+    function GetHttpVersion : TSession.THTTPProperty.THTTPVersion;
     function GetRedirectCount : Longint;
     function GetUploaded : TDataSize;
     function GetDownloaded : TDataSize;
@@ -4031,7 +4131,8 @@ type
     (**
      * Get the HTTP version used in the connection
      *)
-    property HttpVersion : THttpVersion read GetHttpVersion;
+    property HttpVersion : TSession.THTTPProperty.THttpVersion
+      read GetHttpVersion;
 
     (**
      * Get the number of redirects
@@ -4639,7 +4740,8 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_AUTOREFERER, Longint(AUpdateHeaders));
 end;
 
-procedure TSession.THTTPProperty.SetHTTPAuth(AMethod: TAuthMethods);
+procedure TSession.THTTPProperty.SetHTTPAuth (
+  AMethod: TSecurityProperty.TAuthMethods);
 var
   bitmask : Longint;
 begin
@@ -4984,7 +5086,8 @@ end;
 
 { TSession.TSOCKS5Property }
 
-procedure TSession.TSOCKS5Property.SetSOCKS5Auth(AMethod: TAuthMethods);
+procedure TSession.TSOCKS5Property.SetSOCKS5Auth(
+  AMethod: TSecurityProperty.TAuthMethods);
 var
   bitmask : Longint;
 begin
@@ -5079,13 +5182,16 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(APassword));
 end;
 
-procedure TSession.TProxyProperty.SetProxyTLSAuth(AMethod: TTLSAuthMethod);
+procedure TSession.TProxyProperty.SetProxyTLSAuth(
+  AMethod: TSecurityProperty.TTLSAuthMethod);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
-    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
+    PChar(GetEnumName(TypeInfo(TSecurityProperty.TTLSAuthMethod),
+    ord(AMethod))));
 end;
 
-procedure TSession.TProxyProperty.SetProxyHTTPAuth(AMethod: TAuthMethods);
+procedure TSession.TProxyProperty.SetProxyHTTPAuth(
+  AMethod: TSecurityProperty.TAuthMethods);
 var
   bitmask : Longint;
 begin
@@ -5516,14 +5622,14 @@ begin
   end;
 end;
 
-function TResponse.GetHttpVersion: THTTPVersion;
+function TResponse.GetHttpVersion: TSession.THTTPProperty.THTTPVersion;
 var
   ver : Longint = 0;
 begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_HTTP_VERSION, @ver);
-    Result := THTTPVersion(ver);
+    Result := TSession.THTTPProperty.THTTPVersion(ver);
   end;
 end;
 
@@ -5972,16 +6078,18 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
 end;
 
-function TSession.ExtractProtocol(AUrl: string): TProtocol;
+function TSession.ExtractProtocol(AUrl: string): TProtocolProperty.TProtocol;
 var
-  proto : TProtocol;
+  proto : TProtocolProperty.TProtocol;
   search, extract, protocolName : string;
 begin
   search := LowerCase(Copy(AUrl, 1, Pos('://', AUrl) - 1));
 
-  for proto := Low(TProtocol) to High(TProtocol) do
+  for proto := Low(TProtocolProperty.TProtocol) to
+    High(TProtocolProperty.TProtocol) do
   begin
-    protocolName := GetEnumName(TypeInfo(TProtocol), Ord(proto));
+    protocolName := GetEnumName(TypeInfo(TProtocolProperty.TProtocol),
+      Ord(proto));
     extract := LowerCase(Copy(protocolName, Length('PROTOCOL_') + 1,
       Length(protocolName) - Length('PROTOCOL_') + 1));
     if extract = search then
