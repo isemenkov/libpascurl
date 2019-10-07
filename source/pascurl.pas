@@ -2384,6 +2384,7 @@ type
         procedure SetStreamWeight (AWeight : Longint);
         procedure SetRange (ARange : string);
         procedure SetStartTransferFrom (AFrom : curl_off_t);
+        procedure SetCustomRequest (ARequest : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -2733,6 +2734,32 @@ type
          *)
         property StartTransferFrom : curl_off_t write SetStartTransferFrom
           default 0;
+
+        (**
+         * Custom string for request
+         *
+         * When you change the request method by setting CustomRequest to
+         * something, you don't actually change how libcurl behaves or acts in
+         * regards to the particular request method, it will only change the
+         * actual string sent in the request.
+         * Instead of GET or HEAD when performing HTTP based requests. This is
+         * particularly useful, for example, for performing an HTTP DELETE
+         * request.
+         * For example:
+         * When you tell libcurl to do a HEAD request, but then specify a GET
+         * though a custom request libcurl will still act as if it sent a HEAD.
+         * To switch to a proper HEAD use CURLOPT_NOBODY, to switch to a proper
+         * POST use CURLOPT_POST or CURLOPT_POSTFIELDS and to switch to a proper
+         * GET use CURLOPT_HTTPGET.
+         * Many people have wrongly used this option to replace the entire
+         * request with their own, including multiple headers and POST contents.
+         * While that might work in many cases, it will cause libcurl to send
+         * invalid requests and it could possibly confuse the remote server
+         * badly. Use CURLOPT_POST and CURLOPT_POSTFIELDS to set POST data. Use
+         * CURLOPT_HTTPHEADER to replace or extend the set of headers sent by
+         * libcurl. Use CURLOPT_HTTP_VERSION to change HTTP version.
+         *)
+        property CustomRequest : string write SetCustomRequest;
       end;
 
       { TIMAPProperty }
@@ -2745,6 +2772,7 @@ type
         procedure SetSASLAuthzid (AAuthzid : string);
         procedure SetSASLIR (ASend : Boolean);
         procedure SetXOAuth2Bearer (AToken : string);
+        procedure SetCustomRequest (ARequest : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -2793,6 +2821,17 @@ type
          * servers that support the OAuth 2.0 Authorization Framework.
          *)
         property XOAuth2BearerToken : string write SetXOAuth2Bearer;
+
+        (**
+         * Custom string for request
+         *
+         * When you change the request method by setting CustomRequest to
+         * something, you don't actually change how libcurl behaves or acts in
+         * regards to the particular request method, it will only change the
+         * actual string sent in the request.
+         * Instead of LIST when issuing IMAP based requests.
+         *)
+        property CustomRequest : string write SetCustomRequest;
       end;
 
       { TFTPProperty }
@@ -3528,6 +3567,7 @@ type
         procedure SetProxyTransferMode (AEnable : Boolean);
         procedure SetRange (ARange : string);
         procedure SetStartTransferFrom (AFrom : curl_off_t);
+        procedure SetCustomRequest (ARequest : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3742,6 +3782,17 @@ type
          *)
         property StartTransferFrom : curl_off_t write SetStartTransferFrom
           default 0;
+
+        (**
+         * Custom string for request
+         *
+         * When you change the request method by setting CustomRequest to
+         * something, you don't actually change how libcurl behaves or acts in
+         * regards to the particular request method, it will only change the
+         * actual string sent in the request.
+         * Instead of LIST and NLST when performing FTP directory listings.
+         *)
+        property CustomRequest : string write SetCustomRequest;
       end;
 
       { TSMTPProperty }
@@ -3752,6 +3803,7 @@ type
 
         procedure SetMailFrom (AFrom : string);
         procedure SetMailAuth (AAuth : string);
+        procedure SetCustomRequest (ARequest : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3786,6 +3838,22 @@ type
          * RFC 2554.
          *)
         property Auth : string write SetMailAuth;
+
+        (**
+         * Custom string for request
+         *
+         * When you change the request method by setting CustomRequest to
+         * something, you don't actually change how libcurl behaves or acts in
+         * regards to the particular request method, it will only change the
+         * actual string sent in the request.
+         * Instead of a HELP or VRFY when issuing SMTP based requests.
+         * For example:
+         * Normally a multiline response is returned which can be used, in
+         * conjunction with CURLOPT_MAIL_RCPT, to specify an EXPN request. If
+         * the CURLOPT_NOBODY option is specified then the request can be used
+         * to issue NOOP and RSET commands.
+         *)
+        property CustomRequest : string write SetCustomRequest;
       end;
 
       { TTFTPProperty }
@@ -4590,6 +4658,14 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_MAIL_AUTH, PChar(AAuth));
 end;
 
+procedure TSession.TSMTPProperty.SetCustomRequest(ARequest: string);
+begin
+  if ARequest <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+end;
+
 constructor TSession.TSMTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -4728,6 +4804,14 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
 end;
 
+procedure TSession.TFTPProperty.SetCustomRequest(ARequest: string);
+begin
+  if ARequest <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+end;
+
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -4758,6 +4842,14 @@ end;
 procedure TSession.TIMAPProperty.SetXOAuth2Bearer(AToken: string);
 begin
   curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+end;
+
+procedure TSession.TIMAPProperty.SetCustomRequest(ARequest: string);
+begin
+  if ARequest <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
 end;
 
 constructor TSession.TIMAPProperty.Create(AHandle: CURL);
@@ -5231,6 +5323,14 @@ end;
 procedure TSession.THTTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
 begin
   curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+end;
+
+procedure TSession.THTTPProperty.SetCustomRequest(ARequest: string);
+begin
+  if ARequest <> '' then
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
