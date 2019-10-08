@@ -193,6 +193,8 @@ type
         procedure SetFailOnError (AFailOnError : Boolean);
         procedure SetPathAsIs (ALeaveIt : Boolean);
         procedure SetConvertCRLF (AEnable : Boolean);
+        procedure SetUploadFileSize (ASize : curl_off_t);
+        procedure SetUploadBufferSize (ASize : TDataSize);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -286,6 +288,39 @@ type
         * to False.
         *)
         property ConvertCRLF : Boolean write SetConvertCRLF default False;
+
+        (**
+         * Set size of the input file to send off
+         *
+         * When uploading a file to a remote site, filesize should be used to
+         * tell libcurl what the expected size of the input file is.
+         * To unset this value again, set it to -1.
+         * When sending emails using SMTP, this command can be used to specify
+         * the optional SIZE parameter for the MAIL FROM command.
+         * This option does not limit how much data libcurl will actually send,
+         * as that is controlled entirely by what the read callback returns, but
+         * telling one value and sending a different amount may lead to errors.
+         *)
+        property UploadFileSize : curl_off_t write SetUploadFileSize;
+
+        (**
+         * Set preferred upload buffer size
+         *
+         * Pass a long specifying your preferred size (in bytes) for the upload
+         * buffer in libcurl. It makes libcurl uses a larger buffer that gets
+         * passed to the next layer in the stack to get sent off. In some setups
+         * and for some protocols, there's a huge performance benefit of having
+         * a larger upload buffer.
+         * This is just treated as a request, not an order. You cannot be
+         * guaranteed to actually get the given size.
+         * The upload buffer size is by default 64 kilobytes. The maximum buffer
+         * size allowed to be set is 2 megabytes. The minimum buffer size
+         * allowed to be set is 16 kilobytes.
+         * Since curl 7.61.1 the upload buffer is allocated on-demand - so if
+         * the handle isn't used for upload, this buffer will not be allocated
+         * at all.
+         *)
+        property UploadBufferSize : TDataSize write SetUploadBufferSize;
       end;
 
       { TSecurityProperty }
@@ -747,6 +782,7 @@ type
         procedure SetWildcardMatch (AMatch : Boolean);
         procedure SetKeepSendingOnError (AKeepSending : Boolean);
         procedure SetRemotePort (APort : Word);
+        procedure SetUpload (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -921,6 +957,24 @@ type
          * allows the application to override that.
          *)
         property Port : Word write SetRemotePort;
+
+        (**
+         * Enable data upload
+         *
+         * The long parameter upload set to True tells the library to prepare
+         * for and perform an upload. The CURLOPT_READDATA and
+         * CURLOPT_INFILESIZE or CURLOPT_INFILESIZE_LARGE options are also
+         * interesting for uploads. If the protocol is HTTP, uploading means
+         * using the PUT request unless you tell libcurl otherwise.
+         * Using PUT with HTTP 1.1 implies the use of a "Expect: 100-continue"
+         * header. You can disable this header with CURLOPT_HTTPHEADER as usual.
+         * If you use PUT to an HTTP 1.1 server, you can upload data without
+         * knowing the size before starting the transfer if you use chunked
+         * encoding. You enable this by adding a header like "Transfer-Encoding:
+         * chunked" with CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked
+         * transfer, you must specify the size.
+         *)
+        property Upload : Boolean write SetUpload default False;
       end;
 
       { TTCPProperty }
@@ -2385,6 +2439,8 @@ type
         procedure SetRange (ARange : string);
         procedure SetStartTransferFrom (AFrom : curl_off_t);
         procedure SetCustomRequest (ARequest : string);
+        procedure SetTimeModification (AEnable : Boolean);
+        procedure SetMaxDownloadFileSize (ASize : TDataSize);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -2760,6 +2816,30 @@ type
          * libcurl. Use CURLOPT_HTTP_VERSION to change HTTP version.
          *)
         property CustomRequest : string write SetCustomRequest;
+
+        (**
+         * Get the modification time of the remote resource
+         *
+         * If it is True, libcurl will attempt to get the modification time of
+         * the remote document in this operation. This requires that the remote
+         * server sends the time or replies to a time querying command. The
+         * curl_easy_getinfo function with the CURLINFO_FILETIME argument can be
+         * used after a transfer to extract the received time (if any).
+         *)
+        property TimeModification : Boolean write SetTimeModification;
+
+        (**
+         * Maximum file size allowed to download
+         *
+         * This allows you to specify the maximum size (in bytes) of a file to
+         * download. If the file requested is found larger than this value, the
+         * transfer will not start and CURLE_FILESIZE_EXCEEDED will be returned.
+         * The file size is not always known prior to download, and for such
+         * files this option has no effect even if the file transfer ends up
+         * being larger than this given limit. This concerns both FTP and HTTP
+         * transfers.
+         *)
+        property MaxDownloadFileSize : TDataSize write SetMaxDownloadFileSize;
       end;
 
       { TIMAPProperty }
@@ -3568,6 +3648,9 @@ type
         procedure SetRange (ARange : string);
         procedure SetStartTransferFrom (AFrom : curl_off_t);
         procedure SetCustomRequest (ARequest : string);
+        procedure SetTimeModification (AEnable : Boolean);
+        procedure SetDirListOnly (AEnable : Boolean);
+        procedure SetMaxDownloadFileSize (ASize : TDataSize);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3793,6 +3876,46 @@ type
          * Instead of LIST and NLST when performing FTP directory listings.
          *)
         property CustomRequest : string write SetCustomRequest;
+
+        (**
+         * Get the modification time of the remote resource
+         *
+         * If it is True, libcurl will attempt to get the modification time of
+         * the remote document in this operation. This requires that the remote
+         * server sends the time or replies to a time querying command. The
+         * curl_easy_getinfo function with the CURLINFO_FILETIME argument can be
+         * used after a transfer to extract the received time (if any).
+         *)
+        property TimeModification : Boolean write SetTimeModification;
+
+        (**
+         * Ask for names only in a directory listing
+         *
+         * For FTP and SFTP based URLs a parameter set to True tells the library
+         * to list the names of files in a directory, rather than performing a
+         * full directory listing that would normally include file sizes, dates
+         * etc.
+         * Note: For FTP this causes a NLST command to be sent to the FTP
+         * server. Beware that some FTP servers list only files in their
+         * response to NLST; they might not include subdirectories and symbolic
+         * links.
+         * Setting this option to 1 also implies a directory listing even if the
+         * URL doesn't end with a slash, which otherwise is necessary.
+         *)
+        property DirListOnly : Boolean write SetDirListOnly default False;
+
+        (**
+         * Maximum file size allowed to download
+         *
+         * This allows you to specify the maximum size (in bytes) of a file to
+         * download. If the file requested is found larger than this value, the
+         * transfer will not start and CURLE_FILESIZE_EXCEEDED will be returned.
+         * The file size is not always known prior to download, and for such
+         * files this option has no effect even if the file transfer ends up
+         * being larger than this given limit. This concerns both FTP and HTTP
+         * transfers.
+         *)
+        property MaxDownloadFileSize : TDataSize write SetMaxDownloadFileSize;
       end;
 
       { TSMTPProperty }
@@ -4812,6 +4935,21 @@ begin
     curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
 end;
 
+procedure TSession.TFTPProperty.SetTimeModification(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FILETIME, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetDirListOnly(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_DIRLISTONLY, Longint(AEnable));
+end;
+
+procedure TSession.TFTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE, ASize.Bytes);
+end;
+
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -5058,6 +5196,11 @@ end;
 procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
 begin
   curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort));
+end;
+
+procedure TSession.TProtocolProperty.SetUpload(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_UPLOAD, Longint(AEnable));
 end;
 
 constructor TSession.TProtocolProperty.Create(AHandle: CURL);
@@ -5331,6 +5474,16 @@ begin
     curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
   else
     curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+end;
+
+procedure TSession.THTTPProperty.SetTimeModification(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FILETIME, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE, ASize.Bytes);
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
@@ -5692,6 +5845,16 @@ end;
 procedure TSession.TOptionsProperty.SetConvertCRLF(AEnable: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_CRLF, Longint(AEnable));
+end;
+
+procedure TSession.TOptionsProperty.SetUploadFileSize(ASize: curl_off_t);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_INFILESIZE_LARGE, ASize);
+end;
+
+procedure TSession.TOptionsProperty.SetUploadBufferSize(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_UPLOAD_BUFFERSIZE, ASize.Bytes);
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
