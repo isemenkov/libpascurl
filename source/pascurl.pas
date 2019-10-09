@@ -195,6 +195,12 @@ type
         procedure SetConvertCRLF (AEnable : Boolean);
         procedure SetUploadFileSize (ASize : curl_off_t);
         procedure SetUploadBufferSize (ASize : TDataSize);
+        procedure SetTimeout (ATime : TTimeInterval);
+        procedure SetLowSpeedLimit (ASize : TDataSize);
+        procedure SetLowSpeedTime (ATime : TTimeInterval);
+        procedure SetMaxUploadSpeed (ASize : TDataSize);
+        procedure SetMaxDownloadSpeed (ASize : TDataSize);
+        procedure SetMaxConnections (AConn : Longint);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -321,6 +327,72 @@ type
          * at all.
          *)
         property UploadBufferSize : TDataSize write SetUploadBufferSize;
+
+        (**
+         * Set maximum time the request is allowed to take
+         *
+         * Timeout - the maximum time that you allow the libcurl transfer
+         * operation to take. Normally, name lookups can take a considerable
+         * time and limiting operations risk aborting perfectly normal
+         * operations. This option may cause libcurl to use the SIGALRM signal
+         * to timeout system calls.
+         *)
+        property Timeout : TTimeInterval write SetTimeout;
+
+        (**
+         * Set low speed limit in bytes per second
+         *
+         * It contains the average transfer speed per second that the
+         * transfer should be below during LowSpeedTime for libcurl to consider
+         * it to be too slow and abort.
+         *)
+        property LowSpeedLimit : TDataSize write SetLowSpeedLimit;
+
+        (**
+         * Set low speed limit time period
+         *
+         * It contains the time in number seconds that the transfer speed should
+         * be below the LowSpeedLimit for the library to consider it too slow
+         * and abort.
+         *)
+        property LowSpeedTime : TTimeInterval write SetLowSpeedTime;
+
+        (**
+         * Rate limit data upload speed
+         *
+         *  If an upload exceeds this speed the transfer will pause to keep the
+         * speed less than or equal to the parameter value. Defaults to
+         * unlimited speed.
+         * This option doesn't affect transfer speeds done with FILE:// URLs.
+         *)
+        property MaxUploadSpeed : TDataSize write SetMaxUploadSpeed;
+
+        (**
+         * Rate limit data download speed
+         *
+         * If a download exceeds this speed the transfer will pause to keep the
+         * speed less than or equal to the parameter value. Defaults to
+         * unlimited speed.
+         * This option doesn't affect transfer speeds done with FILE:// URLs.
+         *)
+        property MaxDownloadSpeed : TDataSize write SetMaxDownloadSpeed;
+
+        (**
+         * Maximum connection cache size
+         *
+         * The set amount will be the maximum number of simultaneously open
+         * persistent connections that libcurl may cache in the pool associated
+         * with this handle. The default is 5, and there isn't much point in
+         * changing this value unless you are perfectly aware of how this works
+         * and changes libcurl's behaviour. This concerns connections using any
+         * of the protocols that support persistent connections.
+         * When reaching the maximum limit, curl closes the oldest one in the
+         * cache to prevent increasing the number of open connections.
+         * If you already have performed transfers with this curl handle,
+         * setting a smaller MaxConnections than before may cause open
+         * connections to get closed unnecessarily.
+         *)
+        property MaxConnections : Longint write SetMaxConnections default 5;
       end;
 
       { TSecurityProperty }
@@ -5855,6 +5927,41 @@ end;
 procedure TSession.TOptionsProperty.SetUploadBufferSize(ASize: TDataSize);
 begin
   curl_easy_setopt(FHandle, CURLOPT_UPLOAD_BUFFERSIZE, ASize.Bytes);
+end;
+
+procedure TSession.TOptionsProperty.SetTimeout(ATime: TTimeInterval);
+begin
+  if ceil(ATime.Seconds) >= 1 then
+    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT, Longint(ceil(ATime.Seconds)))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT_MS,
+      Longint(ceil(ATime.Milliseconds)));
+end;
+
+procedure TSession.TOptionsProperty.SetLowSpeedLimit(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_LIMIT, Longint(ASize.Bytes));
+end;
+
+procedure TSession.TOptionsProperty.SetLowSpeedTime(ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_TIME,
+    Longint(ceil(ATime.Seconds)));
+end;
+
+procedure TSession.TOptionsProperty.SetMaxUploadSpeed(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAX_SEND_SPEED_LARGE, ASize.Bytes);
+end;
+
+procedure TSession.TOptionsProperty.SetMaxDownloadSpeed(ASize: TDataSize);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAX_RECV_SPEED_LARGE, ASize.Bytes);
+end;
+
+procedure TSession.TOptionsProperty.SetMaxConnections(AConn: Longint);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXCONNECTS, AConn);
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
