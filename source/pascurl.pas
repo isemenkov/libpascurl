@@ -182,6 +182,30 @@ type
       { TOptionsProperty }
 
       TOptionsProperty = class
+      public
+        type
+          (**
+           * Allows an application to select what kind of IP addresses to use
+           * when resolving host names. This is only interesting when using host
+           * names that resolve addresses using more than one version of IP.
+           *)
+          TIPResolve = (
+            (**
+             * Default, resolves addresses to all IP versions that your system
+             * allows.
+             *)
+            IPRESOLVE_WHATEVER            = Longint(CURL_IPRESOLVE_WHATEVER),
+
+            (**
+             * Resolve to IPv4 addresses.
+             *)
+            IPRESOLVE_V4                        = Longint(CURL_IPRESOLVE_V4),
+
+            (**
+             * Resolve to IPv6 addresses.
+             *)
+            IPRESOLVE_V6                        = Longint(CURL_IPRESOLVE_V6),
+          );
       private
         FHandle : CURL;
 
@@ -201,6 +225,11 @@ type
         procedure SetMaxUploadSpeed (ASize : TDataSize);
         procedure SetMaxDownloadSpeed (ASize : TDataSize);
         procedure SetMaxConnections (AConn : Longint);
+        procedure SetForceReuseConnection (AEnable : Boolean);
+        procedure SetCloseConnectionAfterUse (AEnable : Boolean);
+        procedure SetMaxReuseConnectionTime (ATime : TTimeInterval);
+        procedure SetConnectionTimeout (ATime : TTimeInterval);
+        procedure SetIPResolve (AResolve : TIPResolve);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -393,6 +422,77 @@ type
          * connections to get closed unnecessarily.
          *)
         property MaxConnections : Longint write SetMaxConnections default 5;
+
+        (**
+         * Force a new connection to be use
+         *
+         * Set to False to make the next transfer use a new (fresh) connection by
+         * force instead of trying to re-use an existing one. This option should
+         * be used with caution and only if you understand what it does as it
+         * may seriously impact performance.
+         * Related functionality is CURLOPT_FORBID_REUSE which makes sure the
+         * connection is closed after use so that it won't be re-used.
+         * Set fresh to True to have libcurl attempt re-using an existing
+         * connection (default behavior).
+         *)
+        property ForceReuseConnection : Boolean write SetForceReuseConnection
+          default True;
+
+        (**
+         * Make connection get closed at once after one
+         *
+         * Set close to True to make libcurl explicitly close the connection
+         * when done with the transfer. Normally, libcurl keeps all connections
+         * alive when done with one transfer in case a succeeding one follows
+         * that can re-use them. This option should be used with caution and
+         * only if you understand what it does as it can seriously impact
+         * performance.
+         * Set to False to have libcurl keep the connection open for possible
+         * later re-use (default behavior).
+         *)
+        property CloseConnectionAfterUse : Boolean
+          write SetCloseConnectionAfterUse default False;
+
+        (**
+         * Max idle time allowed for reusing a connection
+         *
+         * Pass a parameter containing maxage - the maximum time that you allow
+         * an existing connection to have to be considered for reuse for this
+         * request.
+         * The "connection cache" that holds previously used connections. When a
+         * new request is to be done, it will consider any connection that
+         * matches for reuse. The CURLOPT_MAXAGE_CONN limit prevents libcurl
+         * from trying very old connections for reuse, since old connections
+         * have a high risk of not working and thus trying them is a performance
+         * loss and sometimes service loss due to the difficulties to figure out
+         * the situation. If a connection is found in the cache that is older
+         * than this set maxage, it will instead be closed.
+         *)
+        property MaxReuseConnectionTime : TTimeInterval
+          write SetMaxReuseConnectionTime;
+
+        (**
+         * Timeout for the connect phase
+         *
+         * It should contain the maximum time that you allow the connection
+         * phase to the server to take. This only limits the connection phase,
+         * it has no impact once it has connected. Set to zero to switch to the
+         * default built-in connection timeout - 300 seconds. See also the
+         * CURLOPT_TIMEOUT option.
+         * In unix-like systems, this might cause signals to be used unless
+         * CURLOPT_NOSIGNAL is set.
+         *)
+        property ConnectionTimeout : TTimeInterval write SetConnectionTimeout;
+
+        (**
+         * Specify which IP protocol version to use
+         *
+         * Allows an application to select what kind of IP addresses to use when
+         * resolving host names. This is only interesting when using host names
+         * that resolve addresses using more than one version of IP.
+         *)
+        property IPResolve : TIPResolve write SetIPResolve
+          default IPRESOLVE_WHATEVER;
       end;
 
       { TSecurityProperty }
@@ -5962,6 +6062,38 @@ end;
 procedure TSession.TOptionsProperty.SetMaxConnections(AConn: Longint);
 begin
   curl_easy_setopt(FHandle, CURLOPT_MAXCONNECTS, AConn);
+end;
+
+procedure TSession.TOptionsProperty.SetForceReuseConnection(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FRESH_CONNECT, Longint(not AEnable));
+end;
+
+procedure TSession.TOptionsProperty.SetCloseConnectionAfterUse(AEnable: Boolean
+  );
+begin
+  curl_easy_setopt(FHandle, CURLOPT_FORBID_REUSE, Longint(AEnable));
+end;
+
+procedure TSession.TOptionsProperty.SetMaxReuseConnectionTime(
+  ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_MAXAGE_CONN, Longint(ceil(ATime.Seconds)));
+end;
+
+procedure TSession.TOptionsProperty.SetConnectionTimeout(ATime: TTimeInterval);
+begin
+  if ATime.Seconds >= 1 then
+    curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT,
+      Longint(ceil(ATime.Seconds)))
+  else
+    curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT_MS,
+      Longint(ceil(ATime.Milliseconds)));
+end;
+
+procedure TSession.TOptionsProperty.SetIPResolve(AResolve: TIPResolve);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_IPRESOLVE, Longint(AResolve));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
