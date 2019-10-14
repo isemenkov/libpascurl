@@ -64,10 +64,11 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'su:p:ah';
-  LongOptions : array [1..17] of string = ('help', 'show-content', 'username:',
+  LongOptions : array [1..18] of string = ('help', 'show-content', 'username:',
     'password:', 'all', 'effective-url', 'redirect-url', 'response-code',
     'content-type', 'primary-ip', 'local-ip', 'http-version', 'redirect-count',
-    'content-size', 'header-size', 'request-size', 'download-speed');
+    'content-size', 'header-size', 'request-size', 'download-speed',
+    'total-time');
   Protocol : TSession.TProtocolProperty.TProtocol;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
@@ -178,6 +179,9 @@ begin
         writeln('Download speed, b/s: ':25, FResponse.DownloadSpeed.B);
     end;
 
+    if HasOption('a', 'all') or HasOption('total-time') then
+      writeln('Total time, us: ':25, FResponse.TotalTime.Microseconds.Value);
+
     if HasOption('s', 'show-content') then
     begin
       writeln();
@@ -248,6 +252,7 @@ begin
 '(*                  --header-size         write response header size          *)'+ sLineBreak +
 '(*                  --content-size        write response content size         *)'+ sLineBreak +
 '(*                  --download-speed      write download speed                *)'+ sLineBreak +
+'(*                  --total-time          write total request time            *)'+ sLineBreak +
 '(******************************************************************************)'
   );
 end;
