@@ -2825,8 +2825,8 @@ const
   *
   * Returns: CURLMcode type, general multi error code.
   *)
-  function curl_multi_fdset (multi_handle : CURLM; read_fd_set : TFDSet;
-    write_fd_set : TFDSet; exc_fd_set : TFDSet; max_fd : PInteger) :
+  function curl_multi_fdset (multi_handle : CURLM; read_fd_set : pFDSet;
+    write_fd_set : pFDSet; exc_fd_set : pFDSet; max_fd : PInteger) :
     CURLMcode; cdecl; external CurlLib;
 
  (*
