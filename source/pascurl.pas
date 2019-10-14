@@ -41,16 +41,16 @@ uses
   Classes, SysUtils, libpascurl, math, typinfo;
 
 type
-
   { TTimeInterval }
 
-  TTimeIntervalType = (
-    tiSeconds,
-    tiMilliseconds,
-    tiMicroseconds
-  );
-
   TTimeInterval = class
+  public
+    type
+      TTimeIntervalType = (
+        tiSeconds,
+        tiMilliseconds,
+        tiMicroseconds
+      );
   protected
     FMicroseconds : QWord; (* 1/1 000 000 of second *)
 
@@ -96,15 +96,16 @@ type
 
   { TDataSize }
 
-  TDataSizeType = (
-    dsBytes,
-    dsKiloBytes,
-    dsMegaBytes,
-    dsGigaBytes,
-    dsTeraBytes
-  );
-
   TDataSize = class
+  public
+    type
+      TDataSizeType = (
+        dsBytes,
+        dsKiloBytes,
+        dsMegaBytes,
+        dsGigaBytes,
+        dsTeraBytes
+      );
   protected
     FBytes : QWord;
 
@@ -204,7 +205,7 @@ type
             (**
              * Resolve to IPv6 addresses.
              *)
-            IPRESOLVE_V6                        = Longint(CURL_IPRESOLVE_V6),
+            IPRESOLVE_V6                        = Longint(CURL_IPRESOLVE_V6)
           );
       private
         FHandle : CURL;
@@ -217,7 +218,7 @@ type
         procedure SetFailOnError (AFailOnError : Boolean);
         procedure SetPathAsIs (ALeaveIt : Boolean);
         procedure SetConvertCRLF (AEnable : Boolean);
-        procedure SetUpkeepInterval(AValue: TTimeout);
+        procedure SetUpkeepInterval(ATime: TTimeInterval);
         procedure SetUploadFileSize (ASize : curl_off_t);
         procedure SetUploadBufferSize (ASize : TDataSize);
         procedure SetTimeout (ATime : TTimeInterval);
@@ -232,7 +233,6 @@ type
         procedure SetConnectionTimeout (ATime : TTimeInterval);
         procedure SetIPResolve (AResolve : TIPResolve);
         procedure SetHappyEyeballsTimeout (ATime : TTimeInterval);
-        procedure SetUpkeepInterval (ATime : TTimeInterval);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -5836,7 +5836,7 @@ end;
 
 procedure TSession.THTTPProperty.SetConnectOnly(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURL_CONNECT_ONLY, Longint(AEnable));
+  curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
@@ -5974,7 +5974,7 @@ end;
 
 procedure TSession.TDNSProperty.SetDNSShuffleAddresses(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SHUFFLE_ADDRESSES, Longint(AEnable));
+  curl_easy_setopt(FHandle, CURLOPT_DNS_SHUFFLE_ADDRESSES, Longint(AEnable));
 end;
 
 constructor TSession.TDNSProperty.Create(AHandle: CURL);
