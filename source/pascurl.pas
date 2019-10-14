@@ -217,6 +217,7 @@ type
         procedure SetFailOnError (AFailOnError : Boolean);
         procedure SetPathAsIs (ALeaveIt : Boolean);
         procedure SetConvertCRLF (AEnable : Boolean);
+        procedure SetUpkeepInterval(AValue: TTimeout);
         procedure SetUploadFileSize (ASize : curl_off_t);
         procedure SetUploadBufferSize (ASize : TDataSize);
         procedure SetTimeout (ATime : TTimeInterval);
@@ -230,6 +231,8 @@ type
         procedure SetMaxReuseConnectionTime (ATime : TTimeInterval);
         procedure SetConnectionTimeout (ATime : TTimeInterval);
         procedure SetIPResolve (AResolve : TIPResolve);
+        procedure SetHappyEyeballsTimeout (ATime : TTimeInterval);
+        procedure SetUpkeepInterval (ATime : TTimeInterval);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -493,6 +496,37 @@ type
          *)
         property IPResolve : TIPResolve write SetIPResolve
           default IPRESOLVE_WHATEVER;
+
+        (**
+         * Head start for IPv6 for happy eyeballs
+         *
+         * Happy eyeballs is an algorithm that attempts to connect to both IPv4
+         * and IPv6 addresses for dual-stack hosts, preferring IPv6 first for
+         * timeout. If the IPv6 address cannot be connected to within that time
+         * then a connection attempt is made to the IPv4 address in parallel.
+         * The first connection to be established is the one that is used.
+         * The range of suggested useful values for timeout is limited. Happy
+         * Eyeballs RFC 6555 says "It is RECOMMENDED that connection attempts be
+         * paced 150-250 ms apart to balance human factors against network
+         * load." libcurl currently defaults to 200 ms. Firefox and Chrome
+         * currently default to 300 ms.
+         *)
+        property HappyEyeballsTimeout : TTimeInterval write
+          SetHappyEyeballsTimeout;
+
+        (**
+         * Connection upkeep interval
+         *
+         * Some protocols have "connection upkeep" mechanisms. These mechanisms
+         * usually send some traffic on existing connections in order to keep
+         * them alive; this can prevent connections from being closed due to
+         * overzealous firewalls, for example.
+         * Currently the only protocol with a connection upkeep mechanism is
+         * HTTP/2: when the connection upkeep interval is exceeded and
+         * curl_easy_upkeep is called, an HTTP/2 PING frame is sent on the
+         * connection.
+         *)
+        property UpkeepInterval : TTimeInterval write SetUpkeepInterval;
       end;
 
       { TSecurityProperty }
@@ -973,8 +1007,8 @@ type
           PROTOCOL_IMAPS, PROTOCOL_LDAP, PROTOCOL_LDAPS, PROTOCOL_POP3,
           PROTOCOL_POP3S, PROTOCOL_RTMP, PROTOCOL_RTMPE, PROTOCOL_RTMPS,
           PROTOCOL_RTMPT, PROTOCOL_RTMPTE, PROTOCOL_RTMPTS, PROTOCOL_RTSP,
-          PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS, PROTOCOL_SMTP,
-          PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
+          PROTOCOL_SCP, PROTOCOL_SFTP, PROTOCOL_SMB, PROTOCOL_SMBS,
+          PROTOCOL_SMTP, PROTOCOL_SMTPS, PROTOCOL_TELNET, PROTOCOL_TFTP];
 
         (**
          * Set protocols allowed to redirect to
@@ -984,7 +1018,8 @@ type
          * limit specific transfers to only be allowed to use a subset of
          * protocols in redirections.
          *)
-        property RedirectProtocols : TProtocols write SetAllowedRedirectProtocols
+        property RedirectProtocols : TProtocols
+          write SetAllowedRedirectProtocols
           default [PROTOCOL_HTTP, PROTOCOL_HTTPS, PROTOCOL_FTP, PROTOCOL_FTPS];
 
         (**
@@ -3922,6 +3957,7 @@ type
         procedure SetTimeModification (AEnable : Boolean);
         procedure SetDirListOnly (AEnable : Boolean);
         procedure SetMaxDownloadFileSize (ASize : TDataSize);
+        procedure SetAcceptTimeout (ATime : TTimeInterval);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -4187,6 +4223,14 @@ type
          * transfers.
          *)
         property MaxDownloadFileSize : TDataSize write SetMaxDownloadFileSize;
+
+        (**
+         * Timeout waiting for FTP server to connect back
+         *
+         * Telling libcurl the maximum wait for a server to connect back to
+         * libcurl when an active FTP connection is used.
+         *)
+        property AcceptTimeout : TTimeInterval write SetAcceptTimeout;
       end;
 
       { TSMTPProperty }
@@ -5243,6 +5287,12 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE, ASize.Bytes);
 end;
 
+procedure TSession.TFTPProperty.SetAcceptTimeout(ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_ACCEPTTIMEOUT_MS,
+    Longint(ceil(ATime.Milliseconds)));
+end;
+
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -6259,6 +6309,19 @@ end;
 procedure TSession.TOptionsProperty.SetIPResolve(AResolve: TIPResolve);
 begin
   curl_easy_setopt(FHandle, CURLOPT_IPRESOLVE, Longint(AResolve));
+end;
+
+procedure TSession.TOptionsProperty.SetHappyEyeballsTimeout(ATime: TTimeInterval
+  );
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
+    Longint(ceil(ATime.Milliseconds)));
+end;
+
+procedure TSession.TOptionsProperty.SetUpkeepInterval(ATime: TTimeInterval);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_UPKEEP_INTERVAL_MS,
+    Longint(ceil(ATime.Milliseconds)));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
