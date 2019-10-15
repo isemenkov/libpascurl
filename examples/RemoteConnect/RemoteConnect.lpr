@@ -64,11 +64,11 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'su:p:ah';
-  LongOptions : array [1..18] of string = ('help', 'show-content', 'username:',
+  LongOptions : array [1..20] of string = ('help', 'show-content', 'username:',
     'password:', 'all', 'effective-url', 'redirect-url', 'response-code',
     'content-type', 'primary-ip', 'local-ip', 'http-version', 'redirect-count',
     'content-size', 'header-size', 'request-size', 'download-speed',
-    'total-time');
+    'total-time', 'name-lookup-time', 'connect-time');
   Protocol : TSession.TProtocolProperty.TProtocol;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
@@ -180,7 +180,14 @@ begin
     end;
 
     if HasOption('a', 'all') or HasOption('total-time') then
-      writeln('Total time, us: ':25, FResponse.TotalTime.Microseconds.Value);
+      writeln('Total time: ':25, FResponse.TotalTime.Milliseconds.Format);
+
+    if HasOption('a', 'all') or HasOption('name-lookup-time') then
+      writeln('Name lookup time: ':25,
+      FResponse.NameLookup.Milliseconds.Format);
+
+    if HasOption('a', 'all') or HasOption('connect-time') then
+      writeln('Connect time: ':25, FResponse.ConnectTime.Milliseconds.Format);
 
     if HasOption('s', 'show-content') then
     begin
@@ -253,6 +260,8 @@ begin
 '(*                  --content-size        write response content size         *)'+ sLineBreak +
 '(*                  --download-speed      write download speed                *)'+ sLineBreak +
 '(*                  --total-time          write total request time            *)'+ sLineBreak +
+'(*                  --name-lookup-time    write name lookup time              *)'+ sLineBreak +
+'(*                  --connect-time        write connect time                  *)'+ sLineBreak +
 '(******************************************************************************)'
   );
 end;

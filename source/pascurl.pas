@@ -94,6 +94,9 @@ type
         constructor Create (AInterval : THour);
         destructor Destroy; override;
 
+        function Format (AFormat : string = '%.2d:%.2d:%.2d.%.3d%.3d') :
+          string; inline;
+
         property Value : QWord read GetValue write SetValue;
       end;
 
@@ -5606,6 +5609,13 @@ begin
   inherited Destroy;
 end;
 
+function TTimeInterval.TMillisecond.Format(AFormat: string): string;
+begin
+  Result := SysUtils.Format(AFormat, [0, 0, 0,
+    FMicroseconds div MICROSECONDS_IN_MILLISECOND,
+    FMicroseconds mod MICROSECONDS_IN_MILLISECOND]);
+end;
+
 { TTimeInterval.TMicrosecond }
 
 constructor TTimeInterval.TMicrosecond.Create;
@@ -5650,7 +5660,7 @@ end;
 
 function TTimeInterval.TMicrosecond.Format(AFormat: string): string;
 begin
-  Result := SysUtils.Format(AFormat, [0, 0, 0, FMicroseconds, 0]);
+  Result := SysUtils.Format(AFormat, [0, 0, 0, 0, FMicroseconds]);
 end;
 
 { TSession.TRTSPProperty }
@@ -7420,33 +7430,63 @@ end;
 function TResponse.GetTotalTime: TTimeInterval;
 var
   time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME_T, @time);
+    CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME_T,
+      @time);
     Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+
+    if CurlResult <> CURLE_OK then
+    begin
+      curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME, @dtime);
+      Result := TTimeInterval.Create(
+        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+    end;
   end;
 end;
 
 function TResponse.GetNameLookup: TTimeInterval;
 var
   time : Longword = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME_T,
+      @time);
+    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+
+    if CurlResult <> CURLE_OK then
+    begin
+      curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME, @dtime);
+      Result := TTimeInterval.Create(
+        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+    end;
   end;
 end;
 
 function TResponse.GetConnectTime: TTimeInterval;
 var
   time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
 begin
   if Opened then
   begin
-    curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME_T,
+      @time);
+    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+
+    if CurlResult <> CURLE_OK then
+    begin
+      curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME, @dtime);
+      Result := TTimeInterval.Create(
+        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+    end;
   end;
 end;
 
