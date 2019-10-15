@@ -66,6 +66,9 @@ type
         constructor Create (AInterval : THour);
         destructor Destroy; override;
 
+        function Format (AFormat : string = '%.2d:%.2d:%.2d.%.3d%.3d') :
+          string; inline;
+
         property Value : QWord read FMicroseconds write FMicroseconds;
       end;
 
@@ -758,6 +761,9 @@ type
         procedure SetNetrc (AOption : TNETRCOption);
         procedure SetNetrcFile (AFile : string);
         procedure SetUnrestrictedAuth (AEnable : Boolean);
+        procedure SetSSLCertificate (ACertificate : string);
+        procedure SetSSLCertificateType (AType : string);
+        procedure SetSSLKey (AKey : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -879,6 +885,58 @@ type
         *)
         property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
           default False;
+
+        (**
+         * Set SSL client certificate
+         *
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the file name of your client certificate. The default
+         * format is "P12" on Secure Transport and "PEM" on other engines, and
+         * can be changed with CURLOPT_SSLCERTTYPE.
+         * With NSS or Secure Transport, this can also be the nickname of the
+         * certificate you wish to authenticate with as it is named in the
+         * security database. If you want to use a file from the current
+         * directory, please precede it with "./" prefix, in order to avoid
+         * confusion with a nickname.
+         * (Schannel only) Client certificates must be specified by a path
+         * expression to a certificate store. (Loading PFX is not supported; you
+         * can import it to a store first). You can use
+         * "<store location>lt;store name>lt;thumbprint>" to refer to a
+         * certificate in the system certificates store, for example,
+         * "CurrentUser\MY\934a7ac6f8a5d579285a74fa61e19f23ddfe8d7a".
+         * Thumbprint is usually a SHA-1 hex string which you can see in
+         * certificate details. Following store locations are supported:
+         * CurrentUser, LocalMachine, CurrentService, Services,
+         * CurrentUserGroupPolicy, LocalMachineGroupPolicy,
+         * LocalMachineEnterprise.
+         * When using a client certificate, you most likely also need to provide
+         * a private key with CURLOPT_SSLKEY.
+         *)
+        property SSLCertificate : string write SetSSLCertificate;
+
+        (**
+         * Specify type of the client SSL certificate
+         *
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the format of your certificate. Supported formats are "PEM"
+         * and "DER", except with Secure Transport. OpenSSL (versions 0.9.3 and
+         * later) and Secure Transport (on iOS 5 or later, or OS X 10.7 or
+         * later) also support "P12" for PKCS#12-encoded files.
+         *)
+        property SSLCertificateType : string write SetSSLCertificateType;
+
+        (**
+         * Specify private keyfile for TLS and SSL client certificate
+         *
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the file name of your private key. The default format is
+         * "PEM" and can be changed with CURLOPT_SSLKEYTYPE.
+         * (iOS and Mac OS X only) This option is ignored if curl was built
+         * against Secure Transport. Secure Transport expects the private key to
+         * be already present in the keychain or PKCS#12 file containing the
+         * certificate.
+         *)
+        property SSLKey : string write SetSSLKey;
       end;
 
       { TProtocolProperty }
@@ -1462,6 +1520,9 @@ type
         procedure SetProxyTLSAuth (AMethod : TSecurityProperty.TTLSAuthMethod);
         procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetHAProxyHeader (ASend : Boolean);
+        procedure SetProxySSLCertificate (ACertificate : string);
+        procedure SetProxySSLCertificateType (AType : string);
+        procedure SetProxySSLKey (AKey : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -1644,6 +1705,52 @@ type
          * service that expects this header.
          *)
         property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
+
+        (**
+         * Set SSL proxy client certificate
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the file name of your client certificate used to connect to
+         * the HTTPS proxy. The default format is "P12" on Secure Transport and
+         * "PEM" on other engines, and can be changed with
+         * CURLOPT_PROXY_SSLCERTTYPE.
+         * With NSS or Secure Transport, this can also be the nickname of the
+         * certificate you wish to authenticate with as it is named in the
+         * security database. If you want to use a file from the current
+         * directory, please precede it with "./" prefix, in order to avoid
+         * confusion with a nickname.
+         * When using a client certificate, you most likely also need to provide
+         * a private key with CURLOPT_PROXY_SSLKEY.
+         *)
+        property SSLCertificate : string write SetProxySSLCertificate;
+
+        (**
+         * Specify type of the proxy client SSL sertificate
+         *
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the format of your client certificate used when connecting
+         * to an HTTPS proxy.
+         * Supported formats are "PEM" and "DER", except with Secure Transport.
+         * OpenSSL (versions 0.9.3 and later) and Secure Transport (on iOS 5 or
+         * later, or OS X 10.7 or later) also support "P12" for PKCS#12-encoded
+         * files.
+         *)
+        property SSLCertificateType : string write SetProxySSLCertificateType;
+
+        (**
+         * Specify private keyfile for TLS and SSL proxy client certificate
+         *
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the file name of your private key used for connecting to
+         * the HTTPS proxy. The default format is "PEM" and can be changed with
+         * CURLOPT_PROXY_SSLKEYTYPE.
+         * (iOS and Mac OS X only) This option is ignored if curl was built
+         * against Secure Transport. Secure Transport expects the private key to
+         * be already present in the keychain or PKCS#12 file containing the
+         * certificate.
+         *)
+        property SSLKey : string write SetProxySSLKey;
       end;
 
       { TDNSProperty }
@@ -5328,8 +5435,8 @@ end;
 
 function TTimeInterval.TMinute.GetValue: QWord;
 begin
-  Result := QWord(FMicroseconds / TTimeInterval.TSecond.MICROSECONDS_IN_SECOND /
-    SECONDS_IN_MINUTE);
+  Result := QWord(FMicroseconds div TTimeInterval.TSecond.MICROSECONDS_IN_SECOND
+    div SECONDS_IN_MINUTE);
 end;
 
 procedure TTimeInterval.TMinute.SetValue(AValue: QWord);
@@ -5446,7 +5553,7 @@ end;
 
 function TTimeInterval.TMillisecond.GetValue: QWord;
 begin
-  Result := QWord(FMicroseconds / MICROSECONDS_IN_MILLISECOND);
+  Result := QWord(FMicroseconds div MICROSECONDS_IN_MILLISECOND);
 end;
 
 procedure TTimeInterval.TMillisecond.SetValue(AValue: QWord);
@@ -5539,6 +5646,11 @@ end;
 destructor TTimeInterval.TMicrosecond.Destroy;
 begin
   inherited Destroy;
+end;
+
+function TTimeInterval.TMicrosecond.Format(AFormat: string): string;
+begin
+  Result := SysUtils.Format(AFormat, [0, 0, 0, FMicroseconds, 0]);
 end;
 
 { TSession.TRTSPProperty }
@@ -6421,6 +6533,21 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH, Longint(AEnable));
 end;
 
+procedure TSession.TSecurityProperty.SetSSLCertificate(ACertificate: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SSLCERT, PChar(ACertificate));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLCertificateType(AType: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SSLCERTTYPE, PChar(AType));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLKey(AKey: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SSLKEY, PChar(AKey));
+end;
+
 constructor TSession.TSecurityProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -6641,6 +6768,21 @@ end;
 procedure TSession.TProxyProperty.SetHAProxyHeader(ASend: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLCertificate(ACertificate: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERT, PChar(ACertificate));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLCertificateType(AType: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERTTYPE, PChar(AType));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLKey(AKey: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY, PChar(AKey));
 end;
 
 constructor TSession.TProxyProperty.Create(AHandle: CURL);
