@@ -2,6 +2,11 @@
 #build file for tests
 /examples/RemoteConnect/RemoteConnect
 /examples/RemoteConnectCStyle/RemoteConnectCStyle
+/unit-tests/libpascurl_testproject
+
+#unit-test
+/unit-tests/libpascurl_testproject.fpcunit.ini
+/unit-tests/libpascurl_testproject.ico
 
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
