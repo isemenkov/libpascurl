@@ -5235,142 +5235,89 @@ type
     property Scheme : string read GetScheme;
   end;
 
-  operator:= (AValue : TTimeInterval.TMicrosecond) : TTimeInterval;
-  operator:= (AValue : TTimeInterval.TMillisecond) : TTimeInterval;
-  operator:= (AValue : TTimeInterval.TSecond) : TTimeInterval;
-  operator:= (AValue : TTimeInterval.TMinute) : TTimeInterval;
-  operator:= (AValue : TTimeInterval.THour) : TTimeInterval;
+  operator:= (AValue : QWord) : TTimeInterval.TMicrosecond;
+  operator:= (AValue : TTimeInterval.TMillisecond) : TTimeInterval.TMicrosecond;
+  operator:= (AValue : TTimeInterval.TSecond) : TTimeInterval.TMicrosecond;
+  operator:= (AValue : TTimeInterval.TMinute) : TTimeInterval.TMicrosecond;
+  operator:= (AValue : TTimeInterval.THour) : TTimeInterval.TMicrosecond;
 
-  operator+ (AInterval : TTimeInterval; AValue : TTimeInterval.TMicrosecond) :
-    TTimeInterval;
-  operator+ (AInterval : TTimeInterval; AValue : TTimeInterval.TMillisecond) :
-    TTimeInterval;
-  operator+ (AInterval : TTimeInterval; AValue : TTimeInterval.TSecond) :
-    TTimeInterval;
-  operator+ (AInterval : TTimeInterval; AValue : TTimeInterval.TMinute) :
-    TTimeInterval;
-  operator+ (AInterval : TTimeInterval; AValue : TTimeInterval.THour) :
-    TTimeInterval;
+  operator+ (ms : TTimeInterval.TMicrosecond; AValue : QWord) :
+    TTimeInterval.TMicrosecond;
+  operator+ (ms : TTimeInterval.TMicrosecond; AValue :
+    TTimeInterval.TMicrosecond) : TTimeInterval.TMicrosecond;
 
-  operator- (AInterval : TTimeInterval; AValue : TTimeInterval.TMicrosecond) :
-    TTimeInterval;
-  operator- (AInterval : TTimeInterval; AValue : TTimeInterval.TMillisecond) :
-    TTimeInterval;
-  operator- (AInterval : TTimeInterval; AValue : TTimeInterval.TSecond) :
-    TTimeInterval;
-  operator- (AInterval : TTimeInterval; AValue : TTimeInterval.TMinute) :
-    TTimeInterval;
-  operator- (AInterval : TTimeInterval; AValue : TTimeInterval.THour) :
-    TTimeInterval;
+  operator- (ms : TTimeInterval.TMicrosecond; AValue : QWord) :
+    TTimeInterval.TMicrosecond;
+  operator- (ms : TTimeInterval.TMicrosecond; AValue :
+    TTimeInterval.TMicrosecond) : TTimeInterval.TMicrosecond;
+
+  operator* (ms : TTimeInterval.TMicrosecond; AValue : Word) :
+    TTimeInterval.TMicrosecond;
 
 implementation
 
-operator:=(AValue: TTimeInterval.TMicrosecond): TTimeInterval;
+operator:=(AValue: QWord): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(AValue);
 end;
 
-operator:=(AValue: TTimeInterval.TMillisecond): TTimeInterval;
+operator:=(AValue: TTimeInterval.TMillisecond): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(AValue);
 end;
 
-operator:=(AValue: TTimeInterval.TSecond): TTimeInterval;
+operator:=(AValue: TTimeInterval.TSecond): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(AValue);
 end;
 
-operator:=(AValue: TTimeInterval.TMinute): TTimeInterval;
+operator:=(AValue: TTimeInterval.TMinute): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(AValue);
 end;
 
-operator:=(AValue: TTimeInterval.THour): TTimeInterval;
+operator:=(AValue: TTimeInterval.THour): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(AValue);
 end;
 
-operator+(AInterval: TTimeInterval; AValue: TTimeInterval.TMicrosecond):
-  TTimeInterval;
+operator+(ms: TTimeInterval.TMicrosecond; AValue: QWord
+  ): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AInterval.FMicroseconds.FMicroseconds +
-    AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(ms.Value + AValue);
 end;
 
-operator+(AInterval: TTimeInterval; AValue: TTimeInterval.TMillisecond
-  ): TTimeInterval;
+operator+(ms: TTimeInterval.TMicrosecond; AValue: TTimeInterval.TMicrosecond
+  ): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AInterval.FMicroseconds.FMicroseconds +
-    AValue.FMicroseconds;
+  Result := TTimeInterval.TMicrosecond.Create(ms.Value + AValue.Value);
 end;
 
-operator+(AInterval: TTimeInterval; AValue: TTimeInterval.TSecond
-  ): TTimeInterval;
+operator-(ms: TTimeInterval.TMicrosecond; AValue: QWord
+  ): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AInterval.FMicroseconds.FMicroseconds +
-    AValue.FMicroseconds;
+  if ms.Value >= AValue then
+    Result := TTimeInterval.TMicrosecond.Create(ms.Value - AValue)
+  else
+    Result := TTimeInterval.TMicrosecond.Create(0);
 end;
 
-operator+(AInterval: TTimeInterval; AValue: TTimeInterval.TMinute
-  ): TTimeInterval;
+operator-(ms: TTimeInterval.TMicrosecond; AValue: TTimeInterval.TMicrosecond
+  ): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AInterval.FMicroseconds.FMicroseconds +
-    AValue.FMicroseconds;
+  if ms.Value >= AValue.Value then
+    Result := TTimeInterval.TMicrosecond.Create(ms.Value - AValue.Value)
+  else
+    Result := TTimeInterval.TMicrosecond.Create(0);
 end;
 
-operator+(AInterval: TTimeInterval; AValue: TTimeInterval.THour): TTimeInterval;
+operator*(ms: TTimeInterval.TMicrosecond; AValue: Word
+  ): TTimeInterval.TMicrosecond;
 begin
-  Result.FMicroseconds.FMicroseconds := AInterval.FMicroseconds.FMicroseconds +
-    AValue.FMicroseconds;
-end;
-
-operator-(AInterval: TTimeInterval; AValue: TTimeInterval.TMicrosecond
-  ): TTimeInterval;
-begin
-  if AInterval.FMicroseconds.FMicroseconds > AValue.FMicroseconds then
-  begin
-    Result.FMicroseconds.FMicroseconds :=
-      AInterval.FMicroseconds.FMicroseconds - AValue.FMicroseconds;
-  end;
-end;
-
-operator-(AInterval: TTimeInterval; AValue: TTimeInterval.TMillisecond
-  ): TTimeInterval;
-begin
-  if AInterval.FMicroseconds.FMicroseconds > AValue.FMicroseconds then
-  begin
-    Result.FMicroseconds.FMicroseconds :=
-      AInterval.FMicroseconds.FMicroseconds - AValue.FMicroseconds;
-  end;
-end;
-
-operator-(AInterval: TTimeInterval; AValue: TTimeInterval.TSecond
-  ): TTimeInterval;
-begin
-  if AInterval.FMicroseconds.FMicroseconds > AValue.FMicroseconds then
-  begin
-    Result.FMicroseconds.FMicroseconds :=
-      AInterval.FMicroseconds.FMicroseconds - AValue.FMicroseconds;
-  end;
-end;
-
-operator-(AInterval: TTimeInterval; AValue: TTimeInterval.TMinute
-  ): TTimeInterval;
-begin
-  if AInterval.FMicroseconds.FMicroseconds > AValue.FMicroseconds then
-  begin
-    Result.FMicroseconds.FMicroseconds :=
-      AInterval.FMicroseconds.FMicroseconds - AValue.FMicroseconds;
-  end;
-end;
-
-operator-(AInterval: TTimeInterval; AValue: TTimeInterval.THour): TTimeInterval;
-begin
-  if AInterval.FMicroseconds.FMicroseconds > AValue.FMicroseconds then
-  begin
-    Result.FMicroseconds.FMicroseconds :=
-      AInterval.FMicroseconds.FMicroseconds - AValue.FMicroseconds;
-  end;
+  if ms.Value > 0 then
+    Result := TTimeInterval.TMicrosecond.Create(ms.Value * AValue)
+  else
+    Result := TTimeInterval.TMicrosecond.Create(0);
 end;
 
 { TTimeInterval.THour }
@@ -5610,10 +5557,14 @@ begin
 end;
 
 function TTimeInterval.TMillisecond.Format(AFormat: string): string;
+var
+  millisec : QWord;
+  microsec : QWord;
 begin
-  Result := SysUtils.Format(AFormat, [0, 0, 0,
-    FMicroseconds div MICROSECONDS_IN_MILLISECOND,
-    FMicroseconds mod MICROSECONDS_IN_MILLISECOND]);
+  millisec := FMicroseconds div MICROSECONDS_IN_MILLISECOND;
+  microsec := FMicroseconds - (millisec * MICROSECONDS_IN_MILLISECOND);
+
+  Result := SysUtils.Format(AFormat, [0, 0, 0, millisec, microsec]);
 end;
 
 { TTimeInterval.TMicrosecond }
