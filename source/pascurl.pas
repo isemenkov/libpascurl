@@ -46,156 +46,114 @@ type
   TTimeInterval = class
   public
     type
-      TMillisecond = class;
-      TSecond = class;
-      TMinute = class;
-      THour = class;
+      TMicrosecondRange = 0 .. 999;
+      TMillisecondRange = 0 .. 999;
+      TSecondRange = 0 .. 59;
+      TMinuteRange = 0 .. 59;
+      THourRange = type QWord;
 
       { TMicrosecond }
 
       TMicrosecond = class
       private
-        FMicroseconds : QWord;
+        FMicroseconds : TMicrosecondRange;
       public
         constructor Create;
-        constructor Create (AInterval : QWord);
+        constructor Create (AInterval : TMicrosecondRange);
         constructor Create (AInterval : TMicrosecond);
-        constructor Create (AInterval : TMillisecond);
-        constructor Create (AInterval : TSecond);
-        constructor Create (AInterval : TMinute);
-        constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        function Format (AFormat : string = '%.2d:%.2d:%.2d.%.3d%.3d') :
-          string; inline;
-
-        property Value : QWord read FMicroseconds write FMicroseconds;
+        property Value : TMicrosecondRange read FMicroseconds
+          write FMicroseconds;
       end;
 
       { TMillisecond }
 
       TMillisecond = class
-      public
-        const
-          MICROSECONDS_IN_MILLISECOND = 1000;
       private
-        FMicroseconds : QWord;
-
-        function GetValue : QWord;
-        procedure SetValue (AValue : QWord);
+        FMilliseconds : TMillisecondRange;
       public
         constructor Create;
-        constructor Create (AInterval : QWord);
-        constructor Create (AInterval, APrecision : QWord);
-        constructor Create (AInterval : TMicrosecond);
+        constructor Create (AInterval : TMillisecondRange);
         constructor Create (AInterval : TMillisecond);
-        constructor Create (AInterval : TSecond);
-        constructor Create (AInterval : TMinute);
-        constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        function Format (AFormat : string = '%.2d:%.2d:%.2d.%.3d%.3d') :
-          string; inline;
-
-        property Value : QWord read GetValue write SetValue;
+        property Value : TMillisecondRange read FMilliseconds
+          write FMilliseconds;
       end;
 
       { TSecond }
 
       TSecond = class
-      public
-        const
-          MICROSECONDS_IN_SECOND = 1000000;
       private
-        FMicroseconds : QWord;
-
-        function GetValue : QWord;
-        procedure SetValue (AValue : QWord);
+        FSeconds : TSecondRange;
       public
         constructor Create;
-        constructor Create (AInterval : QWord);
-        constructor Create (AInterval, APrecision : QWord);
-        constructor Create (AInterval : TMicrosecond);
-        constructor Create (AInterval : TMillisecond);
+        constructor Create (AInterval : TSecondRange);
         constructor Create (AInterval : TSecond);
-        constructor Create (AInterval : TMinute);
-        constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        property Value : QWord read GetValue write SetValue;
+        property Value : TSecondRange read FSeconds write FSeconds;
       end;
 
       { TMinute }
 
       TMinute = class
-      public
-        const
-          SECONDS_IN_MINUTE = 60;
       private
-        FMicroseconds : QWord;
-
-        function GetValue : QWord;
-        procedure SetValue (AValue : QWord);
+        FMinutes : TMinuteRange;
       public
         constructor Create;
-        constructor Create (AInterval : QWord);
-        constructor Create (AInterval, APrecision : QWord);
-        constructor Create (AInterval : TMicrosecond);
-        constructor Create (AInterval : TMillisecond);
-        constructor Create (AInterval : TSecond);
+        constructor Create (AInterval : TMinuteRange);
         constructor Create (AInterval : TMinute);
-        constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        property Value : QWord read GetValue write SetValue;
+        property Value : TMinuteRange read FMinutes write FMinutes;
       end;
 
       { THour }
 
       THour = class
-      public
-        const
-          SECONDS_IN_HOUR = 3600;
       private
-        FMicroseconds : QWord;
-
-        function GetValue : QWord;
-        procedure SetValue (AValue : QWord);
+        FHours : THourRange;
       public
         constructor Create;
-        constructor Create (AInterval : QWord);
-        constructor Create (AInterval, APrecision : QWord);
-        constructor Create (AInterval : TMicrosecond);
-        constructor Create (AInterval : TMillisecond);
-        constructor Create (AInterval : TSecond);
-        constructor Create (AInterval : TMinute);
+        constructor Create (AInterval : THourRange);
         constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        property Value : QWord read GetValue write SetValue;
+        property Value : QWord read FHours write FHours;
       end;
   private
     FMicroseconds : TMicrosecond;
+    FMilliseconds : TMillisecond;
+    FSeconds : TSecond;
+    FMinutes : TMinute;
+    FHours : THour;
 
-    function GetMicroseconds : TMicrosecond;
-    function GetMilliseconds : TMillisecond;
-    function GetSeconds : TSecond;
-    function GetMinutes : TMinute;
-    function GetHours : THour;
+    function GetMicroseconds : QWord;
+    procedure SetMicroseconds (AValue : Qword);
+    function GetMilliseconds : QWord;
+    procedure SetMilliseconds (AValue : QWord);
+    function GetSeconds : QWord;
+    procedure SetSeconds (AValue : QWord);
+    function GetMinutes : QWord;
+    procedure SetMinutes (AValue : QWord);
+    function GetHours : QWord;
+    procedure SetHours (AValue : QWord);
+    function GetStringValue : string;
   public
     constructor Create;
-    constructor Create (AInterval : TMicrosecond);
-    constructor Create (AInterval : TMillisecond);
-    constructor Create (AInterval : TSecond);
-    constructor Create (AInterval : TMinute);
-    constructor Create (AInterval : THour);
     destructor Destroy; override;
 
-    property Microseconds : TMicrosecond read GetMicroseconds;
-    property Milliseconds : TMillisecond read GetMilliseconds;
-    property Seconds : TSecond read GetSeconds;
-    property Minutes : TMinute read GetMinutes;
-    property Hours : THour read GetHours;
+    property Microseconds : QWord read GetMicroseconds
+      write SetMicroseconds;
+    property Milliseconds : QWord read GetMilliseconds
+      write SetMilliseconds;
+    property Seconds : QWord read GetSeconds write SetSeconds;
+    property Minutes : QWord read GetMinutes write SetMinutes;
+    property Hours : QWord read GetHours write SetHours;
+
+    property StringValue : string read GetStringValue;
   end;
 
   { TDataSize }
@@ -5235,145 +5193,101 @@ type
     property Scheme : string read GetScheme;
   end;
 
-  operator:= (AValue : QWord) : TTimeInterval.TMicrosecond;
-  operator:= (AValue : TTimeInterval.TMillisecond) : TTimeInterval.TMicrosecond;
-  operator:= (AValue : TTimeInterval.TSecond) : TTimeInterval.TMicrosecond;
-  operator:= (AValue : TTimeInterval.TMinute) : TTimeInterval.TMicrosecond;
-  operator:= (AValue : TTimeInterval.THour) : TTimeInterval.TMicrosecond;
-
-  operator+ (ms : TTimeInterval.TMicrosecond; AValue : QWord) :
-    TTimeInterval.TMicrosecond;
-  operator+ (ms : TTimeInterval.TMicrosecond; AValue :
-    TTimeInterval.TMicrosecond) : TTimeInterval.TMicrosecond;
-
-  operator- (ms : TTimeInterval.TMicrosecond; AValue : QWord) :
-    TTimeInterval.TMicrosecond;
-  operator- (ms : TTimeInterval.TMicrosecond; AValue :
-    TTimeInterval.TMicrosecond) : TTimeInterval.TMicrosecond;
-
-  operator* (ms : TTimeInterval.TMicrosecond; AValue : Word) :
-    TTimeInterval.TMicrosecond;
-
 implementation
 
-operator:=(AValue: QWord): TTimeInterval.TMicrosecond;
+{ TTimeInterval }
+
+function TTimeInterval.GetMicroseconds: QWord;
 begin
-  Result := TTimeInterval.TMicrosecond.Create(AValue);
+  Result := FMicroseconds.Value;
 end;
 
-operator:=(AValue: TTimeInterval.TMillisecond): TTimeInterval.TMicrosecond;
+procedure TTimeInterval.SetMicroseconds(AValue: Qword);
 begin
-  Result := TTimeInterval.TMicrosecond.Create(AValue);
+
 end;
 
-operator:=(AValue: TTimeInterval.TSecond): TTimeInterval.TMicrosecond;
+function TTimeInterval.GetMilliseconds: QWord;
 begin
-  Result := TTimeInterval.TMicrosecond.Create(AValue);
+  Result := FMilliseconds.Value;
 end;
 
-operator:=(AValue: TTimeInterval.TMinute): TTimeInterval.TMicrosecond;
+procedure TTimeInterval.SetMilliseconds(AValue: QWord);
 begin
-  Result := TTimeInterval.TMicrosecond.Create(AValue);
+
 end;
 
-operator:=(AValue: TTimeInterval.THour): TTimeInterval.TMicrosecond;
+function TTimeInterval.GetSeconds: QWord;
 begin
-  Result := TTimeInterval.TMicrosecond.Create(AValue);
+  Result := FSeconds.Value;
 end;
 
-operator+(ms: TTimeInterval.TMicrosecond; AValue: QWord
-  ): TTimeInterval.TMicrosecond;
+procedure TTimeInterval.SetSeconds(AValue: QWord);
 begin
-  Result := TTimeInterval.TMicrosecond.Create(ms.Value + AValue);
+
 end;
 
-operator+(ms: TTimeInterval.TMicrosecond; AValue: TTimeInterval.TMicrosecond
-  ): TTimeInterval.TMicrosecond;
+function TTimeInterval.GetMinutes: QWord;
 begin
-  Result := TTimeInterval.TMicrosecond.Create(ms.Value + AValue.Value);
+  Result := FMinutes.Value;
 end;
 
-operator-(ms: TTimeInterval.TMicrosecond; AValue: QWord
-  ): TTimeInterval.TMicrosecond;
+procedure TTimeInterval.SetMinutes(AValue: QWord);
 begin
-  if ms.Value >= AValue then
-    Result := TTimeInterval.TMicrosecond.Create(ms.Value - AValue)
-  else
-    Result := TTimeInterval.TMicrosecond.Create(0);
+
 end;
 
-operator-(ms: TTimeInterval.TMicrosecond; AValue: TTimeInterval.TMicrosecond
-  ): TTimeInterval.TMicrosecond;
+function TTimeInterval.GetHours: QWord;
 begin
-  if ms.Value >= AValue.Value then
-    Result := TTimeInterval.TMicrosecond.Create(ms.Value - AValue.Value)
-  else
-    Result := TTimeInterval.TMicrosecond.Create(0);
+  Result := FHours.Value;
 end;
 
-operator*(ms: TTimeInterval.TMicrosecond; AValue: Word
-  ): TTimeInterval.TMicrosecond;
+procedure TTimeInterval.SetHours(AValue: QWord);
 begin
-  if ms.Value > 0 then
-    Result := TTimeInterval.TMicrosecond.Create(ms.Value * AValue)
-  else
-    Result := TTimeInterval.TMicrosecond.Create(0);
+  FHours.Value := AValue;
+end;
+
+function TTimeInterval.GetStringValue: string;
+begin
+  Result := Format('%0.2d:%0.2d:%0.2d.%0.3d%0.3d',
+    [FHours.Value, FMinutes.Value, FSeconds.Value, FMilliseconds.Value,
+    FMicroseconds.Value]);
+end;
+
+constructor TTimeInterval.Create;
+begin
+  FMicroseconds := TMicrosecond.Create;
+  FMilliseconds := TMillisecond.Create;
+  FSeconds := TSecond.Create;
+  FMinutes := TMinute.Create;
+  FHours := THour.Create;
+end;
+
+destructor TTimeInterval.Destroy;
+begin
+  FreeAndNil(FMicroseconds);
+  FreeAndNil(FMilliseconds);
+  FreeAndNil(FSeconds);
+  FreeAndNil(FMinutes);
+  FreeAndNil(FHours);
+  inherited Destroy;
 end;
 
 { TTimeInterval.THour }
 
-function TTimeInterval.THour.GetValue: QWord;
-begin
-  Result := QWord(FMicroseconds div TTimeInterval.TSecond.MICROSECONDS_IN_SECOND
-    div SECONDS_IN_HOUR);
-end;
-
-procedure TTimeInterval.THour.SetValue(AValue: QWord);
-begin
-  FMicroseconds := AValue * TTimeInterval.TSecond.MICROSECONDS_IN_SECOND *
-    SECONDS_IN_HOUR;
-end;
-
 constructor TTimeInterval.THour.Create;
 begin
-  FMicroseconds := 0;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval: QWord);
-begin
-  FMicroseconds := AInterval * SECONDS_IN_HOUR *
-    TTimeInterval.TSecond.MICROSECONDS_IN_SECOND;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval, APrecision: QWord);
-begin
-  FMicroseconds := AInterval * SECONDS_IN_HOUR *
-    TTimeInterval.TSecond.MICROSECONDS_IN_SECOND + APrecision;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval: TMicrosecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval: TMillisecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval: TSecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.THour.Create(AInterval: TMinute);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FHours := 0;
 end;
 
 constructor TTimeInterval.THour.Create(AInterval: THour);
 begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FHours := AInterval.FHours;
+end;
+
+constructor TTimeInterval.THour.Create(AInterval: THourRange);
+begin
+  FHours := AInterval;
 end;
 
 destructor TTimeInterval.THour.Destroy;
@@ -5383,58 +5297,19 @@ end;
 
 { TTimeInterval.TMinute }
 
-function TTimeInterval.TMinute.GetValue: QWord;
-begin
-  Result := QWord(FMicroseconds div TTimeInterval.TSecond.MICROSECONDS_IN_SECOND
-    div SECONDS_IN_MINUTE);
-end;
-
-procedure TTimeInterval.TMinute.SetValue(AValue: QWord);
-begin
-  FMicroseconds := AValue * TTimeInterval.TSecond.MICROSECONDS_IN_SECOND *
-    SECONDS_IN_MINUTE;
-end;
-
 constructor TTimeInterval.TMinute.Create;
 begin
-  FMicroseconds := 0;
+  FMinutes := 0;
 end;
 
-constructor TTimeInterval.TMinute.Create(AInterval: QWord);
+constructor TTimeInterval.TMinute.Create(AInterval: TMinuteRange);
 begin
-  FMicroseconds := AInterval * TTimeInterval.TSecond.MICROSECONDS_IN_SECOND *
-    SECONDS_IN_MINUTE;
-end;
-
-constructor TTimeInterval.TMinute.Create(AInterval, APrecision: QWord);
-begin
-  FMicroseconds := AInterval * TTimeInterval.TSecond.MICROSECONDS_IN_SECOND *
-    SECONDS_IN_MINUTE + APrecision;
-end;
-
-constructor TTimeInterval.TMinute.Create(AInterval: TMicrosecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMinute.Create(AInterval: TMillisecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMinute.Create(AInterval: TSecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FMinutes := AInterval;
 end;
 
 constructor TTimeInterval.TMinute.Create(AInterval: TMinute);
 begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMinute.Create(AInterval: THour);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FMinutes := AInterval.FMinutes;
 end;
 
 destructor TTimeInterval.TMinute.Destroy;
@@ -5444,54 +5319,19 @@ end;
 
 { TTimeInterval.TSecond }
 
-function TTimeInterval.TSecond.GetValue: QWord;
-begin
-  Result := FMicroseconds * MICROSECONDS_IN_SECOND;
-end;
-
-procedure TTimeInterval.TSecond.SetValue(AValue: QWord);
-begin
-  FMicroseconds := AValue * MICROSECONDS_IN_SECOND;
-end;
-
 constructor TTimeInterval.TSecond.Create;
 begin
-  FMicroseconds := 0;
+  FSeconds := 0;
 end;
 
-constructor TTimeInterval.TSecond.Create(AInterval: QWord);
+constructor TTimeInterval.TSecond.Create(AInterval: TSecondRange);
 begin
-  FMicroseconds := AInterval * MICROSECONDS_IN_SECOND;
-end;
-
-constructor TTimeInterval.TSecond.Create(AInterval, APrecision: QWord);
-begin
-  FMicroseconds := AInterval * MICROSECONDS_IN_SECOND + APrecision;
-end;
-
-constructor TTimeInterval.TSecond.Create(AInterval: TMicrosecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TSecond.Create(AInterval: TMillisecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FSeconds := AInterval;
 end;
 
 constructor TTimeInterval.TSecond.Create(AInterval: TSecond);
 begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TSecond.Create(AInterval: TMinute);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TSecond.Create(AInterval: THour);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FSeconds := AInterval.FSeconds;
 end;
 
 destructor TTimeInterval.TSecond.Destroy;
@@ -5501,70 +5341,24 @@ end;
 
 { TTimeInterval.TMillisecond }
 
-function TTimeInterval.TMillisecond.GetValue: QWord;
-begin
-  Result := QWord(FMicroseconds div MICROSECONDS_IN_MILLISECOND);
-end;
-
-procedure TTimeInterval.TMillisecond.SetValue(AValue: QWord);
-begin
-  FMicroseconds := AValue * MICROSECONDS_IN_MILLISECOND;
-end;
-
 constructor TTimeInterval.TMillisecond.Create;
 begin
-  FMicroseconds := 0;
+  FMilliseconds := 0;
 end;
 
-constructor TTimeInterval.TMillisecond.Create(AInterval: QWord);
+constructor TTimeInterval.TMillisecond.Create(AInterval: TMillisecondRange);
 begin
-  FMicroseconds := AInterval * MICROSECONDS_IN_MILLISECOND;
-end;
-
-constructor TTimeInterval.TMillisecond.Create(AInterval, APrecision: QWord);
-begin
-  FMicroseconds := AInterval * MICROSECONDS_IN_MILLISECOND + APrecision;
-end;
-
-constructor TTimeInterval.TMillisecond.Create(AInterval: TMicrosecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FMilliseconds := AInterval;
 end;
 
 constructor TTimeInterval.TMillisecond.Create(AInterval: TMillisecond);
 begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMillisecond.Create(AInterval: TSecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMillisecond.Create(AInterval: TMinute);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMillisecond.Create(AInterval: THour);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
+  FMilliseconds := AInterval.FMilliseconds;
 end;
 
 destructor TTimeInterval.TMillisecond.Destroy;
 begin
   inherited Destroy;
-end;
-
-function TTimeInterval.TMillisecond.Format(AFormat: string): string;
-var
-  millisec : QWord;
-  microsec : QWord;
-begin
-  millisec := FMicroseconds div MICROSECONDS_IN_MILLISECOND;
-  microsec := FMicroseconds - (millisec * MICROSECONDS_IN_MILLISECOND);
-
-  Result := SysUtils.Format(AFormat, [0, 0, 0, millisec, microsec]);
 end;
 
 { TTimeInterval.TMicrosecond }
@@ -5574,7 +5368,7 @@ begin
   FMicroseconds := 0;
 end;
 
-constructor TTimeInterval.TMicrosecond.Create(AInterval: QWord);
+constructor TTimeInterval.TMicrosecond.Create(AInterval: TMicrosecondRange);
 begin
   FMicroseconds := AInterval;
 end;
@@ -5584,34 +5378,9 @@ begin
   FMicroseconds := AInterval.FMicroseconds;
 end;
 
-constructor TTimeInterval.TMicrosecond.Create(AInterval: TMillisecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMicrosecond.Create(AInterval: TSecond);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMicrosecond.Create(AInterval: TMinute);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
-constructor TTimeInterval.TMicrosecond.Create(AInterval: THour);
-begin
-  FMicroseconds := AInterval.FMicroseconds;
-end;
-
 destructor TTimeInterval.TMicrosecond.Destroy;
 begin
   inherited Destroy;
-end;
-
-function TTimeInterval.TMicrosecond.Format(AFormat: string): string;
-begin
-  Result := SysUtils.Format(AFormat, [0, 0, 0, 0, FMicroseconds]);
 end;
 
 { TSession.TRTSPProperty }
@@ -5793,7 +5562,7 @@ end;
 procedure TSession.TFTPProperty.SetResponseTimeout(ATimeout: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_FTP_RESPONSE_TIMEOUT,
-    Longint(ATimeout.Seconds.Value));
+    Longint(ATimeout.Seconds));
 end;
 
 procedure TSession.TFTPProperty.SetAlternativeToUser(ACmd: string);
@@ -5875,7 +5644,7 @@ end;
 procedure TSession.TFTPProperty.SetAcceptTimeout(ATime: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_ACCEPTTIMEOUT_MS,
-    Longint(ATime.Milliseconds.Value));
+    Longint(ATime.Milliseconds));
 end;
 
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
@@ -6365,7 +6134,7 @@ end;
 procedure TSession.THTTPProperty.SetExpect100Timeout(ATimeout: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_EXPECT_100_TIMEOUT_MS,
-    Longint(ATimeout.Milliseconds.Value));
+    Longint(ATimeout.Milliseconds));
 end;
 
 procedure TSession.THTTPProperty.SetPipeWait(AEnable: Boolean);
@@ -6524,7 +6293,7 @@ end;
 procedure TSession.TDNSProperty.SetDNSCacheTimeout(ATimeout: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_DNS_CACHE_TIMEOUT,
-    Longint(ATimeout.Seconds.Value));
+    Longint(ATimeout.Seconds));
 end;
 
 procedure TSession.TDNSProperty.SetDNSGlobalCache(AEnable: Boolean);
@@ -6777,13 +6546,13 @@ end;
 procedure TSession.TTCPProperty.SetTCPKeepIdle(ATime: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPIDLE,
-    Longint(ATime.Seconds.Value));
+    Longint(ATime.Seconds));
 end;
 
 procedure TSession.TTCPProperty.SetTCPKeepInterval(ATime: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPINTVL,
-    Longint(ATime.Seconds.Value));
+    Longint(ATime.Seconds));
 end;
 
 constructor TSession.TTCPProperty.Create(AHandle: CURL);
@@ -6862,11 +6631,11 @@ end;
 
 procedure TSession.TOptionsProperty.SetTimeout(ATime: TTimeInterval);
 begin
-  if ATime.Seconds.Value >= 1 then
-    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT, Longint(ATime.Seconds.Value))
+  if ATime.Seconds >= 1 then
+    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT, Longint(ATime.Seconds))
   else
     curl_easy_setopt(FHandle, CURLOPT_TIMEOUT_MS,
-      Longint(ATime.Milliseconds.Value));
+      Longint(ATime.Milliseconds));
 end;
 
 procedure TSession.TOptionsProperty.SetLowSpeedLimit(ASize: TDataSize);
@@ -6877,7 +6646,7 @@ end;
 procedure TSession.TOptionsProperty.SetLowSpeedTime(ATime: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_TIME,
-    Longint(ATime.Seconds.Value));
+    Longint(ATime.Seconds));
 end;
 
 procedure TSession.TOptionsProperty.SetMaxUploadSpeed(ASize: TDataSize);
@@ -6909,17 +6678,17 @@ end;
 procedure TSession.TOptionsProperty.SetMaxReuseConnectionTime(
   ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXAGE_CONN, Longint(ATime.Seconds.Value));
+  curl_easy_setopt(FHandle, CURLOPT_MAXAGE_CONN, Longint(ATime.Seconds));
 end;
 
 procedure TSession.TOptionsProperty.SetConnectionTimeout(ATime: TTimeInterval);
 begin
-  if ATime.Seconds.Value >= 1 then
+  if ATime.Seconds >= 1 then
     curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT,
-      Longint(ATime.Seconds.Value))
+      Longint(ATime.Seconds))
   else
     curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT_MS,
-      Longint(ATime.Milliseconds.Value));
+      Longint(ATime.Milliseconds));
 end;
 
 procedure TSession.TOptionsProperty.SetIPResolve(AResolve: TIPResolve);
@@ -6931,13 +6700,13 @@ procedure TSession.TOptionsProperty.SetHappyEyeballsTimeout(ATime: TTimeInterval
   );
 begin
   curl_easy_setopt(FHandle, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
-    Longint(ATime.Milliseconds.Value));
+    Longint(ATime.Milliseconds));
 end;
 
 procedure TSession.TOptionsProperty.SetUpkeepInterval(ATime: TTimeInterval);
 begin
   curl_easy_setopt(FHandle, CURLOPT_UPKEEP_INTERVAL_MS,
-    Longint(ATime.Milliseconds.Value));
+    Longint(ATime.Milliseconds));
 end;
 
 constructor TSession.TOptionsProperty.Create(AHandle: CURL);
@@ -7033,68 +6802,6 @@ begin
     dsGigaBytes : Result := FormatFloat(FormatType, GigaBytes);
     dsTeraBytes : Result := FormatFloat(FormatType, TeraBytes);
   end;
-end;
-
-{ TTimeInterval }
-
-function TTimeInterval.GetMicroseconds: TMicrosecond;
-begin
-  Result.FMicroseconds := Self.FMicroseconds.FMicroseconds;
-end;
-
-function TTimeInterval.GetMilliseconds: TMillisecond;
-begin
-  Result.FMicroseconds := Self.FMicroseconds.FMicroseconds;
-end;
-
-function TTimeInterval.GetSeconds: TSecond;
-begin
-  Result.FMicroseconds := Self.FMicroseconds.FMicroseconds;
-end;
-
-function TTimeInterval.GetMinutes: TMinute;
-begin
-  Result.FMicroseconds := Self.FMicroseconds.FMicroseconds;
-end;
-
-function TTimeInterval.GetHours: THour;
-begin
-  Result.FMicroseconds := Self.FMicroseconds.FMicroseconds;
-end;
-
-constructor TTimeInterval.Create;
-begin
-  FMicroseconds := TMicrosecond.Create;
-end;
-
-constructor TTimeInterval.Create(AInterval: TMicrosecond);
-begin
-  FMicroseconds := TMicrosecond.Create(AInterval);
-end;
-
-constructor TTimeInterval.Create(AInterval: TMillisecond);
-begin
-  FMicroseconds := TMicrosecond.Create(AInterval);
-end;
-
-constructor TTimeInterval.Create(AInterval: TSecond);
-begin
-  FMicroseconds := TMicrosecond.Create(AInterval);
-end;
-
-constructor TTimeInterval.Create(AInterval: TMinute);
-begin
-  FMicroseconds := TMicrosecond.Create(AInterval);
-end;
-
-constructor TTimeInterval.Create(AInterval: THour);
-begin
-  FMicroseconds := TMicrosecond.Create(AInterval);
-end;
-
-destructor TTimeInterval.Destroy;
-begin
-  inherited Destroy;
 end;
 
 { TResponse }
@@ -7388,13 +7095,14 @@ begin
   begin
     CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME_T,
       @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
 
     if CurlResult <> CURLE_OK then
     begin
       curl_easy_getinfo(session.FHandle, CURLINFO_TOTAL_TIME, @dtime);
-      Result := TTimeInterval.Create(
-        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+      Result := TTimeInterval.Create;
+      Result.Milliseconds := ceil(dtime);
     end;
   end;
 end;
@@ -7409,13 +7117,14 @@ begin
   begin
     CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME_T,
       @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
 
     if CurlResult <> CURLE_OK then
     begin
       curl_easy_getinfo(session.FHandle, CURLINFO_NAMELOOKUP_TIME, @dtime);
-      Result := TTimeInterval.Create(
-        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+      Result := TTimeInterval.Create;
+      Result.Milliseconds := ceil(dtime);
     end;
   end;
 end;
@@ -7430,13 +7139,14 @@ begin
   begin
     CurlResult := curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME_T,
       @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time));
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
 
     if CurlResult <> CURLE_OK then
     begin
       curl_easy_getinfo(session.FHandle, CURLINFO_CONNECT_TIME, @dtime);
-      Result := TTimeInterval.Create(
-        TTimeInterval.TMillisecond.Create(ceil(dtime)));
+      Result := TTimeInterval.Create;
+      Result.Milliseconds := ceil(dtime);
     end;
   end;
 end;
@@ -7448,7 +7158,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_APPCONNECT_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
   end;
 end;
 
@@ -7459,7 +7170,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_PRETRANSFER_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
   end;
 end;
 
@@ -7470,7 +7182,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_STARTTRANSFER_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
   end;
 end;
 
@@ -7481,7 +7194,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_REDIRECT_TIME_T, @time);
-    Result := TTimeInterval.Create(TTimeInterval.TMillisecond.Create(time))
+    Result := TTimeInterval.Create;
+    Result.Milliseconds := time;
   end;
 end;
 
@@ -7492,7 +7206,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_RETRY_AFTER, @delay);
-    Result := TTimeInterval.Create(TTimeInterval.TSecond.Create(delay))
+    Result := TTimeInterval.Create;
+    Result.Seconds := delay;
   end;
 end;
 
