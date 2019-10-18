@@ -5204,7 +5204,14 @@ end;
 
 procedure TTimeInterval.SetMicroseconds(AValue: Qword);
 begin
-
+  if AValue <= High(TMicrosecondRange) then
+  begin
+    FMicroseconds.Value := AValue;
+  end else
+  begin
+    FMicroseconds.Value := AValue mod 1000;
+    Milliseconds := AValue div 1000;
+  end;
 end;
 
 function TTimeInterval.GetMilliseconds: QWord;
@@ -5214,7 +5221,14 @@ end;
 
 procedure TTimeInterval.SetMilliseconds(AValue: QWord);
 begin
-
+  if AValue <= High(TMillisecondRange) then
+  begin
+    FMilliseconds.Value := AValue;
+  end else
+  begin
+    FMilliseconds.Value := AValue mod 1000;
+    Seconds := AValue div 1000;
+  end;
 end;
 
 function TTimeInterval.GetSeconds: QWord;
@@ -5224,7 +5238,14 @@ end;
 
 procedure TTimeInterval.SetSeconds(AValue: QWord);
 begin
-
+  if AValue <= High(TSecondRange) then
+  begin
+    FSeconds.Value := AValue;
+  end else
+  begin
+    FSeconds.Value := AValue mod 60;
+    Minutes := AValue div 60;
+  end;
 end;
 
 function TTimeInterval.GetMinutes: QWord;
@@ -5234,7 +5255,14 @@ end;
 
 procedure TTimeInterval.SetMinutes(AValue: QWord);
 begin
-
+  if AValue <= High(TMinuteRange) then
+  begin
+    FMinutes.Value := AValue;
+  end else
+  begin
+    FMinutes.Value := AValue mod 60;
+    Hours := AValue div 60;
+  end;
 end;
 
 function TTimeInterval.GetHours: QWord;
