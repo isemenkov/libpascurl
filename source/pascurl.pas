@@ -130,30 +130,37 @@ type
     FMinutes : TMinute;
     FHours : THour;
 
-    function GetMicroseconds : QWord;
-    procedure SetMicroseconds (AValue : Qword);
-    function GetMilliseconds : QWord;
-    procedure SetMilliseconds (AValue : QWord);
-    function GetSeconds : QWord;
-    procedure SetSeconds (AValue : QWord);
-    function GetMinutes : QWord;
-    procedure SetMinutes (AValue : QWord);
-    function GetHours : QWord;
-    procedure SetHours (AValue : QWord);
-    function GetStringValue : string;
+    function GetMicroseconds : QWord; inline;
+    procedure SetMicroseconds (AValue : Qword); inline;
+    function GetMilliseconds : QWord; inline;
+    procedure SetMilliseconds (AValue : QWord); inline;
+    function GetSeconds : QWord; inline;
+    procedure SetSeconds (AValue : QWord); inline;
+    function GetMinutes : QWord; inline;
+    procedure SetMinutes (AValue : QWord); inline;
+    function GetHours : QWord; inline;
+    procedure SetHours (AValue : QWord); inline;
   public
     constructor Create;
     destructor Destroy; override;
 
-    property Microseconds : QWord read GetMicroseconds
-      write SetMicroseconds;
-    property Milliseconds : QWord read GetMilliseconds
-      write SetMilliseconds;
-    property Seconds : QWord read GetSeconds write SetSeconds;
-    property Minutes : QWord read GetMinutes write SetMinutes;
-    property Hours : QWord read GetHours write SetHours;
+    function ToMicroseconds : QWord; inline;
+    function ToMilliseconds : QWord; inline;
+    function ToSeconds : QWord; inline;
+    function ToMinutes : QWord; inline;
+    function ToHours : QWord; inline;
+    function ToString : string; inline;
 
-    property StringValue : string read GetStringValue;
+    property Microseconds : QWord read GetMicroseconds write SetMicroseconds;
+    property us : QWord read GetMicroseconds write SetMicroseconds;
+    property Milliseconds : QWord read GetMilliseconds write SetMilliseconds;
+    property ms : QWord read GetMilliseconds write SetMilliseconds;
+    property Seconds : QWord read GetSeconds write SetSeconds;
+    property s : QWord read GetSeconds write SetSeconds;
+    property Minutes : QWord read GetMinutes write SetMinutes;
+    property m : QWord read GetMinutes write SetMinutes;
+    property Hours : QWord read GetHours write SetHours;
+    property h : QWord read GetHours write SetHours;
   end;
 
   { TDataSize }
@@ -5275,7 +5282,7 @@ begin
   FHours.Value := AValue;
 end;
 
-function TTimeInterval.GetStringValue: string;
+function TTimeInterval.ToString: string;
 begin
   Result := Format('%0.2d:%0.2d:%0.2d.%0.3d%0.3d',
     [FHours.Value, FMinutes.Value, FSeconds.Value, FMilliseconds.Value,
@@ -5299,6 +5306,59 @@ begin
   FreeAndNil(FMinutes);
   FreeAndNil(FHours);
   inherited Destroy;
+end;
+
+function TTimeInterval.ToMicroseconds: QWord;
+begin
+  Result := 0;
+  if FHours.Value > 0 then
+    Result := Result + (FHours.Value * 3600000000);
+  if FMinutes.Value > 0 then
+    Result := Result + (FMinutes.Value * 60000000);
+  if FSeconds.Value > 0 then
+    Result := Result + (FSeconds.Value * 1000000);
+  if FMilliseconds.Value > 0 then
+    Result := Result + (FMilliseconds.Value * 1000);
+  if FMicroseconds.Value > 0 then
+    Result := Result + FMicroseconds.Value;
+end;
+
+function TTimeInterval.ToMilliseconds: QWord;
+begin
+  Result := 0;
+  if FHours.Value > 0 then
+    Result := Result + (FHours.Value * 3600000);
+  if FMinutes.Value > 0 then
+    Result := Result + (FMinutes.Value * 60000);
+  if FSeconds.Value > 0 then
+    Result := Result + (FSeconds.Value * 1000);
+  if FMilliseconds.Value > 0 then
+    Result := Result + FMilliseconds.Value;
+end;
+
+function TTimeInterval.ToSeconds: QWord;
+begin
+  Result := 0;
+  if FHours.Value > 0 then
+    Result := Result + (FHours.Value * 3600);
+  if FMinutes.Value > 0 then
+    Result := Result + (FMinutes.Value * 60);
+  if FSeconds.Value > 0 then
+    Result := Result + FSeconds.Value;
+end;
+
+function TTimeInterval.ToMinutes: QWord;
+begin
+  Result := 0;
+  if FHours.Value > 0 then
+    Result := Result + (FHours.Value * 60);
+  if FMinutes.Value > 0 then
+    Result := Result + FMinutes.Value;
+end;
+
+function TTimeInterval.ToHours: QWord;
+begin
+  Result := FHours.Value;
 end;
 
 { TTimeInterval.THour }
