@@ -149,7 +149,7 @@ type
     function ToSeconds : QWord; inline;
     function ToMinutes : QWord; inline;
     function ToHours : QWord; inline;
-    function ToString : string; inline;
+    function {%H-}ToString(ASuffix : string = '') : string; inline;
 
     property Microseconds : QWord read GetMicroseconds write SetMicroseconds;
     property us : QWord read GetMicroseconds write SetMicroseconds;
@@ -168,67 +168,98 @@ type
   TDataSize = class
   public
     type
-      TDataSizeType = (
-        dsBytes,
-        dsKiloBytes,
-        dsMegaBytes,
-        dsGigaBytes,
-        dsTeraBytes
-      );
-  protected
-    FBytes : QWord;
+      TByteRange = 0 .. 1023;
+      TKilobyteRange = 0 .. 1023;
+      TMegabyteRange = 0 .. 1023;
+      TGigabyteRange = type QWord;
 
-    function  GetBytes : QWord;
-    procedure SetBytes (bytes : QWord);
-    function  GetKiloBytes : Double;
-    procedure SetKiloBytes (Kb : Double);
-    function  GetMegaBytes : Double;
-    procedure SetMegaBytes (Mb : Double);
-    function  GetGigaBytes : Double;
-    procedure SetGigaBytes (Gb : Double);
-    function  GetTeraBytes : Double;
-    procedure SetTeraBytes (Tb : Double);
+      { TByte }
+
+      TByte = class
+      private
+        FBytes : TByteRange;
+      public
+        constructor Create;
+        constructor Create (ASize : TByteRange);
+        constructor Create (ASize : TByte);
+        destructor Destroy; override;
+
+        property Value : TByteRange read FBytes write FBytes;
+      end;
+
+      { TKilobyte }
+
+      TKilobyte = class
+      private
+        FKilobytes : TKilobyteRange;
+      public
+        constructor Create;
+        constructor Create (ASize : TKilobyteRange);
+        constructor Create (ASize : TKilobyte);
+        destructor Destroy; override;
+
+        property Value : TKilobyteRange read FKilobytes write FKilobytes;
+      end;
+
+      { TMegabyte }
+
+      TMegabyte = class
+      private
+        FMegabytes : TMegabyteRange;
+      public
+        constructor Create;
+        constructor Create (ASize : TMegabyteRange);
+        constructor Create (ASize : TMegabyte);
+        destructor Destroy; override;
+
+        property Value : TMegabyteRange read FMegabytes write FMegabytes;
+      end;
+
+      { TGigabyte }
+
+      TGigabyte = class
+      private
+        FGigabytes : TGigabyteRange;
+      public
+        constructor Create;
+        constructor Create (ASize : TGigabyteRange);
+        constructor Create (ASize : TGigabyte);
+        destructor Destroy; override;
+
+        property Value : TGigabyteRange read FGigabytes write FGigabytes;
+      end;
+  private
+    FBytes : TByte;
+    FKilobytes : TKilobyte;
+    FMegabytes : TMegabyte;
+    FGigabytes : TGigabyte;
+
+    function GetBytes : QWord; inline;
+    procedure SetBytes (ASize : QWord); inline;
+    function GetKilobytes : QWord; inline;
+    procedure SetKilobytes (ASize : QWord); inline;
+    function GetMegabytes : QWord; inline;
+    procedure SetMegabytes (ASize : QWord); inline;
+    function GetGigabytes : QWord; inline;
+    procedure SetGigabytes (ASize : QWord); inline;
   public
     constructor Create;
-    constructor Create (Bytes : QWord);
-    constructor Create (Size : Double; SizeType : TDataSizeType);
-    (**
-     * Formats data size using the format specification
-     *
-     * The following format specifiers are supported:
-     *  0  is a digit place holder. If there is a corresponding digit in the
-     *     value being formatted, then it replaces the 0. If not, the 0 is left
-     *     as-is.
-     *  #  is also a digit place holder. If there is a corresponding digit in
-     *     the value being formatted, then it replaces the #. If not, it is
-     *     removed
-     *  .  determines the location of the decimal point. Only the first '.'
-     *     character is taken into account.
-     *  ,  determines the use of the thousand separator character in the output
-     *     string.
-     *)
-    function Format (SizeType : TDataSizeType = dsMegaBytes;
-      const FormatType : string = '0.###') : string;
+    destructor Destroy; override;
 
-    (* 1024 Gb *)
-    property TeraBytes : Double read GetTeraBytes write SetTeraBytes;
-    property TB : Double read GetTeraBytes write SetTeraBytes;
+    function ToBytes : QWord; inline;
+    function ToKilobytes : QWord; inline;
+    function ToMegabytes : QWord; inline;
+    function ToGigabytes : QWord; inline;
+    function {%H-}ToString (ASuffix : string = '') : string; inline;
 
-    (* 1024 Mb *)
-    property GigaBytes : Double read GetGigaBytes write SetGigaBytes;
-    property GB : Double read GetGigaBytes write SetGigaBytes;
-
-    (* 1024 Kb *)
-    property MegaBytes : Double read GetMegaBytes write SetMegaBytes;
-    property MB : Double read GetMegaBytes write SetMegaBytes;
-
-    (* 1024 b *)
-    property KiloBytes : Double read GetKiloBytes write SetKiloBytes;
-    property KB : Double read GetKiloBytes write SetKiloBytes;
-
-    (* b *)
     property Bytes : QWord read GetBytes write SetBytes;
-    property B : QWord read GetBytes write SetBytes;
+    property b : QWord read GetBytes write SetBytes;
+    property Kilobytes : QWord read GetKilobytes write SetKilobytes;
+    property KiB : QWord read GetKilobytes write SetKilobytes;
+    property Megabytes : QWord read GetMegabytes write SetMegabytes;
+    property MiB : QWord read GetMegabytes write SetMegabytes;
+    property Gigabytes : QWord read GetGigabytes write SetGigabytes;
+    property GiB : QWord read GetGigabytes write SetGigabytes;
   end;
 
   { TSession }
@@ -5202,6 +5233,235 @@ type
 
 implementation
 
+{ TDataSize }
+
+function TDataSize.GetBytes: QWord;
+begin
+  Result := FBytes.Value;
+end;
+
+procedure TDataSize.SetBytes(ASize: QWord);
+begin
+  if ASize <= High(TByteRange) then
+  begin
+    FBytes.Value := ASize;
+  end else
+  begin
+    FBytes.Value := ASize mod 1024;
+    Kilobytes := ASize div 1024;
+  end;
+end;
+
+function TDataSize.GetKilobytes: QWord;
+begin
+  Result := FKilobytes.Value;
+end;
+
+procedure TDataSize.SetKilobytes(ASize: QWord);
+begin
+  if ASize <= High(TKilobyteRange) then
+  begin
+    FKilobytes.Value := ASize;
+  end else
+  begin
+    FKilobytes.Value := ASize mod 1024;
+    Megabytes := ASize div 1024;
+  end;
+end;
+
+function TDataSize.GetMegabytes: QWord;
+begin
+  Result := FMegabytes.Value;
+end;
+
+procedure TDataSize.SetMegabytes(ASize: QWord);
+begin
+  if ASize <= High(TMegabyteRange) then
+  begin
+    FMegabytes.Value := ASize;
+  end else
+  begin
+    FMegabytes.Value := ASize mod 1024;
+    Gigabytes := ASize div 1024;
+  end;
+end;
+
+function TDataSize.GetGigabytes: QWord;
+begin
+  Result := FGigabytes.Value;
+end;
+
+procedure TDataSize.SetGigabytes(ASize: QWord);
+begin
+  FGigabytes.Value := ASize;
+end;
+
+constructor TDataSize.Create;
+begin
+  FBytes := TByte.Create;
+  FKilobytes := TKilobyte.Create;
+  FMegabytes := TMegabyte.Create;
+  FGigabytes := TGigabyte.Create;
+end;
+
+destructor TDataSize.Destroy;
+begin
+  FreeAndNil(FBytes);
+  FreeAndNil(FKilobytes);
+  FreeAndNil(FMegabytes);
+  FreeAndNil(FGigabytes);
+
+  inherited Destroy;
+end;
+
+function TDataSize.ToBytes: QWord;
+begin
+  Result := 0;
+  if FGigabytes.Value > 0 then
+    Result := Result + (FGigabytes.Value * 1073741824);
+  if FMegabytes.Value > 0 then
+    Result := Result + (FMegabytes.Value * 1048576);
+  if FKilobytes.Value > 0 then
+    Result := Result + (FKilobytes.Value * 1024);
+  if FBytes.Value > 0 then
+    Result := Result + FBytes.Value;
+end;
+
+function TDataSize.ToKilobytes: QWord;
+begin
+  Result := 0;
+  if FGigabytes.Value > 0 then
+    Result := Result + (FGigabytes.Value * 1048576);
+  if FMegabytes.Value > 0 then
+    Result := Result + (FMegabytes.Value * 1024);
+  if FKilobytes.Value > 0 then
+    Result := Result + FKilobytes.Value;
+end;
+
+function TDataSize.ToMegabytes: QWord;
+begin
+  Result := 0;
+  if FGigabytes.Value > 0 then
+    Result := Result + (FGigabytes.Value * 1024);
+  if FMegabytes.Value > 0 then
+    Result := Result + FMegabytes.Value;
+end;
+
+function TDataSize.ToGigabytes: QWord;
+begin
+  Result := FGigabytes.Value;
+end;
+
+function TDataSize.ToString (ASuffix : string): string;
+begin
+  if FGigabytes.Value > 0 then
+  begin
+    Result := Format('%0.2d,%0.2d',
+      [FGigabytes.Value, FMegabytes.Value]) + ' GiB' + ASuffix;
+  end else
+  if FMegabytes.Value > 0 then
+  begin
+    Result := Format('%0.2d,%0.2d',
+      [FMegabytes.Value, FKilobytes.Value]) + 'MiB' + ASuffix;
+  end else
+  if FKilobytes.Value > 0 then
+  begin
+    Result := Format('%0.2d,%0.2d',
+      [FKilobytes.Value, FBytes.Value]) + ' KiB' + ASuffix;
+  end else
+  begin
+    Result := Format('%0.2d', [FBytes.Value]) + ' B' + ASuffix;
+  end;
+end;
+
+{ TDataSize.TGigabyte }
+
+constructor TDataSize.TGigabyte.Create;
+begin
+  FGigabytes := 0;
+end;
+
+constructor TDataSize.TGigabyte.Create(ASize: TGigabyteRange);
+begin
+  FGigabytes := ASize;
+end;
+
+constructor TDataSize.TGigabyte.Create(ASize: TGigabyte);
+begin
+  FGigabytes := ASize.Value;
+end;
+
+destructor TDataSize.TGigabyte.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TDataSize.TMegabyte }
+
+constructor TDataSize.TMegabyte.Create;
+begin
+  FMegabytes := 0;
+end;
+
+constructor TDataSize.TMegabyte.Create(ASize: TMegabyteRange);
+begin
+  FMegabytes := ASize;
+end;
+
+constructor TDataSize.TMegabyte.Create(ASize: TMegabyte);
+begin
+  FMegabytes := ASize.Value;
+end;
+
+destructor TDataSize.TMegabyte.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TDataSize.TKilobyte }
+
+constructor TDataSize.TKilobyte.Create;
+begin
+  FKilobytes := 0;
+end;
+
+constructor TDataSize.TKilobyte.Create(ASize: TKilobyteRange);
+begin
+  FKilobytes := ASize;
+end;
+
+constructor TDataSize.TKilobyte.Create(ASize: TKilobyte);
+begin
+  FKilobytes := ASize.Value;
+end;
+
+destructor TDataSize.TKilobyte.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TDataSize.TByte }
+
+constructor TDataSize.TByte.Create;
+begin
+  FBytes := 0;
+end;
+
+constructor TDataSize.TByte.Create(ASize: TByteRange);
+begin
+  FBytes := ASize;
+end;
+
+constructor TDataSize.TByte.Create(ASize: TByte);
+begin
+  FBytes := ASize.Value;
+end;
+
+destructor TDataSize.TByte.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TTimeInterval }
 
 function TTimeInterval.GetMicroseconds: QWord;
@@ -5282,11 +5542,11 @@ begin
   FHours.Value := AValue;
 end;
 
-function TTimeInterval.ToString: string;
+function TTimeInterval.ToString(ASuffix : string): string;
 begin
   Result := Format('%0.2d:%0.2d:%0.2d.%0.3d%0.3d',
     [FHours.Value, FMinutes.Value, FSeconds.Value, FMilliseconds.Value,
-    FMicroseconds.Value]);
+    FMicroseconds.Value]) + ASuffix;
 end;
 
 constructor TTimeInterval.Create;
@@ -6807,91 +7067,6 @@ begin
   inherited Destroy;
 end;
 
-{ TDataSize }
-
-function TDataSize.GetBytes: QWord;
-begin
-  Result := FBytes;
-end;
-
-procedure TDataSize.SetBytes(bytes: QWord);
-begin
-  FBytes := bytes;
-end;
-
-function TDataSize.GetKiloBytes: Double;
-begin
-  Result := FBytes / 1024;
-end;
-
-procedure TDataSize.SetKiloBytes(Kb: Double);
-begin
-  FBytes := QWord(Kb * 1024);
-end;
-
-function TDataSize.GetMegaBytes: Double;
-begin
-  Result := FBytes / (1024 * 1024);
-end;
-
-procedure TDataSize.SetMegaBytes(Mb: Double);
-begin
-  FBytes := QWord(Mb * (1024 * 1024));
-end;
-
-function TDataSize.GetGigaBytes: Double;
-begin
-  Result := FBytes / (1024 * 1024 * 1024);
-end;
-
-procedure TDataSize.SetGigaBytes(Gb: Double);
-begin
-  FBytes := QWord(Gb * (1024 * 1024 * 1024));
-end;
-
-function TDataSize.GetTeraBytes: Double;
-begin
-  Result := FBytes / (1024 * 1024 * 1024 * 1024);
-end;
-
-procedure TDataSize.SetTeraBytes(Tb: Double);
-begin
-  FBytes := QWord(Tb * (1024 * 1024 * 1024 * 1024));
-end;
-
-constructor TDataSize.Create;
-begin
-  // do nothing!
-end;
-
-constructor TDataSize.Create(Bytes: QWord);
-begin
-  FBytes := Bytes;
-end;
-
-constructor TDataSize.Create(Size: Double; SizeType: TDataSizeType);
-begin
-  case SizeType of
-    dsBytes : Bytes := QWord(Ceil(Size));
-    dsKiloBytes : KiloBytes := Size;
-    dsMegaBytes : MegaBytes := Size;
-    dsGigaBytes : GigaBytes := Size;
-    dsTeraBytes : TeraBytes := Size;
-  end;
-end;
-
-function TDataSize.Format(SizeType: TDataSizeType;
-  const FormatType: string): string;
-begin
-  case SizeType of
-    dsBytes : Result := FormatFloat(FormatType, Double(Bytes));
-    dsKiloBytes : Result := FormatFloat(FormatType, KiloBytes);
-    dsMegaBytes : Result := FormatFloat(FormatType, MegaBytes);
-    dsGigaBytes : Result := FormatFloat(FormatType, GigaBytes);
-    dsTeraBytes : Result := FormatFloat(FormatType, TeraBytes);
-  end;
-end;
-
 { TResponse }
 
 function TResponse.IsOpened: Boolean;
@@ -7058,7 +7233,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_SIZE_UPLOAD_T, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
@@ -7069,7 +7245,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_SIZE_DOWNLOAD_T, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
@@ -7080,7 +7257,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
@@ -7091,7 +7269,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_SPEED_UPLOAD_T, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
@@ -7102,7 +7281,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_HEADER_SIZE, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
@@ -7113,7 +7293,8 @@ begin
   if Opened then
   begin
     curl_easy_getinfo(session.FHandle, CURLINFO_REQUEST_SIZE, @bytes);
-    Result := TDataSize.Create(bytes);
+    Result := TDataSize.Create;
+    Result.Bytes := bytes;
   end;
 end;
 
