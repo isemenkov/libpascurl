@@ -66,43 +66,49 @@ object pascal wrapper around cURL library
 #### Usage example
 
 ```pascal
-  program console;
   
-  {$mode objfpc}{$H+}
-  
-  uses
-    pascurl;
-
   var
-    session : TSession;
-    info    : TSessionInfo;
-  begin
-    if ParamCount = 2 then
-    begin
-      session := TSession.Create;
-      session.Url := Param[1];
+    FSession : TSession;
+    FResponse : TResponse;
 
-      session.Protocol.FollowRedirect := True;
-      session.Protocol.DefaultProtocol := PROTOCOL_HTTPS;
-      session.Protocol.TransferEncoding := True; 
+    FProtocol : TSession.TProtocolProperty.TProtocol;
+
+  begin
+    FSession := TSession.Create;
+
+    FSession.Url := 'https://example.dev';
     
+    FResponse := TResponse.Create(FSession);
+    if FResponse.Opened and not FResponse.HasErrors then
+    begin
       
-      info := TSessionInfo.Create(session);
-      if info.Opened and not info.HasErrors then
+      FProtocol := FSession.ExtractProtocol(FResponse.EffectiveUrl);
+      if FProtocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
       begin
-        writeln('URL: ':20,                 info.EffectiveUrl);
-        writeln('Response code: ':20,       info.ResponseCode);
-        writeln('Header size, kB: ':20,     info.HeaderSize.Format(dsKiloBytes, '0.00'));
-        writeln('Content type: ':20,        info.ContentType);
-        writeln('Content length, kB: ':20,  info.Downloaded.Format(dsKiloBytes, '0.00'));
-        writeln('IP: ':20,                  info.PrimaryIP);
-        writeln('Total time, ms: ':20,      info.TotalTime.Format(tiMicroseconds, '0##'));
-        writeln('==== Content ====');
-        writeln(info.Content);
-      end else
+        writeln('Response code :', TSession.THTTPProperty.THTTPStatusCode(FResponse.ResponseCode));
+      end else if FProtocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
       begin
-        writeln(info.ErrorMessage);
+        writeln('Response code :', TSession.TFTPProperty.TFTPStatusCode(FResponse.ResponseCode));
       end;
-    end;
-  end.
+    
+      if FProtocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
+      begin
+        writeln('HTTP version :', FResponse.HTTPVersion);
+      end; 
+
+      writeln('Url :', FResponse.EffectiveUrl);
+      writeln('Redirect count :', FResponse.RedirectCount);
+      writeln('Redirect url :', FResponse.RedirectUrl);
+      writeln('Request size :', FResponse.RequestSize.ToString);
+      writeln('Header size :', FResponse.HeaderSize.ToString);
+      writeln('Content size :', FResponse.Downloaded.ToString);
+      writeln('Download speed :', FResponse.DownloadSpeed.ToString('/s'));
+      writeln('Total time :', FResponse.TotalTime.ToString);
+
+      writeln(FResponse.Content); 
+
+      FreeAndNil(FResponse);
+      FreeAndNil(FSession);
+    end
+
 ```
