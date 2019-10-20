@@ -5362,7 +5362,7 @@ begin
   if FMegabytes.Value > 0 then
   begin
     Result := Format('%0.2d,%0.2d',
-      [FMegabytes.Value, FKilobytes.Value]) + 'MiB' + ASuffix;
+      [FMegabytes.Value, FKilobytes.Value]) + ' MiB' + ASuffix;
   end else
   if FKilobytes.Value > 0 then
   begin
