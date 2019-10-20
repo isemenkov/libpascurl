@@ -116,34 +116,13 @@ begin
       writeln('Content type: ':25, FResponse.ContentType);
 
     if HasOption('a', 'all') or HasOption('request-size') then
-    begin
-      if FResponse.RequestSize.KiloBytes >= 1 then
-        writeln('Request size, Kb: ':25,
-          FResponse.RequestSize.Format(dsKiloBytes, '0.##'))
-      else
-        writeln('Request size, b: ':25, FResponse.RequestSize.B);
-    end;
+      writeln('Request size: ':25, FResponse.RequestSize.ToString);
 
     if HasOption('a', 'all') or HasOption('header-size') then
-    begin
-      if FResponse.HeaderSize.KiloBytes >= 1 then
-        writeln('Header size, Kb: ':25,
-          FResponse.HeaderSize.Format(dsKiloBytes, '0.##'))
-      else
-        writeln('Header size, b: ':25, FResponse.HeaderSize.B);
-    end;
+      writeln('Header size: ':25, FResponse.HeaderSize.ToString);
 
     if HasOption('a', 'all') or HasOption('content-size') then
-    begin
-      if FResponse.Downloaded.MegaBytes >= 1 then
-        writeln('Content size, Mb: ':25,
-          FResponse.Downloaded.Format(dsMegaBytes, '0.##'))
-      else if FResponse.Downloaded.KiloBytes >= 1 then
-        writeln('Content size, Kb: ':25,
-          FResponse.Downloaded.Format(dsKiloBytes, '0.##'))
-      else
-        writeln('Content size, b: ':25, FResponse.Downloaded.B);
-    end;
+      writeln('Content size: ':25, FResponse.Downloaded.ToString);
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
       writeln('Primary IP: ':25, FResponse.PrimaryIP);
@@ -168,26 +147,16 @@ begin
     end;
 
     if HasOption('a', 'all') or HasOption('download-speed') then
-    begin
-      if FResponse.DownloadSpeed.MegaBytes >= 1 then
-        writeln('Download speed, Mb/s: ':25,
-          FResponse.DownloadSpeed.Format(dsMegaBytes, '0.##'))
-      else if FResponse.DownloadSpeed.KiloBytes >= 1 then
-        writeln('Download speed, Kb/s: ':25,
-          FResponse.DownloadSpeed.Format(dsKiloBytes, '0.##'))
-      else
-        writeln('Download speed, b/s: ':25, FResponse.DownloadSpeed.B);
-    end;
+      writeln('Download speed: ':25, FResponse.DownloadSpeed.ToString('/s'));
 
     if HasOption('a', 'all') or HasOption('total-time') then
-      writeln('Total time: ':25, FResponse.TotalTime.Milliseconds.Format);
+      writeln('Total time: ':25, FResponse.TotalTime.ToString);
 
     if HasOption('a', 'all') or HasOption('name-lookup-time') then
-      writeln('Name lookup time: ':25,
-      FResponse.NameLookup.Milliseconds.Format);
+      writeln('Name lookup time: ':25, FResponse.NameLookup.ToString);
 
     if HasOption('a', 'all') or HasOption('connect-time') then
-      writeln('Connect time: ':25, FResponse.ConnectTime.Milliseconds.Format);
+      writeln('Connect time: ':25, FResponse.ConnectTime.ToString);
 
     if HasOption('s', 'show-content') then
     begin
