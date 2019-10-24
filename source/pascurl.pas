@@ -333,6 +333,7 @@ type
         procedure SetConnectionTimeout (ATime : TTimeInterval);
         procedure SetIPResolve (AResolve : TIPResolve);
         procedure SetHappyEyeballsTimeout (ATime : TTimeInterval);
+        procedure SetPrivateData (AData : Pointer);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -627,6 +628,16 @@ type
          * connection.
          *)
         property UpkeepInterval : TTimeInterval write SetUpkeepInterval;
+
+        (**
+         * Store a private pointer
+         *
+         * Pass a Pointer as parameter, pointing to data that should be
+         * associated with this curl handle. The pointer can subsequently be
+         * retrieved using curl_easy_getinfo with the CURLINFO_PRIVATE option.
+         * libcurl itself never does anything with this data.
+         *)
+        property PrivateData : Pointer write SetPrivateData;
       end;
 
       { TSecurityProperty }
@@ -4961,6 +4972,7 @@ type
     function GetRTSPServerCSeq : Longint;
     function GetRTSPReceivedCSeq : Longint;
     function GetScheme : string;
+    function GetPrivateData : Pointer;
   public
     constructor Create (s : TSession);
 
@@ -5229,6 +5241,16 @@ type
      * Get the URL scheme (sometimes called protocol) used in the connection
      *)
     property Scheme : string read GetScheme;
+
+    (**
+     * Get private pointer
+     *
+     * Pass a pointer to a char pointer to receive the pointer to the private
+     * data associated with the curl handle (set with the CURLOPT_PRIVATE).
+     * Please note that for internal reasons, the value is returned as a char
+     * pointer, although effectively being a Pointer.
+     *)
+    property PrivateData : Pointer read GetPrivateData;
   end;
 
 implementation
@@ -7584,6 +7606,17 @@ begin
   end;
 end;
 
+function TResponse.GetPrivateData: Pointer;
+var
+  Data : PPChar;
+begin
+  if Opened then
+  begin
+    curl_easy_getinfo(session.FHandle, CURLINFO_PRIVATE, Data);
+    Result := Data^;
+  end;
+end;
+
 constructor TResponse.Create(s: TSession);
 begin
   if s.Opened then
@@ -7684,7 +7717,7 @@ end;
 
 function TSession.IsOpened: Boolean;
 begin
-  Result := FHandle <> Pointer(0);
+  Result := FHandle <> nil;
 end;
 
 procedure TSession.SetUrl(url: string);
