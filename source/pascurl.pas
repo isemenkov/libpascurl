@@ -1517,8 +1517,6 @@ type
         procedure SetProxyTLSUsername (AName : string);
         procedure SetProxyTLSPassword (APassword : string);
         procedure SetProxyTLSAuth (AMethod : TSecurityProperty.TTLSAuthMethod);
-        procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
-        procedure SetHAProxyHeader (ASend : Boolean);
         procedure SetProxySSLCertificate (ACertificate : string);
         procedure SetProxySSLCertificateType (AType : string);
         procedure SetProxySSLKey (AKey : string);
@@ -1681,29 +1679,6 @@ type
          *)
         property TLSAuth : TSecurityProperty.TTLSAuthMethod
           write SetProxyTLSAuth;
-
-        (**
-         * Set HTTP proxy authentication methods to try
-         *
-         * Tell libcurl which HTTP authentication method(s) you want it to use
-         * for your proxy authentication. If more than one bit is set, libcurl
-         * will first query the site to see what authentication methods it
-         * supports and then pick the best one you allow it to use. For some
-         * methods, this will induce an extra network round-trip.
-         *)
-        property HTTPAuth : TSecurityProperty.TAuthMethods
-          write SetProxyHTTPAuth default [AUTH_BASIC];
-
-        (**
-         * Send HAProxy PROXY protocol v.1 header
-         *
-         * Tells the library to send an HAProxy PROXY protocol v1 header at
-         * beginning of the connection. The default action is not to send this
-         * header.
-         * This option is primarily useful when sending test requests to a
-         * service that expects this header.
-         *)
-        property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
 
         (**
          * Set SSL proxy client certificate
@@ -2919,6 +2894,8 @@ type
         procedure SetMaxDownloadFileSize (ASize : TDataSize);
         procedure SetConnectOnly (AEnable : Boolean);
         procedure SetKeepSendingOnError (AKeepSending : Boolean);
+        procedure SetHAProxyHeader (ASend : Boolean);
+        procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3344,6 +3321,29 @@ type
          *)
         property KeepSendingOnError : Boolean write SetKeepSendingOnError
           default False;
+
+        (**
+         * Send HAProxy PROXY protocol v.1 header
+         *
+         * Tells the library to send an HAProxy PROXY protocol v1 header at
+         * beginning of the connection. The default action is not to send this
+         * header.
+         * This option is primarily useful when sending test requests to a
+         * service that expects this header.
+         *)
+        property HAProxyProtocol : Boolean write SetHAProxyHeader default False;
+
+        (**
+         * Set HTTP proxy authentication methods to try
+         *
+         * Tell libcurl which HTTP authentication method(s) you want it to use
+         * for your proxy authentication. If more than one bit is set, libcurl
+         * will first query the site to see what authentication methods it
+         * supports and then pick the best one you allow it to use. For some
+         * methods, this will induce an extra network round-trip.
+         *)
+        property HTTPProxyAuth : TSecurityProperty.TAuthMethods
+          write SetProxyHTTPAuth default [AUTH_BASIC];
       end;
 
       { TIMAPProperty }
@@ -4496,6 +4496,10 @@ type
         procedure SetMailAuth (AAuth : string);
         procedure SetCustomRequest (ARequest : string);
         procedure SetConnectOnly (AEnable : Boolean);
+        procedure SetLoginOptions (AOptions : string);
+        procedure SetSASLAuthzid (AAuthzid : string);
+        procedure SetSASLIR (ASend : Boolean);
+        procedure SetXOAuth2Bearer (AToken : string);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -4562,6 +4566,51 @@ type
          * reused.
          *)
         property ConnectOnly : Boolean write SetConnectOnly default False;
+
+        (**
+         * Set login options
+         *
+         * For more information about the login options please see RFC 2384, RFC
+         * 5092 and IETF draft draft-earhart-url-smtp-00.txt
+         * LoginOptions can be used to set protocol specific login options, such
+         * as the preferred authentication mechanism via "AUTH=NTLM" or
+         * "AUTH=*", and should be used in conjunction with the Username option.
+         *)
+        property LoginOptions : string write SetLoginOptions;
+
+       (**
+        * Authorisation identity (identity to act as)
+        *
+        * Authorisation identity (authzid) for the transfer. Only applicable to
+        * the PLAIN SASL authentication mechanism where it is optional.
+        * When not specified only the authentication identity (authcid) as
+        * specified by the username will be sent to the server, along with the
+        * password. The server will derive a authzid from the authcid when not
+        * provided, which it will then uses internally.
+        * When the authzid is specified, the use of which is server dependent,
+        * it can be used to access another user's inbox, that the user has been
+        * granted access to, or a shared mailbox for example.
+        *)
+        property SASLAuthzid : string write SetSASLAuthzid;
+
+       (**
+        * Enable/disable sending initial response in first packet
+        *
+        * curl will send the initial response to the server in the first
+        * authentication packet in order to reduce the number of ping pong
+        * requests. Only applicable to the following supporting SASL
+        * authentication mechanisms:
+        * Login * Plain * GSSAPI * NTLM * OAuth 2.0
+        *)
+        property SASLInitialResponse : Boolean write SetSASLIR default False;
+
+       (**
+        * Specify OAuth 2.0 access token
+        *
+        * OAuth 2.0 Bearer Access Token for use with HTTP, IMAP, POP3 and SMTP
+        * servers that support the OAuth 2.0 Authorization Framework.
+        *)
+        property XOAuth2BearerToken : string write SetXOAuth2Bearer;
       end;
 
       { TTFTPProperty }
@@ -4795,6 +4844,66 @@ type
         property Range : string write SetRange;
       end;
 
+      { TPOP3Property }
+
+      TPOP3Property = class
+      private
+        FHandle : CURL;
+
+        procedure SetLoginOptions (AOptions : string);
+        procedure SetSASLAuthzid (AAuthzid : string);
+        procedure SetSASLIR (ASend : Boolean);
+        procedure SetXOAuth2Bearer (AToken : string);
+      public
+        constructor Create (AHandle : CURL);
+        destructor Destroy; override;
+
+       (**
+        * Set login options
+        *
+        * For more information about the login options please see RFC 2384, RFC
+        * 5092 and IETF draft draft-earhart-url-smtp-00.txt
+        * LoginOptions can be used to set protocol specific login options, such
+        * as the preferred authentication mechanism via "AUTH=NTLM" or
+        * "AUTH=*", and should be used in conjunction with the Username option.
+        *)
+        property LoginOptions : string write SetLoginOptions;
+
+       (**
+        * Authorisation identity (identity to act as)
+        *
+        * Authorisation identity (authzid) for the transfer. Only applicable to
+        * the PLAIN SASL authentication mechanism where it is optional.
+        * When not specified only the authentication identity (authcid) as
+        * specified by the username will be sent to the server, along with the
+        * password. The server will derive a authzid from the authcid when not
+        * provided, which it will then uses internally.
+        * When the authzid is specified, the use of which is server dependent,
+        * it can be used to access another user's inbox, that the user has been
+        * granted access to, or a shared mailbox for example.
+        *)
+        property SASLAuthzid : string write SetSASLAuthzid;
+
+       (**
+        * Enable/disable sending initial response in first packet
+        *
+        * curl will send the initial response to the server in the first
+        * authentication packet in order to reduce the number of ping pong
+        * requests. Only applicable to the following supporting SASL
+        * authentication mechanisms:
+        * Login * Plain * GSSAPI * NTLM * OAuth 2.0
+        *)
+        property SASLInitialResponse : Boolean write SetSASLIR default False;
+
+       (**
+        * Specify OAuth 2.0 access token
+        *
+        * OAuth 2.0 Bearer Access Token for use with HTTP, IMAP, POP3 and SMTP
+        * servers that support the OAuth 2.0 Authorization Framework.
+        *)
+        property XOAuth2BearerToken : string write SetXOAuth2Bearer;
+      end;
+
   protected
     FHandle : CURL;
     FBuffer : TMemoryStream;
@@ -4811,6 +4920,7 @@ type
     FTFTP : TTFTPProperty;
     FSMTP : TSMTPProperty;
     FRTSP : TRTSPProperty;
+    FPOP3 : TPOP3Property;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -5337,6 +5447,38 @@ type
   end;
 
 implementation
+
+{ TSession.TPOP3Property }
+
+procedure TSession.TPOP3Property.SetLoginOptions(AOptions: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+end;
+
+procedure TSession.TPOP3Property.SetSASLAuthzid(AAuthzid: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+end;
+
+procedure TSession.TPOP3Property.SetSASLIR(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+end;
+
+procedure TSession.TPOP3Property.SetXOAuth2Bearer(AToken: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+end;
+
+constructor TSession.TPOP3Property.Create(AHandle: CURL);
+begin
+  FHandle := AHandle;
+end;
+
+destructor TSession.TPOP3Property.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TSession.TLinkedList }
 
@@ -5949,6 +6091,26 @@ end;
 procedure TSession.TSMTPProperty.SetConnectOnly(AEnable: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
+end;
+
+procedure TSession.TSMTPProperty.SetLoginOptions(AOptions: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+end;
+
+procedure TSession.TSMTPProperty.SetSASLAuthzid(AAuthzid: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+end;
+
+procedure TSession.TSMTPProperty.SetSASLIR(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+end;
+
+procedure TSession.TSMTPProperty.SetXOAuth2Bearer(AToken: string);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
 end;
 
 constructor TSession.TSMTPProperty.Create(AHandle: CURL);
@@ -6663,6 +6825,44 @@ begin
     Longint(AKeepSending));
 end;
 
+procedure TSession.THTTPProperty.SetHAProxyHeader(ASend: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
+end;
+
+procedure TSession.THTTPProperty.SetProxyHTTPAuth(AMethod:
+  TSecurityProperty.TAuthMethods);
+var
+  bitmask : Longint;
+begin
+  bitmask := 0;
+  if AUTH_BASIC in AMethod then
+    bitmask := bitmask or CURLAUTH_BASIC;
+  if AUTH_DIGEST in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST;
+  if AUTH_NEGOTIATE in AMethod then
+    bitmask := bitmask or CURLAUTH_NEGOTIATE;
+  if AUTH_GSSAPI in AMethod then
+    bitmask := bitmask or CURLAUTH_GSSAPI;
+  if AUTH_NTLM in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM;
+  if AUTH_DIGEST_IE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST_IE;
+  if AUTH_NTLM_WB in AMethod then
+    bitmask := bitmask or CURLAUTH_NTLM_WB;
+  if AUTH_BEARER in AMethod then
+    bitmask := bitmask or CURLAUTH_BEARER;
+  if AUTH_ANY in AMethod then
+    bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
+      CURLAUTH_BEARER;
+  if AUTH_ANYSAFE in AMethod then
+    bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
+      CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
+
+  curl_easy_setopt(FHandle, CURLOPT_PROXYAUTH, bitmask);
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -6930,44 +7130,6 @@ begin
   curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
     PChar(GetEnumName(TypeInfo(TSecurityProperty.TTLSAuthMethod),
     ord(AMethod))));
-end;
-
-procedure TSession.TProxyProperty.SetProxyHTTPAuth(
-  AMethod: TSecurityProperty.TAuthMethods);
-var
-  bitmask : Longint;
-begin
-  bitmask := 0;
-  if AUTH_BASIC in AMethod then
-    bitmask := bitmask or CURLAUTH_BASIC;
-  if AUTH_DIGEST in AMethod then
-    bitmask := bitmask or CURLAUTH_DIGEST;
-  if AUTH_NEGOTIATE in AMethod then
-    bitmask := bitmask or CURLAUTH_NEGOTIATE;
-  if AUTH_GSSAPI in AMethod then
-    bitmask := bitmask or CURLAUTH_GSSAPI;
-  if AUTH_NTLM in AMethod then
-    bitmask := bitmask or CURLAUTH_NTLM;
-  if AUTH_DIGEST_IE in AMethod then
-    bitmask := bitmask or CURLAUTH_DIGEST_IE;
-  if AUTH_NTLM_WB in AMethod then
-    bitmask := bitmask or CURLAUTH_NTLM_WB;
-  if AUTH_BEARER in AMethod then
-    bitmask := bitmask or CURLAUTH_BEARER;
-  if AUTH_ANY in AMethod then
-    bitmask := CURLAUTH_BASIC or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
-      CURLAUTH_NTLM or CURLAUTH_DIGEST_IE or CURLAUTH_NTLM_WB or
-      CURLAUTH_BEARER;
-  if AUTH_ANYSAFE in AMethod then
-    bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
-      CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
-
-  curl_easy_setopt(FHandle, CURLOPT_PROXYAUTH, bitmask);
-end;
-
-procedure TSession.TProxyProperty.SetHAProxyHeader(ASend: Boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
 end;
 
 procedure TSession.TProxyProperty.SetProxySSLCertificate(ACertificate: string);
@@ -7804,6 +7966,7 @@ begin
   FTFTP := TTFTPProperty.Create(FHandle);
   FSMTP := TSMTPProperty.Create(FHandle);
   FRTSP := TRTSPProperty.Create(FHandle);
+  FPOP3 := TPOP3Property.Create(FHandle);
 
   if Opened then
   begin
