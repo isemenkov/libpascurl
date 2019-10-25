@@ -280,6 +280,18 @@ type
       TUploadFunction = function (buffer : PChar; size : LongWord) : LongWord
         of object;
 
+      { TLinkedList }
+
+      TLinkedList = class
+      private
+        FList : pcurl_slist;
+      public
+        constructor Create;
+        destructor Destroy; override;
+
+        procedure Append (AString : string);
+      end;
+
       { TOptionsProperty }
 
       TOptionsProperty = class
@@ -310,6 +322,7 @@ type
       private
         FHandle : CURL;
 
+        procedure SetNoSignal (AEnable : Boolean);
         procedure SetAddressScope (AScope : Longint);
         procedure SetInterface (AInterface : string);
         procedure SetUnixSocketPath (APath : string);
@@ -337,6 +350,30 @@ type
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
+
+       (**
+        * Skip all signal handling
+        *
+        * If it is TRUE, libcurl will not use any functions that install signal
+        * handlers or any functions that cause signals to be sent to the
+        * process. This option is here to allow multi-threaded unix applications
+        * to still set/use all timeout options etc, without risking getting
+        * signals.
+        * If this option is set and libcurl has been built with the standard
+        * name resolver, timeouts will not occur while the name resolve takes
+        * place. Consider building libcurl with the c-ares or threaded resolver
+        * backends to enable asynchronous DNS lookups, to enable timeouts for
+        * name resolves without the use of signals.
+        * Setting NoSignal to TRUE makes libcurl NOT ask the system to ignore
+        * SIGPIPE signals, which otherwise are sent by the system when trying to
+        * send data to a socket which is closed in the other end. libcurl makes
+        * an effort to never cause such SIGPIPEs to trigger, but some operating
+        * systems have no way to avoid them and even on those that have there
+        * are some corner cases when they may still happen, contrary to our
+        * desire. In addition, using CURLAUTH_NTLM_WB authentication could cause
+        * a SIGCHLD signal to be raised.
+        *)
+        property NoSignal : Boolean write SetNoSignal default False;
 
        (**
         * Set scope id for IPv6 addresses
@@ -1151,8 +1188,7 @@ type
         procedure SetIncludeHeader (AIncludeHeader : Boolean);
         procedure SetIgnoreContentLength (AIgnoreLength : Boolean);
         procedure SetTransferEncoding (AEncoding : Boolean);
-        procedure SetWildcardMatch (AMatch : Boolean);
-        procedure SetKeepSendingOnError (AKeepSending : Boolean);
+
         procedure SetRemotePort (APort : Word);
         procedure SetUpload (AEnable : Boolean);
       public
@@ -1271,53 +1307,6 @@ type
          * will be automatically uncompressed by libcurl on reception.
          *)
         property TransferEncoding : Boolean write SetTransferEncoding
-          default False;
-
-        (**
-         * Enable directory wildcard transfers
-         * [This feature is only supported for FTP download]
-         *
-         * Transfer multiple files according to a file name pattern. The pattern
-         * can be specified as part of the Url option, using an fnmatch-like
-         * pattern (Shell Pattern Matching) in the last part of URL (file name).
-         *
-         * A brief introduction of its syntax follows:
-         *
-         * * - ASTERISK
-         * ftp://example.com/some/path/*.txt (for all txt's from the root
-         * directory). Only two asterisks are allowed within the same pattern
-         * string.
-         *
-         * ? - QUESTION MARK
-         * Question mark matches any (exactly one) character.
-         * ftp://example.com/some/path/photo?.jpeg
-         *
-         * [ - BRACKET EXPRESSION
-         * The left bracket opens a bracket expression. The question mark and
-         * asterisk have no special meaning in a bracket expression. Each
-         * bracket expression ends by the right bracket and matches exactly one
-         * character. Some examples follow:
-         * [a-zA-Z0-9] or [f-gF-G] - character interval
-         * [abc] - character enumeration
-         * [^abc] or [!abc] - negation
-         * [[:name:]] class expression. Supported classes are alnum,lower,
-         * space, alpha, digit, print, upper, blank, graph, xdigit.
-         * [][-!^] - special case - matches only '-', ']', '[', '!' or '^'.
-         * These characters have no special purpose.
-         * [\[\]\\] - escape syntax. Matches '[', ']' or '´.
-         * Using the rules above, a file name pattern can be constructed:
-         * ftp://example.com/some/path/[a-z[:upper:]\\].jpeg
-         *)
-        property WildcardMatch : Boolean write SetWildcardMatch;
-
-        (**
-         * Keep sending on early HTTP response >= 300
-         *
-         * Tells the library to keep sending the request body if the HTTP code
-         * returned is equal to or larger than 300. The default action would be
-         * to stop sending and close the stream or connection.
-         *)
-        property KeepSendingOnError : Boolean write SetKeepSendingOnError
           default False;
 
         (**
@@ -2929,6 +2918,7 @@ type
         procedure SetTimeModification (AEnable : Boolean);
         procedure SetMaxDownloadFileSize (ASize : TDataSize);
         procedure SetConnectOnly (AEnable : Boolean);
+        procedure SetKeepSendingOnError (AKeepSending : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -3344,6 +3334,16 @@ type
          * reused.
          *)
         property ConnectOnly : Boolean write SetConnectOnly default False;
+
+        (**
+         * Keep sending on early HTTP response >= 300
+         *
+         * Tells the library to keep sending the request body if the HTTP code
+         * returned is equal to or larger than 300. The default action would be
+         * to stop sending and close the stream or connection.
+         *)
+        property KeepSendingOnError : Boolean write SetKeepSendingOnError
+          default False;
       end;
 
       { TIMAPProperty }
@@ -4173,6 +4173,7 @@ type
         procedure SetDirListOnly (AEnable : Boolean);
         procedure SetMaxDownloadFileSize (ASize : TDataSize);
         procedure SetAcceptTimeout (ATime : TTimeInterval);
+        procedure SetWildcardMatch (AMatch : Boolean);
       public
         constructor Create (AHandle : CURL);
         destructor Destroy; override;
@@ -4446,6 +4447,43 @@ type
          * libcurl when an active FTP connection is used.
          *)
         property AcceptTimeout : TTimeInterval write SetAcceptTimeout;
+
+        (**
+         * Enable directory wildcard transfers
+         * [This feature is only supported for FTP download]
+         *
+         * Transfer multiple files according to a file name pattern. The pattern
+         * can be specified as part of the Url option, using an fnmatch-like
+         * pattern (Shell Pattern Matching) in the last part of URL (file name).
+         *
+         * A brief introduction of its syntax follows:
+         *
+         * * - ASTERISK
+         * ftp://example.com/some/path/*.txt (for all txt's from the root
+         * directory). Only two asterisks are allowed within the same pattern
+         * string.
+         *
+         * ? - QUESTION MARK
+         * Question mark matches any (exactly one) character.
+         * ftp://example.com/some/path/photo?.jpeg
+         *
+         * [ - BRACKET EXPRESSION
+         * The left bracket opens a bracket expression. The question mark and
+         * asterisk have no special meaning in a bracket expression. Each
+         * bracket expression ends by the right bracket and matches exactly one
+         * character. Some examples follow:
+         * [a-zA-Z0-9] or [f-gF-G] - character interval
+         * [abc] - character enumeration
+         * [^abc] or [!abc] - negation
+         * [[:name:]] class expression. Supported classes are alnum,lower,
+         * space, alpha, digit, print, upper, blank, graph, xdigit.
+         * [][-!^] - special case - matches only '-', ']', '[', '!' or '^'.
+         * These characters have no special purpose.
+         * [\[\]\\] - escape syntax. Matches '[', ']' or '´.
+         * Using the rules above, a file name pattern can be constructed:
+         * ftp://example.com/some/path/[a-z[:upper:]\\].jpeg
+         *)
+        property WildcardMatch : Boolean write SetWildcardMatch;
       end;
 
       { TSMTPProperty }
@@ -4817,6 +4855,7 @@ type
     procedure SetUrl (url : string);
     procedure SetLocalPort (APort : Word);
     procedure SetLocalPortRange (ARange : Longint);
+    procedure SetConnectTo (AList : TLinkedList);
   public
     function ExtractProtocol (AUrl : string) : TProtocolProperty.TProtocol;
   public
@@ -4893,6 +4932,50 @@ type
      *)
      property PortRange : Longint write SetLocalPortRange default 1;
   public
+
+    (**
+     * Connect to a specific host and port instead of thr URL's host and port
+     *
+     * Pass a pointer to a linked list of strings with "connect to" information
+     * to use for establishing network connections with this handle. The linked
+     * list should be a fully valid list of struct curl_slist structs properly
+     * filled in. Use curl_slist_append to create the list and
+     * curl_slist_free_all to clean up an entire list.
+     * Each single string should be written using the format
+     * HOST:PORT:CONNECT-TO-HOST:CONNECT-TO-PORT where HOST is the host of the
+     * request, PORT is the port of the request, CONNECT-TO-HOST is the host
+     * name to connect to, and CONNECT-TO-PORT is the port to connect to.
+     * The first string that matches the request's host and port is used.
+     * Dotted numerical IP addresses are supported for HOST and CONNECT-TO-HOST.
+     * A numerical IPv6 address must be written within [brackets].
+     * Any of the four values may be empty. When the HOST or PORT is empty, the
+     * host or port will always match (the request's host or port is ignored).
+     * When CONNECT-TO-HOST or CONNECT-TO-PORT is empty, the "connect to"
+     * feature will be disabled for the host or port, and the request's host or
+     * port will be used to establish the network connection.
+     * This option is suitable to direct the request at a specific server, e.g.
+     * at a specific cluster node in a cluster of servers.
+     * The "connect to" host and port are only used to establish the network
+     * connection. They do NOT affect the host and port that are used for
+     * TLS/SSL (e.g. SNI, certificate verification) or for the application
+     * protocols.
+     * In contrast to CURLOPT_RESOLVE, the option CURLOPT_CONNECT_TO does not
+     * pre-populate the DNS cache and therefore it does not affect future
+     * transfers of other easy handles that have been added to the same multi
+     * handle.
+     * The "connect to" host and port are ignored if they are equal to the host
+     * and the port in the request URL, because connecting to the host and the
+     * port in the request URL is the default behavior.
+     * If an HTTP proxy is used for a request having a special "connect to" host
+     * or port, and the "connect to" host or port differs from the request's
+     * host and port, the HTTP proxy is automatically switched to tunnel mode
+     * for this specific request. This is necessary because it is not possible
+     * to connect to a specific host or port in normal (non-tunnel) mode.
+     * When this option is passed to curl_easy_setopt, libcurl will not copy the
+     * entire list so you must keep it around until you no longer use this
+     * handle for a transfer before you call curl_slist_free_all on the list.
+     *)
+    property ConnectTo : TLinkedList write SetConnectTo;
 
     (**
      * Callback for writing received data
@@ -5254,6 +5337,24 @@ type
   end;
 
 implementation
+
+{ TSession.TLinkedList }
+
+constructor TSession.TLinkedList.Create;
+begin
+  FList := nil;
+end;
+
+destructor TSession.TLinkedList.Destroy;
+begin
+  curl_slist_free_all(FList);
+  inherited Destroy;
+end;
+
+procedure TSession.TLinkedList.Append(AString: string);
+begin
+  FList := curl_slist_append(FList, PChar(AString));
+end;
 
 { TDataSize }
 
@@ -6017,6 +6118,11 @@ begin
     Longint(ATime.Milliseconds));
 end;
 
+procedure TSession.TFTPProperty.SetWildcardMatch(AMatch: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_WILDCARDMATCH, Longint(AMatch));
+end;
+
 constructor TSession.TFTPProperty.Create(AHandle: CURL);
 begin
   FHandle := AHandle;
@@ -6251,18 +6357,6 @@ end;
 procedure TSession.TProtocolProperty.SetTransferEncoding(AEncoding: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING, Longint(AEncoding));
-end;
-
-procedure TSession.TProtocolProperty.SetWildcardMatch(AMatch: Boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_WILDCARDMATCH, Longint(AMatch));
-end;
-
-procedure TSession.TProtocolProperty.SetKeepSendingOnError
-  (AKeepSending: Boolean);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_KEEP_SENDING_ON_ERROR,
-    Longint(AKeepSending));
 end;
 
 procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
@@ -6561,6 +6655,12 @@ end;
 procedure TSession.THTTPProperty.SetConnectOnly(AEnable: Boolean);
 begin
   curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
+end;
+
+procedure TSession.THTTPProperty.SetKeepSendingOnError(AKeepSending: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_KEEP_SENDING_ON_ERROR,
+    Longint(AKeepSending));
 end;
 
 constructor TSession.THTTPProperty.Create(AHandle: CURL);
@@ -6937,6 +7037,11 @@ end;
 
 { TSession.TOptionsProperty }
 
+procedure TSession.TOptionsProperty.SetNoSignal(AEnable: Boolean);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_NOSIGNAL, Longint(AEnable));
+end;
+
 procedure TSession.TOptionsProperty.SetAddressScope(AScope: Longint);
 begin
   curl_easy_setopt(FHandle, CURLOPT_ADDRESS_SCOPE, AScope);
@@ -7071,6 +7176,11 @@ procedure TSession.TOptionsProperty.SetHappyEyeballsTimeout(ATime: TTimeInterval
 begin
   curl_easy_setopt(FHandle, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
     Longint(ATime.Milliseconds));
+end;
+
+procedure TSession.TOptionsProperty.SetPrivateData(AData: Pointer);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_PRIVATE, AData);
 end;
 
 procedure TSession.TOptionsProperty.SetUpkeepInterval(ATime: TTimeInterval);
@@ -7608,7 +7718,7 @@ end;
 
 function TResponse.GetPrivateData: Pointer;
 var
-  Data : PPChar;
+  Data : PPChar = nil;
 begin
   if Opened then
   begin
@@ -7737,6 +7847,11 @@ end;
 procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
   curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
+end;
+
+procedure TSession.SetConnectTo(AList: TLinkedList);
+begin
+  curl_easy_setopt(FHandle, CURLOPT_CONNECT_TO, AList.FList);
 end;
 
 function TSession.ExtractProtocol(AUrl: string): TProtocolProperty.TProtocol;
