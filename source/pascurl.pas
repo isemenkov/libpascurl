@@ -938,9 +938,6 @@ type
           USESSL_ALL                        = Longint(CURLUSESSL_ALL)
         );
 
-        (**
-         * Control which version range of SSL/TLS versions to use
-         *)
         TSSLVersion = (
 
           (**
@@ -985,35 +982,56 @@ type
            *)
            SSLVERSION_TLSv1_3            = Longint(CURL_SSLVERSION_TLSv1_3),
 
-          (**
-           * The flag defines the maximum supported TLS version by libcurl, or
-           * the default value from the SSL library is used. libcurl will use a
-           * sensible default maximum, which was TLS v1.2 up to before 7.61.0
-           * and is TLS v1.3 since then - assuming the TLS library support it.
-           *)
-           SSLVERSION_MAX_DEFAULT        = Longint(CURL_SSLVERSION_MAX_DEFAULT),
+         (**
+          * The flag defines the maximum supported TLS version by libcurl, or
+          * the default value from the SSL library is used. libcurl will use a
+          * sensible default maximum, which was TLS v1.2 up to before 7.61.0
+          * and is TLS v1.3 since then - assuming the TLS library support it.
+          *)
+          SSLVERSION_MAX_DEFAULT        = Longint(CURL_SSLVERSION_MAX_DEFAULT),
 
-          (**
-           * The flag defines maximum supported TLS version as TLS v1.0.
-           *)
+         (**
+          * The flag defines maximum supported TLS version as TLS v1.0.
+          *)
            SSLVERSION_MAX_TLSv1_0        = Longint(CURL_SSLVERSION_MAX_TLSv1_0),
 
-          (**
-           * The flag defines maximum supported TLS version as TLS v1.1.
-           *)
-           SSLVERSION_MAX_TLSv1_1        = Longint(CURL_SSLVERSION_MAX_TLSv1_1),
+         (**
+          * The flag defines maximum supported TLS version as TLS v1.1.
+          *)
+          SSLVERSION_MAX_TLSv1_1        = Longint(CURL_SSLVERSION_MAX_TLSv1_1),
 
-          (**
-           * The flag defines maximum supported TLS version as TLS v1.2.
-           *)
-           SSLVERSION_MAX_TLSv1_2        = Longint(CURL_SSLVERSION_MAX_TLSv1_2),
+         (**
+          * The flag defines maximum supported TLS version as TLS v1.2.
+          *)
+          SSLVERSION_MAX_TLSv1_2        = Longint(CURL_SSLVERSION_MAX_TLSv1_2),
 
-          (**
-           * The flag defines maximum supported TLS version as TLS v1.3.
-           *)
-           SSLVERSION_MAX_TLSv1_3        = Longint(CURL_SSLVERSION_MAX_TLSv1_3)
+         (**
+          * The flag defines maximum supported TLS version as TLS v1.3.
+          *)
+          SSLVERSION_MAX_TLSv1_3        = Longint(CURL_SSLVERSION_MAX_TLSv1_3)
         );
 
+        TSSLOption = (
+          (**
+           * Tells libcurl to not attempt to use any workarounds for a security
+           * flaw in the SSL3 and TLS1.0 protocols. If this option isn't used or
+           * this bit is set to 0, the SSL layer libcurl uses may use a
+           * work-around for this flaw although it might cause interoperability
+           * problems with some (older) SSL implementations.
+           *)
+          SSLOPTIONS_ALLOW_BEAST        = Longint(CURLSSLOPT_ALLOW_BEAST),
+
+          (**
+           * Tells libcurl to disable certificate revocation checks for those
+           * SSL backends where such behavior is present. This option is only
+           * supported for Schannel (the native Windows SSL library), with an
+           * exception in the case of Windows' Untrusted Publishers blacklist
+           * which it seems can't be bypassed.
+           *)
+          SSLOPTIONS_NO_REVOKE          = Longint(CURLSSLOPT_NO_REVOKE)
+        );
+
+        TSSLOptions = set of TSSLOption;
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
@@ -1043,6 +1061,17 @@ type
         procedure SetSSLVerifyPeer (AEnable : Boolean);
         procedure SetSSLVerifyStatus (AEnable : Boolean);
         procedure SetCertificateAuthority (APath : string);
+        procedure SetSSLCertificateFilename (AFilename : string);
+        procedure SetCertificateAuthorityDirectory (ADirectory : string);
+        procedure SetCertificateRevocationList (AFilename : string);
+        procedure SetSSLCertificationInfo (AEnable : Boolean);
+        procedure SetPinnedPublicKey (AKey : string);
+        procedure SetRandomDataFile (AFilename : string);
+        procedure SetEntropyGatheringDaemonSocket (APath : string);
+        procedure SetSSLCipherList (AList : string);
+        procedure SetTLS13Ciphers (AList : string);
+        procedure SetSSLSessionIDCache (AEnable : Boolean);
+        procedure SetSSLOptions (AOptions : TSSLOptions);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -1374,6 +1403,164 @@ type
          * default for Schannel).
          *)
         property CertificateAuthority : string write SetCertificateAuthority;
+
+        (**
+         * Specify directory holding CA certificates
+         *
+         * Pass a string naming a directory holding multiple CA certificates to
+         * verify the peer with. If libcurl is built against OpenSSL, the
+         * certificate directory must be prepared using the openssl c_rehash
+         * utility. This makes sense only when used in combination with the
+         * CURLOPT_SSL_VERIFYPEER option.
+         * The CURLOPT_CAPATH function apparently does not work in Windows due
+         * to some limitation in openssl.
+         *)
+        property CertificateAuthorityDirectory : string
+          write SetCertificateAuthorityDirectory;
+
+        (**
+         * Issuer SSL certificate filename
+         *
+         * Pass a string naming a file holding a CA certificate in PEM format.
+         * If the option is set, an additional check against the peer
+         * certificate is performed to verify the issuer is indeed the one
+         * associated with the certificate provided by the option. This
+         * additional check is useful in multi-level PKI where one needs to
+         * enforce that the peer certificate is from a specific branch of the
+         * tree.
+         * This option makes sense only when used in combination with the
+         * CURLOPT_SSL_VERIFYPEER option. Otherwise, the result of the check is
+         * not considered as failure.
+         * A specific error code (CURLE_SSL_ISSUER_ERROR) is defined with the
+         * option, which is returned if the setup of the SSL/TLS session has
+         * failed due to a mismatch with the issuer of peer certificate
+         * (CURLOPT_SSL_VERIFYPEER has to be set too for the check to fail).
+         *)
+        property SSLCertificateFilename : string
+          write SetSSLCertificateFilename;
+
+        (**
+         * Specify a Certificate Revocation List file
+         *
+         * Pass a string naming a file with the concatenation of CRL (in PEM
+         * format) to use in the certificate validation that occurs during the
+         * SSL exchange.
+         * When curl is built to use NSS or GnuTLS, there is no way to influence
+         * the use of CRL passed to help in the verification process. When
+         * libcurl is built with OpenSSL support, X509_V_FLAG_CRL_CHECK and
+         * X509_V_FLAG_CRL_CHECK_ALL are both set, requiring CRL check against
+         * all the elements of the certificate chain if a CRL file is passed.
+         * This option makes sense only when used in combination with the
+         * CURLOPT_SSL_VERIFYPEER option.
+         * A specific error code (CURLE_SSL_CRL_BADFILE) is defined with the
+         * option. It is returned when the SSL exchange fails because the CRL
+         * file cannot be loaded. A failure in certificate verification due to a
+         * revocation information found in the CRL does not trigger this
+         * specific error.
+         *)
+        property CertificateRevocaionList : string
+          write SetCertificateRevocationList;
+
+        (**
+         * Request SSL certificate information
+         *
+         * Enable/disable libcurl's certificate chain info gatherer. With this
+         * enabled, libcurl will extract lots of information and data about the
+         * certificates in the certificate chain used in the SSL connection.
+         * This data may then be retrieved after a transfer using
+         * curl_easy_getinfo and its option CURLINFO_CERTINFO.
+         *)
+        property SSLCertificateInformation : Boolean
+          write SetSSLCertificationInfo default False;
+
+        (**
+         * Set pinned public key
+         *
+         * Pass a string as parameter. The string can be the file name of your
+         * pinned public key. The file format expected is "PEM" or "DER". The
+         * string can also be any number of base64 encoded sha256 hashes
+         * preceded by "sha256//" and separated by ";"
+         * When negotiating a TLS or SSL connection, the server sends a
+         * certificate indicating its identity. A public key is extracted from
+         * this certificate and if it does not exactly match the public key
+         * provided to this option, curl will abort the connection before
+         * sending or receiving any data.
+         * On mismatch, CURLE_SSL_PINNEDPUBKEYNOTMATCH is returned.
+         *)
+        property PinnedPublicKey : string write SetPinnedPublicKey;
+
+        (**
+         * Specify a source for random data
+         *
+         * Pass a file name. The file might be used to read from to seed the
+         * random engine for SSL and more.
+         *)
+        property RamdomFile : string write SetRandomDataFile;
+
+        (**
+         * Set EGD socket path
+         *
+         * Pass a path name to the Entropy Gathering Daemon socket. It will be
+         * used to seed the random engine for SSL.
+         *)
+        property EGDSocket : string write SetEntropyGatheringDaemonSocket;
+
+        (**
+         * Specify ciphers to use for TLS
+         *
+         * Pass a string holding the list of ciphers to use for the SSL
+         * connection. The list must be syntactically correct, it consists of
+         * one or more cipher strings separated by colons. Commas or spaces are
+         * also acceptable separators but colons are normally used, !, - and +
+         * can be used as operators.
+         * For OpenSSL and GnuTLS valid examples of cipher lists include
+         * 'RC4-SHA', ´SHA1+DES´, 'TLSv1' and 'DEFAULT'. The default list is
+         * normally set when you compile OpenSSL.
+         * You'll find more details about cipher lists on this URL:
+         * https://curl.haxx.se/docs/ssl-ciphers.html
+         * For NSS, valid examples of cipher lists include 'rsa_rc4_128_md5',
+         * ´rsa_aes_128_sha´, etc. With NSS you don't add/remove ciphers. If one
+         * uses this option then all known ciphers are disabled and only those
+         * passed in are enabled.
+         * For WolfSSL, valid examples of cipher lists include
+         * ´ECDHE-RSA-RC4-SHA´, 'AES256-SHA:AES256-SHA256', etc.
+         *)
+        property SSLCipherList : string write SetSSLCipherList;
+
+        (**
+         * Specify ciphers suites to use for TLS 1.3
+         *
+         * Pass a string holding the list of cipher suites to use for the
+         * TLS 1.3 connection. The list must be syntactically correct, it
+         * consists of one or more cipher suite strings separated by colons.
+         * You'll find more details about cipher lists on this URL:
+         * https://curl.haxx.se/docs/ssl-ciphers.html
+         * This option is currently used only when curl is built to use
+         * OpenSSL 1.1.1 or later. If you are using a different SSL backend you
+         * can try setting TLS 1.3 cipher suites by using the
+         * CURLOPT_SSL_CIPHER_LIST option.
+         *)
+        property TLS13CipherList : string write SetTLS13Ciphers;
+
+        (**
+         * Enable/disable use of the SSL session-ID cache
+         *
+         * Pass a False to disable libcurl's use of SSL session-ID caching. Set
+         * this to 1 to enable it. By default all transfers are done using the
+         * cache enabled. While nothing ever should get hurt by attempting to
+         * reuse SSL session-IDs, there seem to be or have been broken SSL
+         * implementations in the wild that may require you to disable this in
+         * order for you to succeed.
+         *)
+        property SSLSessionIDCache : Boolean write SetSSLSessionIDCache
+          default True;
+
+        (**
+         * Set SSL behaviour options
+         *
+         * Tell libcurl about specific SSL behaviors
+         *)
+        property SSLOptions : TSSLOptions write SetSSLOptions;
       end;
 
       { TProtocolProperty }
@@ -1804,6 +1991,12 @@ type
         procedure SetProxySSLVerifyHost (AEnable : Boolean);
         procedure SetProxySSLVerifyPeer (AEnable : Boolean);
         procedure SetCertificateAuthority (APath : string);
+        procedure SetCertificateAuthorityDirectory (ADirectory : string);
+        procedure SetCertificateRevocationList (AFilename : string);
+        procedure SetProxyPinnedPublicKey (AKey : string);
+        procedure SetProxySSLCipherList (AList : string);
+        procedure SetProxyTLS13Ciphers (AList : string);
+        procedure SetProxySSLOptions (AOptions : TSecurityProperty.TSSLOptions);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -2124,6 +2317,103 @@ type
          * peer's certificate chain.
          *)
         property CertificateAuthority : string write SetCertificateAuthority;
+
+        (**
+         * Specify directory holding proxy CA certificates
+         *
+         * Pass a string naming a directory holding multiple CA certificates to
+         * verify the HTTPS proxy with. If libcurl is built against OpenSSL, the
+         * certificate directory must be prepared using the openssl c_rehash
+         * utility. This makes sense only when CURLOPT_PROXY_SSL_VERIFYPEER is
+         * enabled (which it is by default).
+         *)
+        property CertificateAuthorityDirectory : string
+          write SetCertificateAuthorityDirectory;
+
+        (**
+         * Specify a proxy Certificate Revocation List file
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a string naming a file with the concatenation of CRL (in PEM
+         * format) to use in the certificate validation that occurs during the
+         * SSL exchange.
+         * When curl is built to use NSS or GnuTLS, there is no way to influence
+         * the use of CRL passed to help in the verification process. When
+         * libcurl is built with OpenSSL support, X509_V_FLAG_CRL_CHECK and
+         * X509_V_FLAG_CRL_CHECK_ALL are both set, requiring CRL check against
+         * all the elements of the certificate chain if a CRL file is passed.
+         * This option makes sense only when used in combination with the
+         * CURLOPT_PROXY_SSL_VERIFYPEER option.
+         * A specific error code (CURLE_SSL_CRL_BADFILE) is defined with the
+         * option. It is returned when the SSL exchange fails because the CRL
+         * file cannot be loaded. A failure in certificate verification due to a
+         * revocation information found in the CRL does not trigger this
+         * specific error.
+         *)
+        property CertificateRevocationList : string
+          write SetCertificateRevocationList;
+
+        (**
+         * Set pinned public key for https proxy
+         *
+         * Pass a string as parameter. The string can be the file name of your
+         * pinned public key. The file format expected is "PEM" or "DER". The
+         * string can also be any number of base64 encoded sha256 hashes
+         * preceded by "sha256//" and separated by ";"
+         * When negotiating a TLS or SSL connection, the https proxy sends a
+         * certificate indicating its identity. A public key is extracted from
+         * this certificate and if it does not exactly match the public key
+         * provided to this option, curl will abort the connection before
+         * sending or receiving any data.
+         * On mismatch, CURLE_SSL_PINNEDPUBKEYNOTMATCH is returned.
+         *)
+        property PinnedPublicKey : string write SetProxyPinnedPublicKey;
+
+        (**
+         * Specify ciphers to use for proxy TLS
+         *
+         * Pass a string holding the list of ciphers to use for the connection
+         * to the HTTPS proxy. The list must be syntactically correct, it
+         * consists of one or more cipher strings separated by colons. Commas or
+         * spaces are also acceptable separators but colons are normally used,
+         * !, - and + can be used as operators.
+         * For OpenSSL and GnuTLS valid examples of cipher lists include
+         * 'RC4-SHA', ´SHA1+DES´, 'TLSv1' and 'DEFAULT'. The default list is
+         * normally set when you compile OpenSSL.
+         * You'll find more details about cipher lists on this URL:
+         * https://www.openssl.org/docs/apps/ciphers.html
+         * For NSS, valid examples of cipher lists include 'rsa_rc4_128_md5',
+         * ´rsa_aes_128_sha´, etc. With NSS you don't add/remove ciphers. If one
+         * uses this option then all known ciphers are disabled and only those
+         * passed in are enabled.
+         * You'll find more details about the NSS cipher lists on this URL:
+         * http://git.fedorahosted.org/cgit/mod_nss.git/plain/docs/mod_nss.html#Directives
+         *)
+        property SSLCipherList : string write SetProxySSLCipherList;
+
+        (**
+         * Ciphers suites for proxy TLS 1.3
+         *
+         * Pass a string holding the list of cipher suites to use for the
+         * TLS 1.3 connection to a proxy. The list must be syntactically
+         * correct, it consists of one or more cipher suite strings separated by
+         * colons.
+         * You'll find more details about cipher lists on this URL:
+         * https://curl.haxx.se/docs/ssl-ciphers.html
+         * This option is currently used only when curl is built to use
+         * OpenSSL 1.1.1 or later. If you are using a different SSL backend you
+         * can try setting TLS 1.3 cipher suites by using the
+         * CURLOPT_PROXY_SSL_CIPHER_LIST option.
+         *)
+        property TLS13CipherList : string write SetProxyTLS13Ciphers;
+
+        (**
+         * Set proxy SSL behavior options
+         *
+         * Tell libcurl about specific SSL behaviors
+         *)
+        property SSLOptions : TSecurityProperty.TSSLOptions
+          write SetProxySSLOptions;
       end;
 
       { TDNSProperty }
@@ -3280,6 +3570,28 @@ type
         HEADER_SEPARATE                = Longint(CURLHEADER_SEPARATE)
       );
 
+      TGSSAPIDelegation = (
+
+       (**
+        *
+        *)
+        GSSAPI_DELEGATION_NONE         = Longint(CURLGSSAPI_DELEGATION_NONE),
+
+       (**
+        * Delegate only if the OK-AS-DELEGATE flag is set in the service ticket
+        * in case this feature is supported by the GSS-API implementation and
+        * the definition of GSS_C_DELEG_POLICY_FLAG was available at
+        * compile-time
+        *)
+        GSSAPI_DELEGATION_POLICY_FLAG
+                                   = Longint(CURLGSSAPI_DELEGATION_POLICY_FLAG),
+
+       (**
+        * Allow unconditional GSSAPI credential delegation
+        *)
+        GSSAPI_DELEGATION_FLAG         = Longint(CURLGSSAPI_DELEGATION_FLAG)
+      );
+
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
@@ -3328,6 +3640,7 @@ type
         procedure SetProxyHeaders (AHeader : TLinkedList);
         procedure SetHeaderOptions (AOptions : TSendHeaderOptions);
         procedure SetHTTP200Aliases (AAliases : TLinkedList);
+        procedure SetGSSAPIDelegation (ADelegate : TGSSAPIDelegation);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -3893,6 +4206,19 @@ type
         * is assumed to match HTTP 1.0 when an alias match.
         *)
         property HTTP200Aliases : TLinkedList write SetHTTP200Aliases;
+
+        (**
+         * Set allowed GSS-API delegation
+         *
+         * Set the parameter level to GSSAPI_DELEGATION_FLAG to allow
+         * unconditional GSSAPI credential delegation. Set the parameter to
+         * GSSAPI_DELEGATION_POLICY_FLAG to delegate only if the OK-AS-DELEGATE
+         * flag is set in the service ticket in case this feature is supported
+         * by the GSS-API implementation and the definition of
+         * GSS_C_DELEG_POLICY_FLAG was available at compile-time.
+         *)
+         property GSSAPIDelegation : TGSSAPIDelegation
+           write SetGSSAPIDelegation default GSSAPI_DELEGATION_NONE;
       end;
 
       { TIMAPProperty }
@@ -4739,6 +5065,7 @@ type
         procedure SetAuthServiceName (AName : string);
         procedure SetCommandBeforeTransfer (ACommands : TLinkedList);
         procedure SetCommandAfterTransfer (ACommands : TLinkedList);
+        procedure SetKerberosSecurityLevel (ALevel : string);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -5125,6 +5452,17 @@ type
          *)
         property CommandAfterTransfer : TLinkedList
           write SetCommandAfterTransfer;
+
+        (**
+         * Set FTP kerberos security level
+         *
+         * Set the kerberos security level for FTP; this also enables kerberos
+         * awareness. This is a string that should match one of the following:
+         * 'clear', 'safe', 'confidential' or 'private'. If the string is set
+         * but doesn't match one of these, 'private' will be used. Set the
+         * string to NULL to disable kerberos support for FTP.
+         *)
+        property KerberosSecurityLevel : string write SetKerberosSecurityLevel;
       end;
 
       { TSMTPProperty }
@@ -7178,6 +7516,11 @@ begin
     ACommands.FList));
 end;
 
+procedure TSession.TFTPProperty.SetKerberosSecurityLevel(ALevel: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_KRBLEVEL, PChar(ALevel)));
+end;
+
 constructor TSession.TFTPProperty.Create(AHandle: CURL; AErrorStack :
   PErrorStack);
 begin
@@ -7815,6 +8158,13 @@ begin
     AAliases.FList));
 end;
 
+procedure TSession.THTTPProperty.SetGSSAPIDelegation(
+  ADelegate: TGSSAPIDelegation);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_GSSAPI_DELEGATION,
+    Longint(ADelegate)));
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL; AErrorStack :
   PErrorStack);
 begin
@@ -7977,6 +8327,83 @@ end;
 procedure TSession.TSecurityProperty.SetCertificateAuthority(APath: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CAINFO, PChar(APath)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLCertificateFilename(AFilename: string
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ISSUERCERT,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TSecurityProperty.SetCertificateAuthorityDirectory(
+  ADirectory: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CAPATH,
+    PChar(ADirectory)));
+end;
+
+procedure TSession.TSecurityProperty.SetCertificateRevocationList(
+  AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CRLFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLCertificationInfo(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CERTINFO,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetPinnedPublicKey(AKey: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PINNEDPUBLICKEY,
+    PChar(AKey)));
+end;
+
+procedure TSession.TSecurityProperty.SetRandomDataFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANDOM_FILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TSecurityProperty.SetEntropyGatheringDaemonSocket(
+  APath: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_EGDSOCKET,
+    PChar(APath)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLCipherList(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_CIPHER_LIST,
+    PChar(AList)));
+end;
+
+procedure TSession.TSecurityProperty.SetTLS13Ciphers(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TLS13_CIPHERS,
+    PChar(AList)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLSessionIDCache(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_SESSIONID_CACHE,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLOptions(AOptions: TSSLOptions);
+var
+  Bitmask : Longint;
+begin
+  Bitmask := 0;
+  if SSLOPTIONS_ALLOW_BEAST in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_ALLOW_BEAST;
+  if SSLOPTIONS_NO_REVOKE in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_NO_REVOKE;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_OPTIONS, Bitmask));
 end;
 
 constructor TSession.TSecurityProperty.Create(AHandle: CURL; AErrorStack :
@@ -8246,6 +8673,53 @@ procedure TSession.TProxyProperty.SetCertificateAuthority(APath: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAINFO,
     PChar(APath)));
+end;
+
+procedure TSession.TProxyProperty.SetCertificateAuthorityDirectory(
+  ADirectory: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAPATH,
+    PChar(ADirectory)));
+end;
+
+procedure TSession.TProxyProperty.SetCertificateRevocationList(AFilename: string
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CRLFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TProxyProperty.SetProxyPinnedPublicKey(AKey: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_PINNEDPUBLICKEY,
+    PChar(AKey)));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLCipherList(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_CIPHER_LIST,
+    PChar(AList)));
+end;
+
+procedure TSession.TProxyProperty.SetProxyTLS13Ciphers(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLS13_CIPHERS,
+    PChar(AList)));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLOptions(
+  AOptions: TSecurityProperty.TSSLOptions);
+var
+  Bitmask : Longint;
+begin
+  Bitmask := 0;
+  if SSLOPTIONS_ALLOW_BEAST in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_ALLOW_BEAST;
+  if SSLOPTIONS_NO_REVOKE in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_NO_REVOKE;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_OPTIONS,
+    Bitmask));
 end;
 
 constructor TSession.TProxyProperty.Create(AHandle: CURL; AErrorStack :
