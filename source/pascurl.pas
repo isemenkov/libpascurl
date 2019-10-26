@@ -38,7 +38,7 @@ unit pascurl;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, math, typinfo;
+  Classes, SysUtils, libpascurl, math, typinfo, fgl;
 
 type
   { TTimeInterval }
@@ -292,6 +292,25 @@ type
         procedure Append (AString : string);
       end;
 
+      { TErrorStack }
+      { Store curl_easy_setopt function errors }
+
+      PErrorStack = ^TErrorStack;
+      TErrorStack = class
+      private
+        type
+          TCURLCodeList = specialize TFPGList<CURLcode>;
+      private
+        FList : TCURLCodeList;
+      public
+        constructor Create;
+        destructor Destroy; override;
+
+        procedure Push (ACode : CURLcode);
+        function Pop : CURLcode;
+        function Count : Cardinal;
+      end;
+
       { TOptionsProperty }
 
       TOptionsProperty = class
@@ -321,6 +340,7 @@ type
           );
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetNoSignal (AEnable : Boolean);
         procedure SetAddressScope (AScope : Longint);
@@ -348,7 +368,7 @@ type
         procedure SetHappyEyeballsTimeout (ATime : TTimeInterval);
         procedure SetPrivateData (AData : Pointer);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
        (**
@@ -796,6 +816,7 @@ type
         );
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetUserPassword (AUserpwd : string);
         procedure SetUsername (AName : string);
@@ -804,7 +825,6 @@ type
         procedure SetTLSPassword (APassword : string);
         procedure SetTLSAuth (AMethod : TTLSAuthMethod);
         procedure SetAllowUsernameInURL (AAllow : Boolean);
-        procedure SetAuthServiceName (AName : string);
         procedure SetNetrc (AOption : TNETRCOption);
         procedure SetNetrcFile (AFile : string);
         procedure SetUnrestrictedAuth (AEnable : Boolean);
@@ -812,7 +832,7 @@ type
         procedure SetSSLCertificateType (AType : string);
         procedure SetSSLKey (AKey : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
        (**
@@ -887,16 +907,6 @@ type
         * Set TLS authentication methods
         *)
         property TLSAuth : TTLSAuthMethod write SetTLSAuth;
-
-       (**
-        * Authentication service name
-        *
-        * String holding the name of the service for DIGEST-MD5, SPNEGO and
-        * Kerberos 5 authentication mechanisms. The default service names are
-        * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
-        * change them.
-        *)
-        property AuthServiceName : string write SetAuthServiceName;
 
        (**
         * Request then .netrc is used
@@ -1177,6 +1187,7 @@ type
         TProtocols = set of TProtocol;
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetAllowedProtocols (AProtocols : TProtocols);
         procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
@@ -1192,7 +1203,7 @@ type
         procedure SetRemotePort (APort : Word);
         procedure SetUpload (AEnable : Boolean);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -1344,6 +1355,7 @@ type
       TTCPProperty = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetTCPFastOpen (AEnable : Boolean);
         procedure SetTCPNoDelay (AEnable : Boolean);
@@ -1351,7 +1363,7 @@ type
         procedure SetTCPKeepIdle (ATime : TTimeInterval);
         procedure SetTCPKeepInterval (ATime : TTimeInterval);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -1414,12 +1426,13 @@ type
       TSOCKS5Property = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetSOCKS5Auth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetSOCKS5GSSAPIServiceName (AName : string);
         procedure SetSOCKS5GSSAPINegotiation (AEnable : Boolean);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -1502,6 +1515,7 @@ type
           );
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
         FSOCKS5 : TSOCKS5Property;
 
         procedure SetPreProxy (APreProxy : string);
@@ -1521,7 +1535,7 @@ type
         procedure SetProxySSLCertificateType (AType : string);
         procedure SetProxySSLKey (AKey : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         property SOCKS5 : TSOCKS5Property read FSOCKS5 write FSOCKS5;
@@ -1732,6 +1746,7 @@ type
       TDNSProperty = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetDNSCacheTimeout (ATimeout : TTimeInterval);
         procedure SetDNSGlobalCache (AEnable : Boolean);
@@ -1742,7 +1757,7 @@ type
         procedure SetDNSServers (AServers : string);
         procedure SetDNSShuffleAddresses (AEnable : Boolean);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -1842,6 +1857,7 @@ type
       THTTPCookie = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetCookie (ACookie : string);
         procedure SetCookieFile (AFile : string);
@@ -1849,7 +1865,7 @@ type
         procedure SetCookieSession (ACreate : Boolean);
         procedure SetCookieList (ACookie : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -2859,6 +2875,7 @@ type
 
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
         FCookie : THTTPCookie;
 
         procedure SetUserAgent (AAgent : string);
@@ -2896,8 +2913,9 @@ type
         procedure SetKeepSendingOnError (AKeepSending : Boolean);
         procedure SetHAProxyHeader (ASend : Boolean);
         procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
+        procedure SetAuthServiceName (AName : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         property Cookie : THTTPCookie read FCookie write FCookie;
@@ -3344,6 +3362,16 @@ type
          *)
         property HTTPProxyAuth : TSecurityProperty.TAuthMethods
           write SetProxyHTTPAuth default [AUTH_BASIC];
+
+        (**
+         * Authentication service name
+         *
+         * String holding the name of the service for DIGEST-MD5, SPNEGO and
+         * Kerberos 5 authentication mechanisms. The default service names are
+         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+         * change them.
+         *)
+        property AuthServiceName : string write SetAuthServiceName;
       end;
 
       { TIMAPProperty }
@@ -3351,6 +3379,7 @@ type
       TIMAPProperty = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetLoginOptions (AOptions : string);
         procedure SetSASLAuthzid (AAuthzid : string);
@@ -3358,8 +3387,9 @@ type
         procedure SetXOAuth2Bearer (AToken : string);
         procedure SetCustomRequest (ARequest : string);
         procedure SetConnectOnly (AEnable : Boolean);
+        procedure SetAuthServiceName (AName : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -3433,6 +3463,16 @@ type
          * reused.
          *)
         property ConnectOnly : Boolean write SetConnectOnly default False;
+
+        (**
+         * Authentication service name
+         *
+         * String holding the name of the service for DIGEST-MD5, SPNEGO and
+         * Kerberos 5 authentication mechanisms. The default service names are
+         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+         * change them.
+         *)
+        property AuthServiceName : string write SetAuthServiceName;
       end;
 
       { TFTPProperty }
@@ -4150,6 +4190,7 @@ type
         );
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetFTPPort (APort : string);
         procedure SetAppendUpload (AEnable : Boolean);
@@ -4174,8 +4215,9 @@ type
         procedure SetMaxDownloadFileSize (ASize : TDataSize);
         procedure SetAcceptTimeout (ATime : TTimeInterval);
         procedure SetWildcardMatch (AMatch : Boolean);
+        procedure SetAuthServiceName (AName : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -4484,6 +4526,16 @@ type
          * ftp://example.com/some/path/[a-z[:upper:]\\].jpeg
          *)
         property WildcardMatch : Boolean write SetWildcardMatch;
+
+        (**
+         * Authentication service name
+         *
+         * String holding the name of the service for DIGEST-MD5, SPNEGO and
+         * Kerberos 5 authentication mechanisms. The default service names are
+         * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+         * change them.
+         *)
+        property AuthServiceName : string write SetAuthServiceName;
       end;
 
       { TSMTPProperty }
@@ -4491,6 +4543,7 @@ type
       TSMTPProperty = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetMailFrom (AFrom : string);
         procedure SetMailAuth (AAuth : string);
@@ -4500,8 +4553,9 @@ type
         procedure SetSASLAuthzid (AAuthzid : string);
         procedure SetSASLIR (ASend : Boolean);
         procedure SetXOAuth2Bearer (AToken : string);
+        procedure SetAuthServiceName (AName : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -4611,6 +4665,16 @@ type
         * servers that support the OAuth 2.0 Authorization Framework.
         *)
         property XOAuth2BearerToken : string write SetXOAuth2Bearer;
+
+       (**
+        * Authentication service name
+        *
+        * String holding the name of the service for DIGEST-MD5, SPNEGO and
+        * Kerberos 5 authentication mechanisms. The default service names are
+        * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+        * change them.
+        *)
+       property AuthServiceName : string write SetAuthServiceName;
       end;
 
       { TTFTPProperty }
@@ -4618,11 +4682,12 @@ type
       TTFTPProperty = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetBlockSize (ASize : Longint);
         procedure SetNoOptions (AEnable : Boolean);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (**
@@ -4752,6 +4817,7 @@ type
         );
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetRequest (AReq : Longint);
         procedure SetSessionID (AId : string);
@@ -4761,7 +4827,7 @@ type
         procedure SetServerCSeq (ACSeq : Longint);
         procedure SetRange (ARange : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
         (*
@@ -4849,13 +4915,15 @@ type
       TPOP3Property = class
       private
         FHandle : CURL;
+        FErrorStack : TErrorStack;
 
         procedure SetLoginOptions (AOptions : string);
         procedure SetSASLAuthzid (AAuthzid : string);
         procedure SetSASLIR (ASend : Boolean);
         procedure SetXOAuth2Bearer (AToken : string);
+        procedure SetAuthServiceName (AName : string);
       public
-        constructor Create (AHandle : CURL);
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
 
        (**
@@ -4902,10 +4970,21 @@ type
         * servers that support the OAuth 2.0 Authorization Framework.
         *)
         property XOAuth2BearerToken : string write SetXOAuth2Bearer;
+
+       (**
+        * Authentication service name
+        *
+        * String holding the name of the service for DIGEST-MD5, SPNEGO and
+        * Kerberos 5 authentication mechanisms. The default service names are
+        * "ftp", "HTTP", "imap", "pop" and "smtp". This option allows you to
+        * change them.
+        *)
+       property AuthServiceName : string write SetAuthServiceName;
       end;
 
   protected
     FHandle : CURL;
+    FErrorStack : TErrorStack;
     FBuffer : TMemoryStream;
     FUploadOffset : Int64;
     FOptions : TOptionsProperty;
@@ -5448,31 +5527,77 @@ type
 
 implementation
 
+{ TSession.TErrorStack }
+
+constructor TSession.TErrorStack.Create;
+begin
+  FList := TCURLCodeList.Create;
+end;
+
+destructor TSession.TErrorStack.Destroy;
+begin
+  FreeAndNil(FList);
+  inherited Destroy;
+end;
+
+procedure TSession.TErrorStack.Push(ACode: CURLcode);
+begin
+  if ACode <> CURLE_OK then
+  begin
+    FList.Add(ACode);
+  end;
+end;
+
+function TSession.TErrorStack.Pop: CURLcode;
+begin
+  if FList.Count > 0 then
+  begin
+    Result := FList.First;
+    FList.Delete(1);
+  end;
+end;
+
+function TSession.TErrorStack.Count: Cardinal;
+begin
+  Result := FList.Count;
+end;
+
 { TSession.TPOP3Property }
 
 procedure TSession.TPOP3Property.SetLoginOptions(AOptions: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS,
+    PChar(AOptions)));
 end;
 
 procedure TSession.TPOP3Property.SetSASLAuthzid(AAuthzid: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID,
+    PChar(AAuthzid)));
 end;
 
 procedure TSession.TPOP3Property.SetSASLIR(ASend: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend)));
 end;
 
 procedure TSession.TPOP3Property.SetXOAuth2Bearer(AToken: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER,
+    PChar(AToken)));
 end;
 
-constructor TSession.TPOP3Property.Create(AHandle: CURL);
+procedure TSession.TPOP3Property.SetAuthServiceName(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
+    PChar(AName)));
+end;
+
+constructor TSession.TPOP3Property.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TPOP3Property.Destroy;
@@ -6000,45 +6125,50 @@ end;
 
 procedure TSession.TRTSPProperty.SetRequest(AReq: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_REQUEST, AReq);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_REQUEST, AReq));
 end;
 
 procedure TSession.TRTSPProperty.SetSessionID(AId: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_SESSION_ID, PChar(AId));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_SESSION_ID,
+    PChar(AId)));
 end;
 
 procedure TSession.TRTSPProperty.SetStreamURI(AURI: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_STREAM_URI, PChar(AURI));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_STREAM_URI,
+    PChar(AURI)));
 end;
 
 procedure TSession.TRTSPProperty.SetTransport(ATransport: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_TRANSPORT, PChar(ATransport));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_TRANSPORT,
+    PChar(ATransport)));
 end;
 
 procedure TSession.TRTSPProperty.SetClientCSeq(ACSeq: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_CLIENT_CSEQ, ACSeq);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_CLIENT_CSEQ, ACSeq));
 end;
 
 procedure TSession.TRTSPProperty.SetServerCSeq(ACSeq: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RTSP_SERVER_CSEQ, ACSeq);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RTSP_SERVER_CSEQ, ACSeq));
 end;
 
 procedure TSession.TRTSPProperty.SetRange(ARange: string);
 begin
   if ARange <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, 0));
 end;
 
-constructor TSession.TRTSPProperty.Create(AHandle: CURL);
+constructor TSession.TRTSPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TRTSPProperty.Destroy;
@@ -6050,17 +6180,20 @@ end;
 
 procedure TSession.TTFTPProperty.SetBlockSize(ASize: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TFTP_BLKSIZE, ASize);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TFTP_BLKSIZE, ASize));
 end;
 
 procedure TSession.TTFTPProperty.SetNoOptions(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TFTP_NO_OPTIONS, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TFTP_NO_OPTIONS,
+    Longint(AEnable)));
 end;
 
-constructor TSession.TTFTPProperty.Create(AHandle: CURL);
+constructor TSession.TTFTPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TTFTPProperty.Destroy;
@@ -6072,50 +6205,63 @@ end;
 
 procedure TSession.TSMTPProperty.SetMailFrom(AFrom: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAIL_FROM, PChar(AFrom));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAIL_FROM, PChar(AFrom)));
 end;
 
 procedure TSession.TSMTPProperty.SetMailAuth(AAuth: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAIL_AUTH, PChar(AAuth));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAIL_AUTH, PChar(AAuth)));
 end;
 
 procedure TSession.TSMTPProperty.SetCustomRequest(ARequest: string);
 begin
   if ARequest <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST,
+      PChar(ARequest)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0));
 end;
 
 procedure TSession.TSMTPProperty.SetConnectOnly(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TSMTPProperty.SetLoginOptions(AOptions: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS,
+    PChar(AOptions)));
 end;
 
 procedure TSession.TSMTPProperty.SetSASLAuthzid(AAuthzid: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID,
+    PChar(AAuthzid)));
 end;
 
 procedure TSession.TSMTPProperty.SetSASLIR(ASend: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend)));
 end;
 
 procedure TSession.TSMTPProperty.SetXOAuth2Bearer(AToken: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER,
+    PChar(AToken)));
 end;
 
-constructor TSession.TSMTPProperty.Create(AHandle: CURL);
+procedure TSession.TSMTPProperty.SetAuthServiceName(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
+    PChar(AName)));
+end;
+
+constructor TSession.TSMTPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TSMTPProperty.Destroy;
@@ -6127,32 +6273,36 @@ end;
 
 procedure TSession.THTTPCookie.SetCookie(ACookie: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIE, PChar(ACookie));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COOKIE, PChar(ACookie)));
 end;
 
 procedure TSession.THTTPCookie.SetCookieFile(AFile: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIEFILE, PChar(AFile));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COOKIEFILE, PChar(AFile)));
 end;
 
 procedure TSession.THTTPCookie.SetCookieJar(AFile: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIEJAR, PChar(AFile));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COOKIEJAR, PChar(AFile)));
 end;
 
 procedure TSession.THTTPCookie.SetCookieSession(ACreate: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIESESSION, Longint(ACreate));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COOKIESESSION,
+    Longint(ACreate)));
 end;
 
 procedure TSession.THTTPCookie.SetCookieList(ACookie: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_COOKIELIST, PChar(ACookie));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COOKIELIST,
+    PChar(ACookie)));
 end;
 
-constructor TSession.THTTPCookie.Create(AHandle: CURL);
+constructor TSession.THTTPCookie.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.THTTPCookie.Destroy;
@@ -6164,130 +6314,155 @@ end;
 
 procedure TSession.TFTPProperty.SetFTPPort(APort: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTPPORT, PChar(APort));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTPPORT, PChar(APort)));
 end;
 
 procedure TSession.TFTPProperty.SetAppendUpload(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_APPEND, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_APPEND, Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetUseEPRT(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPRT, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPRT,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetUseEPSV(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPSV, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_USE_EPSV,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetUsePRET(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_USE_PRET, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_USE_PRET,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetCreateMissingDirs(ACreate: TCreateDirs);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_CREATE_MISSING_DIRS, Longint(ACreate));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_CREATE_MISSING_DIRS,
+    Longint(ACreate)));
 end;
 
 procedure TSession.TFTPProperty.SetResponseTimeout(ATimeout: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_RESPONSE_TIMEOUT,
-    Longint(ATimeout.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_RESPONSE_TIMEOUT,
+    Longint(ATimeout.Seconds)));
 end;
 
 procedure TSession.TFTPProperty.SetAlternativeToUser(ACmd: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_ALTERNATIVE_TO_USER, PChar(ACmd));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_ALTERNATIVE_TO_USER,
+    PChar(ACmd)));
 end;
 
 procedure TSession.TFTPProperty.SetSkipPASVIP(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_SKIP_PASV_IP, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_SKIP_PASV_IP,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetSSLAuth(AAuth: TAuth);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTPSSLAUTH, Longint(AAuth));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTPSSLAUTH,
+    Longint(AAuth)));
 end;
 
 procedure TSession.TFTPProperty.SetSSLCCC(ACCC: TSSL_CCC);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_SSL_CCC, Longint(ACCC));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_SSL_CCC,
+    Longint(ACCC)));
 end;
 
 procedure TSession.TFTPProperty.SetAccountInfo(AAccount: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_ACCOUNT, PChar(AAccount));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_ACCOUNT,
+    PChar(AAccount)));
 end;
 
 procedure TSession.TFTPProperty.SetFileMethod(AMethod: TFileMethod);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FTP_FILEMETHOD, Longint(AMethod));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FTP_FILEMETHOD,
+    Longint(AMethod)));
 end;
 
 procedure TSession.TFTPProperty.SetTransferText(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TRANSFERTEXT, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TRANSFERTEXT,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetProxyTransferMode(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TRANSFER_MODE, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TRANSFER_MODE,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetRange(ARange: string);
 begin
   if ARange <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, 0));
 end;
 
 procedure TSession.TFTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom));
 end;
 
 procedure TSession.TFTPProperty.SetCustomRequest(ARequest: string);
 begin
   if ARequest <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST,
+      PChar(ARequest)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0));
 end;
 
 procedure TSession.TFTPProperty.SetTimeModification(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FILETIME, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FILETIME,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetDirListOnly(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DIRLISTONLY, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DIRLISTONLY,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TFTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE, ASize.Bytes);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
+    ASize.Bytes));
 end;
 
 procedure TSession.TFTPProperty.SetAcceptTimeout(ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_ACCEPTTIMEOUT_MS,
-    Longint(ATime.Milliseconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ACCEPTTIMEOUT_MS,
+    Longint(ATime.Milliseconds)));
 end;
 
 procedure TSession.TFTPProperty.SetWildcardMatch(AMatch: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_WILDCARDMATCH, Longint(AMatch));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_WILDCARDMATCH,
+    Longint(AMatch)));
 end;
 
-constructor TSession.TFTPProperty.Create(AHandle: CURL);
+procedure TSession.TFTPProperty.SetAuthServiceName(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
+    PChar(AName)));
+end;
+
+constructor TSession.TFTPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TFTPProperty.Destroy;
@@ -6299,40 +6474,53 @@ end;
 
 procedure TSession.TIMAPProperty.SetLoginOptions(AOptions: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS, PChar(AOptions));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOGIN_OPTIONS,
+    PChar(AOptions)));
 end;
 
 procedure TSession.TIMAPProperty.SetSASLAuthzid(AAuthzid: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID, PChar(AAuthzid));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_AUTHZID,
+    PChar(AAuthzid)));
 end;
 
 procedure TSession.TIMAPProperty.SetSASLIR(ASend: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SASL_IR, Longint(ASend)));
 end;
 
 procedure TSession.TIMAPProperty.SetXOAuth2Bearer(AToken: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER, PChar(AToken));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_XOAUTH2_BEARER,
+    PChar(AToken)));
 end;
 
 procedure TSession.TIMAPProperty.SetCustomRequest(ARequest: string);
 begin
   if ARequest <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST,
+      PChar(ARequest)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0));
 end;
 
 procedure TSession.TIMAPProperty.SetConnectOnly(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY,
+    Longint(AEnable)));
 end;
 
-constructor TSession.TIMAPProperty.Create(AHandle: CURL);
+procedure TSession.TIMAPProperty.SetAuthServiceName(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
+    PChar(AName)));
+end;
+
+constructor TSession.TIMAPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TIMAPProperty.Destroy;
@@ -6405,7 +6593,7 @@ begin
   if PROTOCOL_TFTP in AProtocols then
     bitmask := bitmask or CURLPROTO_TFTP;
 
-  curl_easy_setopt(FHandle, CURLOPT_PROTOCOLS, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROTOCOLS, bitmask));
 end;
 
 procedure TSession.TProtocolProperty.SetAllowedRedirectProtocols
@@ -6471,7 +6659,7 @@ begin
   if PROTOCOL_TFTP in AProtocols then
     bitmask := bitmask or CURLPROTO_TFTP;
 
-  curl_easy_setopt(FHandle, CURLOPT_REDIR_PROTOCOLS, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_REDIR_PROTOCOLS, bitmask));
 end;
 
 procedure TSession.TProtocolProperty.SetDefaultProtocol(AProtocol: TProtocol);
@@ -6481,59 +6669,66 @@ begin
   protocol := GetEnumName(TypeInfo(TProtocol), Ord(AProtocol));
   protocol := LowerCase(Copy(protocol, Length('PROTOCOL_') + 1,
     Length(protocol) - Length('PROTOCOL_') + 1));
-  curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL, PChar(protocol));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL,
+    PChar(protocol)));
 end;
 
 procedure TSession.TProtocolProperty.SetFollowRedirect(AFollow: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION, Longint(AFollow));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
+    Longint(AFollow)));
 end;
 
 procedure TSession.TProtocolProperty.SetMaxRedirects(AAmount: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount));
 end;
 
 procedure TSession.TProtocolProperty.SetNoBody(ANoBody: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody)));
 end;
 
 procedure TSession.TProtocolProperty.SetVerbose(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_VERBOSE, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_VERBOSE,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TProtocolProperty.SetIncludeHeader(AIncludeHeader: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HEADER, Longint(AIncludeHeader));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HEADER,
+    Longint(AIncludeHeader)));
 end;
 
 procedure TSession.TProtocolProperty.SetIgnoreContentLength(
   AIgnoreLength: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
-    Longint(AIgnoreLength));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
+    Longint(AIgnoreLength)));
 end;
 
 procedure TSession.TProtocolProperty.SetTransferEncoding(AEncoding: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING, Longint(AEncoding));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING,
+    Longint(AEncoding)));
 end;
 
 procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort)));
 end;
 
 procedure TSession.TProtocolProperty.SetUpload(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_UPLOAD, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UPLOAD, Longint(AEnable)));
 end;
 
-constructor TSession.TProtocolProperty.Create(AHandle: CURL);
+constructor TSession.TProtocolProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TProtocolProperty.Destroy;
@@ -6545,12 +6740,13 @@ end;
 
 procedure TSession.THTTPProperty.SetUserAgent(AAgent: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_USERAGENT, PChar(AAgent));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT, PChar(AAgent)));
 end;
 
 procedure TSession.THTTPProperty.SetAutoReferer(AUpdateHeaders: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_AUTOREFERER, Longint(AUpdateHeaders));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_AUTOREFERER,
+    Longint(AUpdateHeaders)));
 end;
 
 procedure TSession.THTTPProperty.SetHTTPAuth (
@@ -6583,12 +6779,13 @@ begin
     bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
       CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
 
-  curl_easy_setopt(FHandle, CURLOPT_HTTPAUTH, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTPAUTH, bitmask));
 end;
 
 procedure TSession.THTTPProperty.SetUnrestrictedAuth(ASend: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH, Longint(ASend));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH,
+    Longint(ASend)));
 end;
 
 procedure TSession.THTTPProperty.SetPostRedirect(ARedirect: TPostRedirects);
@@ -6605,27 +6802,28 @@ begin
   if REDIRECT_POST_ALL in ARedirect then
     bitmask := CURL_REDIR_POST_ALL;
 
-  curl_easy_setopt(FHandle, CURLOPT_POSTREDIR, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POSTREDIR, bitmask));
 end;
 
 procedure TSession.THTTPProperty.SetPutMethod(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PUT, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PUT, Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetPostMethod(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_POST, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POST, Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetPostFields(AData: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_POSTFIELDS, PChar(AData));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POSTFIELDS, PChar(AData)));
 end;
 
 procedure TSession.THTTPProperty.SetPostFieldsSize(ASize: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE, ASize);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE,
+    ASize));
 end;
 
 procedure TSession.THTTPProperty.SetAcceptEncoding(AEncodings: TEncodings);
@@ -6650,7 +6848,7 @@ var
 begin
   if AEncodings = [ENCODE_NONE] then
   begin
-    curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, 0));
   end else
   begin
     if ENCODE_DEFLATE in AEncodings then
@@ -6669,23 +6867,25 @@ begin
       enc := enc + GetEncodingName(ENCODE_BR);
     end;
 
-    curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING, PChar(enc));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ACCEPT_ENCODING,
+      PChar(enc)));
   end;
 end;
 
 procedure TSession.THTTPProperty.SetTransferEncoding(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetReferer(AWhere: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_REFERER, PChar(AWhere));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_REFERER, PChar(AWhere)));
 end;
 
 procedure TSession.THTTPProperty.SetAltSvcCacheFile(AFile: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_ALTSVC, PChar(AFile));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ALTSVC, PChar(AFile)));
 end;
 
 procedure TSession.THTTPProperty.SetAltSvcCtrl(AAltSvc: TAltSvcs);
@@ -6695,7 +6895,7 @@ begin
   bitmask := 0;
   if [ALTSVC_DISABLE] = AAltSvc then
   begin
-    curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, 0));
   end else
   begin
     if ALTSVC_IMMEDIATELY in AAltSvc then
@@ -6718,116 +6918,131 @@ begin
     begin
       bitmask := bitmask or CURLALTSVC_H3;
     end;
-    curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, bitmask);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, bitmask));
   end;
 end;
 
 procedure TSession.THTTPProperty.SetGetMethod(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HTTPGET, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTPGET,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetRequestTarget(ATarget: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_REQUEST_TARGET, PChar(ATarget));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_REQUEST_TARGET,
+    PChar(ATarget)));
 end;
 
 procedure TSession.THTTPProperty.SetHttpVersion(AVersion: THTTPVersion);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HTTP_VERSION, Longint(AVersion));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTP_VERSION,
+    Longint(AVersion)));
 end;
 
 procedure TSession.THTTPProperty.SetHttp09Allowed(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HTTP09_ALLOWED, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTP09_ALLOWED,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetIgnoreContentLength(AIgnore: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH, Longint(AIgnore));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
+    Longint(AIgnore)));
 end;
 
 procedure TSession.THTTPProperty.SetHttpContentDecoding(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HTTP_CONTENT_DECODING, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTP_CONTENT_DECODING,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetHttpTransferDecoding(AEnable: Boolean);
 begin
-  curl_easy_setopt(Fhandle, CURLOPT_HTTP_TRANSFER_DECODING, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(Fhandle, CURLOPT_HTTP_TRANSFER_DECODING,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetExpect100Timeout(ATimeout: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_EXPECT_100_TIMEOUT_MS,
-    Longint(ATimeout.Milliseconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_EXPECT_100_TIMEOUT_MS,
+    Longint(ATimeout.Milliseconds)));
 end;
 
 procedure TSession.THTTPProperty.SetPipeWait(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PIPEWAIT, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PIPEWAIT,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetStreamDepends(ADependHandle: CURL);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS, ADependHandle);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS,
+    ADependHandle));
 end;
 
 procedure TSession.THTTPProperty.SetStreamDependsExclusive(ADependHandle: CURL);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS_E, ADependHandle);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_STREAM_DEPENDS_E,
+    ADependHandle));
 end;
 
 procedure TSession.THTTPProperty.SetStreamWeight(AWeight: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_STREAM_WEIGHT, AWeight);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_STREAM_WEIGHT, AWeight));
 end;
 
 procedure TSession.THTTPProperty.SetRange(ARange: string);
 begin
   if ARange <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, PChar(ARange)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_RANGE, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RANGE, 0));
 end;
 
 procedure TSession.THTTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom));
 end;
 
 procedure TSession.THTTPProperty.SetCustomRequest(ARequest: string);
 begin
   if ARequest <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, PChar(ARequest))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST,
+      PChar(ARequest)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0));
 end;
 
 procedure TSession.THTTPProperty.SetTimeModification(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FILETIME, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FILETIME,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE, ASize.Bytes);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
+    ASize.Bytes));
 end;
 
 procedure TSession.THTTPProperty.SetConnectOnly(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY,
+    Longint(AEnable)));
 end;
 
 procedure TSession.THTTPProperty.SetKeepSendingOnError(AKeepSending: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_KEEP_SENDING_ON_ERROR,
-    Longint(AKeepSending));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_KEEP_SENDING_ON_ERROR,
+    Longint(AKeepSending)));
 end;
 
 procedure TSession.THTTPProperty.SetHAProxyHeader(ASend: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL, Longint(ASend));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HAPROXYPROTOCOL,
+    Longint(ASend)));
 end;
 
 procedure TSession.THTTPProperty.SetProxyHTTPAuth(AMethod:
@@ -6860,13 +7075,21 @@ begin
     bitmask := bitmask or CURLAUTH_DIGEST or CURLAUTH_NEGOTIATE or
       CURLAUTH_NTLM or CURLAUTH_NTLM_WB or CURLAUTH_BEARER;
 
-  curl_easy_setopt(FHandle, CURLOPT_PROXYAUTH, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYAUTH, bitmask));
 end;
 
-constructor TSession.THTTPProperty.Create(AHandle: CURL);
+procedure TSession.THTTPProperty.SetAuthServiceName(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
+    PChar(AName)));
+end;
+
+constructor TSession.THTTPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
-  FCookie := THTTPCookie.Create(AHandle);
+  FErrorStack := AErrorStack^;
+  FCookie := THTTPCookie.Create(AHandle, AErrorStack);
 end;
 
 destructor TSession.THTTPProperty.Destroy;
@@ -6878,79 +7101,82 @@ end;
 
 procedure TSession.TSecurityProperty.SetUserPassword(AUserpwd: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_USERPWD, PChar(AUserpwd));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERPWD, PChar(AUserpwd)));
 end;
 
 procedure TSession.TSecurityProperty.SetUsername(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_USERNAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERNAME, PChar(AName)));
 end;
 
 procedure TSession.TSecurityProperty.SetPassword(APassword: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PASSWORD, PChar(APassword));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PASSWORD,
+    PChar(APassword)));
 end;
 
 procedure TSession.TSecurityProperty.SetTLSUsername(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_USERNAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_USERNAME,
+    PChar(AName)));
 end;
 
 procedure TSession.TSecurityProperty.SetTLSPassword(APassword: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_PASSWORD, PChar(APassword));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_PASSWORD,
+    PChar(APassword)));
 end;
 
 procedure TSession.TSecurityProperty.SetTLSAuth(AMethod: TTLSAuthMethod);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_TYPE,
-    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod))));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TLSAUTH_TYPE,
+    PChar(GetEnumName(TypeInfo(TTLSAuthMethod), ord(AMethod)))));
 end;
 
 procedure TSession.TSecurityProperty.SetAllowUsernameInURL(AAllow: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DISALLOW_USERNAME_IN_URL,
-    Longint(Boolean(not AAllow)));
-end;
-
-procedure TSession.TSecurityProperty.SetAuthServiceName(AName: string);
-begin
-  curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DISALLOW_USERNAME_IN_URL,
+    Longint(Boolean(not AAllow))));
 end;
 
 procedure TSession.TSecurityProperty.SetNetrc(AOption: TNETRCOption);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_NETRC, Longint(AOption));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NETRC, Longint(AOption)));
 end;
 
 procedure TSession.TSecurityProperty.SetNetrcFile(AFile: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_NETRC_FILE, PChar(AFile));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NETRC_FILE, PChar(AFile)));
 end;
 
 procedure TSession.TSecurityProperty.SetUnrestrictedAuth(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TSecurityProperty.SetSSLCertificate(ACertificate: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SSLCERT, PChar(ACertificate));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLCERT,
+    PChar(ACertificate)));
 end;
 
 procedure TSession.TSecurityProperty.SetSSLCertificateType(AType: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SSLCERTTYPE, PChar(AType));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLCERTTYPE,
+    PChar(AType)));
 end;
 
 procedure TSession.TSecurityProperty.SetSSLKey(AKey: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SSLKEY, PChar(AKey));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLKEY, PChar(AKey)));
 end;
 
-constructor TSession.TSecurityProperty.Create(AHandle: CURL);
+constructor TSession.TSecurityProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TSecurityProperty.Destroy;
@@ -6962,63 +7188,71 @@ end;
 
 procedure TSession.TDNSProperty.SetDNSCacheTimeout(ATimeout: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DNS_CACHE_TIMEOUT,
-    Longint(ATimeout.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_CACHE_TIMEOUT,
+    Longint(ATimeout.Seconds)));
 end;
 
 procedure TSession.TDNSProperty.SetDNSGlobalCache(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DNS_USE_GLOBAL_CACHE, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_USE_GLOBAL_CACHE,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TDNSProperty.SetDNSoverHTTPS(AUrl: string);
 begin
   if AUrl <> '' then
   begin
-    curl_easy_setopt(FHandle, CURLOPT_DOH_URL, PChar(AUrl));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DOH_URL, PChar(AUrl)));
   end else
   begin
-    curl_easy_setopt(FHandle, CURLOPT_DOH_URL, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DOH_URL, 0));
   end;
 end;
 
 procedure TSession.TDNSProperty.SetDNSInterface(AInterface: string);
 begin
   if AInterface <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE, PChar(AInterface))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE,
+      PChar(AInterface)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE, 0));
 end;
 
 procedure TSession.TDNSProperty.SetDNSLocalIP4(AAddress: string);
 begin
   if AAddress <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4, PChar(AAddress))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4,
+      PChar(AAddress)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4, 0));
 end;
 
 procedure TSession.TDNSProperty.SetDNSLocalIP6(AAddress: string);
 begin
   if AAddress <> '' then
-    curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6, PChar(AAddress))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6,
+      PChar(AAddress)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6, 0));
 end;
 
 procedure TSession.TDNSProperty.SetDNSServers(AServers: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DNS_SERVERS, PChar(AServers));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_SERVERS,
+    PChar(AServers)));
 end;
 
 procedure TSession.TDNSProperty.SetDNSShuffleAddresses(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_DNS_SHUFFLE_ADDRESSES, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_SHUFFLE_ADDRESSES,
+    Longint(AEnable)));
 end;
 
-constructor TSession.TDNSProperty.Create(AHandle: CURL);
+constructor TSession.TDNSProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TDNSProperty.Destroy;
@@ -7039,22 +7273,26 @@ begin
   if AUTH_GSSAPI in AMethod then
     bitmask := bitmask or CURLAUTH_GSSAPI;
 
-  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_AUTH, bitmask);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SOCKS5_AUTH, bitmask));
 end;
 
 procedure TSession.TSOCKS5Property.SetSOCKS5GSSAPIServiceName(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_SERVICE, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_SERVICE,
+    PChar(AName)));
 end;
 
 procedure TSession.TSOCKS5Property.SetSOCKS5GSSAPINegotiation(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_NEC, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SOCKS5_GSSAPI_NEC,
+    Longint(AEnable)));
 end;
 
-constructor TSession.TSOCKS5Property.Create(AHandle: CURL);
+constructor TSession.TSOCKS5Property.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TSOCKS5Property.Destroy;
@@ -7066,91 +7304,105 @@ end;
 
 procedure TSession.TProxyProperty.SetPreProxy(APreProxy: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PRE_PROXY, PChar(APreProxy));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PRE_PROXY,
+    PChar(APreProxy)));
 end;
 
 procedure TSession.TProxyProperty.SetProxy(AProxy: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY, PChar(AProxy));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY, PChar(AProxy)));
 end;
 
 procedure TSession.TProxyProperty.SetPort(APort: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXYPORT, APort);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYPORT, APort));
 end;
 
 procedure TSession.TProxyProperty.SetProxyType(AType: TProxyType);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXYTYPE, Longint(AType));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYTYPE,
+    Longint(AType)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyServiceName(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_SERVICE_NAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SERVICE_NAME,
+    PChar(AName)));
 end;
 
 procedure TSession.TProxyProperty.SetNoProxyHosts(AHosts: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_NOPROXY, PChar(AHosts));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOPROXY, PChar(AHosts)));
 end;
 
 procedure TSession.TProxyProperty.SetHttpProxyTunnel(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HTTPPROXYTUNNEL, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTPPROXYTUNNEL,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyUserPassword(AUserpwd: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXYUSERPWD, PChar(AUserpwd));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYUSERPWD,
+    PChar(AUserpwd)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyUsername(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXYUSERNAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYUSERNAME,
+    PChar(AName)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyPassword(APassword: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXYPASSWORD, PChar(APassword));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYPASSWORD,
+    PChar(APassword)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyTLSUsername(AName: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_USERNAME, PChar(AName));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_USERNAME,
+    PChar(AName)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyTLSPassword(APassword: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD, PChar(APassword));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD,
+    PChar(APassword)));
 end;
 
 procedure TSession.TProxyProperty.SetProxyTLSAuth(
   AMethod: TSecurityProperty.TTLSAuthMethod);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
     PChar(GetEnumName(TypeInfo(TSecurityProperty.TTLSAuthMethod),
-    ord(AMethod))));
+    ord(AMethod)))));
 end;
 
 procedure TSession.TProxyProperty.SetProxySSLCertificate(ACertificate: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERT, PChar(ACertificate));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERT,
+    PChar(ACertificate)));
 end;
 
 procedure TSession.TProxyProperty.SetProxySSLCertificateType(AType: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERTTYPE, PChar(AType));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERTTYPE,
+    PChar(AType)));
 end;
 
 procedure TSession.TProxyProperty.SetProxySSLKey(AKey: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY, PChar(AKey));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY,
+    PChar(AKey)));
 end;
 
-constructor TSession.TProxyProperty.Create(AHandle: CURL);
+constructor TSession.TProxyProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
-  FSOCKS5 := TSOCKS5Property.Create(AHandle);
+  FErrorStack := AErrorStack^;
+  FSOCKS5 := TSOCKS5Property.Create(AHandle, AErrorStack);
 end;
 
 destructor TSession.TProxyProperty.Destroy;
@@ -7162,34 +7414,39 @@ end;
 
 procedure TSession.TTCPProperty.SetTCPFastOpen(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TCP_FASTOPEN, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TCP_FASTOPEN,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TTCPProperty.SetTCPNoDelay(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TCP_NODELAY, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TCP_NODELAY,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TTCPProperty.SetTCPKeepalive(ASendProbe: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPALIVE, Longint(ASendProbe));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPALIVE,
+    Longint(ASendProbe)));
 end;
 
 procedure TSession.TTCPProperty.SetTCPKeepIdle(ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPIDLE,
-    Longint(ATime.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPIDLE,
+    Longint(ATime.Seconds)));
 end;
 
 procedure TSession.TTCPProperty.SetTCPKeepInterval(ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPINTVL,
-    Longint(ATime.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TCP_KEEPINTVL,
+    Longint(ATime.Seconds)));
 end;
 
-constructor TSession.TTCPProperty.Create(AHandle: CURL);
+constructor TSession.TTCPProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TTCPProperty.Destroy;
@@ -7201,27 +7458,30 @@ end;
 
 procedure TSession.TOptionsProperty.SetNoSignal(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_NOSIGNAL, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOSIGNAL,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TOptionsProperty.SetAddressScope(AScope: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_ADDRESS_SCOPE, AScope);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ADDRESS_SCOPE, AScope));
 end;
 
 procedure TSession.TOptionsProperty.SetInterface(AInterface: string);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_INTERFACE, PChar(AInterface));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_INTERFACE,
+    PChar(AInterface)));
 end;
 
 procedure TSession.TOptionsProperty.SetUnixSocketPath(APath: string);
 begin
   if APath = '' then
   begin
-    curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, 0));
   end else
   begin
-    curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH, PChar(APath));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UNIX_SOCKET_PATH,
+      PChar(APath)));
   end;
 end;
 
@@ -7229,131 +7489,147 @@ procedure TSession.TOptionsProperty.SetAbstractUnixSocketPath(APath: string);
 begin
   if APath = '' then
   begin
-    curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET, 0);
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET,
+      0));
   end else
   begin
-    curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET, PChar(APath));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ABSTRACT_UNIX_SOCKET,
+      PChar(APath)));
   end;
 end;
 
 procedure TSession.TOptionsProperty.SetBufferSize(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_BUFFERSIZE, Longint(ASize.Bytes));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_BUFFERSIZE,
+    Longint(ASize.Bytes)));
 end;
 
 procedure TSession.TOptionsProperty.SetFailOnError(AFailOnError: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FAILONERROR, Longint(AFailOnError));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FAILONERROR,
+    Longint(AFailOnError)));
 end;
 
 procedure TSession.TOptionsProperty.SetPathAsIs(ALeaveIt: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PATH_AS_IS, Longint(ALeaveIt));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PATH_AS_IS,
+    Longint(ALeaveIt)));
 end;
 
 procedure TSession.TOptionsProperty.SetConvertCRLF(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_CRLF, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CRLF, Longint(AEnable)));
 end;
 
 procedure TSession.TOptionsProperty.SetUploadFileSize(ASize: curl_off_t);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_INFILESIZE_LARGE, ASize);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_INFILESIZE_LARGE, ASize));
 end;
 
 procedure TSession.TOptionsProperty.SetUploadBufferSize(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_UPLOAD_BUFFERSIZE, ASize.Bytes);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UPLOAD_BUFFERSIZE,
+    ASize.Bytes));
 end;
 
 procedure TSession.TOptionsProperty.SetTimeout(ATime: TTimeInterval);
 begin
   if ATime.Seconds >= 1 then
-    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT, Longint(ATime.Seconds))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TIMEOUT,
+      Longint(ATime.Seconds)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_TIMEOUT_MS,
-      Longint(ATime.Milliseconds));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TIMEOUT_MS,
+      Longint(ATime.Milliseconds)));
 end;
 
 procedure TSession.TOptionsProperty.SetLowSpeedLimit(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_LIMIT, Longint(ASize.Bytes));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_LIMIT,
+    Longint(ASize.Bytes)));
 end;
 
 procedure TSession.TOptionsProperty.SetLowSpeedTime(ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_TIME,
-    Longint(ATime.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOW_SPEED_TIME,
+    Longint(ATime.Seconds)));
 end;
 
 procedure TSession.TOptionsProperty.SetMaxUploadSpeed(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAX_SEND_SPEED_LARGE, ASize.Bytes);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAX_SEND_SPEED_LARGE,
+    ASize.Bytes));
 end;
 
 procedure TSession.TOptionsProperty.SetMaxDownloadSpeed(ASize: TDataSize);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAX_RECV_SPEED_LARGE, ASize.Bytes);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAX_RECV_SPEED_LARGE,
+    ASize.Bytes));
 end;
 
 procedure TSession.TOptionsProperty.SetMaxConnections(AConn: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXCONNECTS, AConn);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXCONNECTS, AConn));
 end;
 
 procedure TSession.TOptionsProperty.SetForceReuseConnection(AEnable: Boolean);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FRESH_CONNECT, Longint(not AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FRESH_CONNECT,
+    Longint(not AEnable)));
 end;
 
 procedure TSession.TOptionsProperty.SetCloseConnectionAfterUse(AEnable: Boolean
   );
 begin
-  curl_easy_setopt(FHandle, CURLOPT_FORBID_REUSE, Longint(AEnable));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FORBID_REUSE,
+    Longint(AEnable)));
 end;
 
 procedure TSession.TOptionsProperty.SetMaxReuseConnectionTime(
   ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_MAXAGE_CONN, Longint(ATime.Seconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXAGE_CONN,
+    Longint(ATime.Seconds)));
 end;
 
 procedure TSession.TOptionsProperty.SetConnectionTimeout(ATime: TTimeInterval);
 begin
   if ATime.Seconds >= 1 then
-    curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT,
-      Longint(ATime.Seconds))
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT,
+      Longint(ATime.Seconds)))
   else
-    curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT_MS,
-      Longint(ATime.Milliseconds));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECTTIMEOUT_MS,
+      Longint(ATime.Milliseconds)));
 end;
 
 procedure TSession.TOptionsProperty.SetIPResolve(AResolve: TIPResolve);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_IPRESOLVE, Longint(AResolve));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_IPRESOLVE,
+    Longint(AResolve)));
 end;
 
 procedure TSession.TOptionsProperty.SetHappyEyeballsTimeout(ATime: TTimeInterval
   );
 begin
-  curl_easy_setopt(FHandle, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
-    Longint(ATime.Milliseconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS,
+    Longint(ATime.Milliseconds)));
 end;
 
 procedure TSession.TOptionsProperty.SetPrivateData(AData: Pointer);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_PRIVATE, AData);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PRIVATE, AData));
 end;
 
 procedure TSession.TOptionsProperty.SetUpkeepInterval(ATime: TTimeInterval);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_UPKEEP_INTERVAL_MS,
-    Longint(ATime.Milliseconds));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UPKEEP_INTERVAL_MS,
+    Longint(ATime.Milliseconds)));
 end;
 
-constructor TSession.TOptionsProperty.Create(AHandle: CURL);
+constructor TSession.TOptionsProperty.Create(AHandle: CURL; AErrorStack :
+  PErrorStack);
 begin
   FHandle := AHandle;
+  FErrorStack := AErrorStack^;
 end;
 
 destructor TSession.TOptionsProperty.Destroy;
@@ -7951,22 +8227,23 @@ begin
   inherited Create;
 
   FHandle := curl_easy_init;
+  FErrorStack := TErrorStack.Create;
   FBuffer := TMemoryStream.Create;
   FUploadOffset := 0;
 
-  FOptions := TOptionsProperty.Create(FHandle);
-  FProtocol := TProtocolProperty.Create(FHandle);
-  FTCP := TTCPProperty.Create(FHandle);
-  FProxy := TProxyProperty.Create(FHandle);
-  FDNS := TDNSProperty.Create(FHandle);
-  FSecurity := TSecurityProperty.Create(FHandle);
-  FHTTP := THTTPProperty.Create(FHandle);
-  FIMAP := TIMAPProperty.Create(FHandle);
-  FFTP := TFTPProperty.Create(FHandle);
-  FTFTP := TTFTPProperty.Create(FHandle);
-  FSMTP := TSMTPProperty.Create(FHandle);
-  FRTSP := TRTSPProperty.Create(FHandle);
-  FPOP3 := TPOP3Property.Create(FHandle);
+  FOptions := TOptionsProperty.Create(FHandle, @FErrorStack);
+  FProtocol := TProtocolProperty.Create(FHandle, @FErrorStack);
+  FTCP := TTCPProperty.Create(FHandle, @FErrorStack);
+  FProxy := TProxyProperty.Create(FHandle, @FErrorStack);
+  FDNS := TDNSProperty.Create(FHandle, @FErrorStack);
+  FSecurity := TSecurityProperty.Create(FHandle, @FErrorStack);
+  FHTTP := THTTPProperty.Create(FHandle, @FErrorStack);
+  FIMAP := TIMAPProperty.Create(FHandle, @FErrorStack);
+  FFTP := TFTPProperty.Create(FHandle, @FErrorStack);
+  FTFTP := TTFTPProperty.Create(FHandle, @FErrorStack);
+  FSMTP := TSMTPProperty.Create(FHandle, @FErrorStack);
+  FRTSP := TRTSPProperty.Create(FHandle, @FErrorStack);
+  FPOP3 := TPOP3Property.Create(FHandle, @FErrorStack);
 
   if Opened then
   begin
@@ -7998,23 +8275,24 @@ begin
   if Opened then
   begin
     FBuffer.Clear;
-    curl_easy_setopt(FHandle, CURLOPT_URL, PChar(url));
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_URL, PChar(url)));
   end;
 end;
 
 procedure TSession.SetLocalPort(APort: Word);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOCALPORT, Longint(APort));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOCALPORT,
+    Longint(APort)));
 end;
 
 procedure TSession.SetLocalPortRange(ARange: Longint);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOCALPORTRANGE, ARange));
 end;
 
 procedure TSession.SetConnectTo(AList: TLinkedList);
 begin
-  curl_easy_setopt(FHandle, CURLOPT_CONNECT_TO, AList.FList);
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECT_TO, AList.FList));
 end;
 
 function TSession.ExtractProtocol(AUrl: string): TProtocolProperty.TProtocol;
