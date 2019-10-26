@@ -289,7 +289,7 @@ type
         constructor Create;
         destructor Destroy; override;
 
-        procedure Append (AString : string);
+        function Append (AString : string) : TLinkedList;
       end;
 
       { TErrorStack }
@@ -827,7 +827,6 @@ type
         procedure SetAllowUsernameInURL (AAllow : Boolean);
         procedure SetNetrc (AOption : TNETRCOption);
         procedure SetNetrcFile (AFile : string);
-        procedure SetUnrestrictedAuth (AEnable : Boolean);
         procedure SetSSLCertificate (ACertificate : string);
         procedure SetSSLCertificateType (AType : string);
         procedure SetSSLKey (AKey : string);
@@ -928,20 +927,6 @@ type
         * directory.
         *)
         property NetrcFile : string write SetNetrcFile;
-
-       (**
-        * Send credentials to other hosts too
-        *
-        * Set the parameter to True to make libcurl continue to send
-        * authentication (user+password) credentials when following locations,
-        * even when hostname changed. This option is meaningful only when
-        * setting FollowRedirect.
-        * By default, libcurl will only send given credentials to the initial
-        * host name as given in the original URL, to avoid leaking username +
-        * password to other sites.
-        *)
-        property UnrestrictedAuth : Boolean write SetUnrestrictedAuth
-          default False;
 
         (**
          * Set SSL client certificate
@@ -1192,13 +1177,10 @@ type
         procedure SetAllowedProtocols (AProtocols : TProtocols);
         procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
         procedure SetDefaultProtocol (AProtocol : TProtocol);
-        procedure SetFollowRedirect (AFollow : Boolean);
-        procedure SetMaxRedirects (AAmount : Longint);
         procedure SetNoBody (ANoBody : Boolean);
         procedure SetVerbose (AEnable : Boolean);
         procedure SetIncludeHeader (AIncludeHeader : Boolean);
         procedure SetIgnoreContentLength (AIgnoreLength : Boolean);
-        procedure SetTransferEncoding (AEncoding : Boolean);
 
         procedure SetRemotePort (APort : Word);
         procedure SetUpload (AEnable : Boolean);
@@ -1244,27 +1226,6 @@ type
         property DefaultProtocol : TProtocol write SetDefaultProtocol;
 
         (**
-         * Follow HTTP 3XXX redirects
-         *
-         * Tells the library to follow any Location: header that the server
-         * sends as part of an HTTP header in a 3xx response. The Location:
-         * header can specify a relative or an absolute URL to follow.
-         * libcurl will issue another request for the new URL and follow new
-         * Location: headers all the way until no more such headers are
-         * returned. libcurl limits what protocols it automatically follows to.
-         * By default libcurl will allow HTTP, HTTPS, FTP and FTPS on redirect.
-         *)
-        property FollowRedirect : Boolean write SetFollowRedirect default True;
-
-        (**
-         * Meximum numbers of redirects allowed
-         *
-         * Setting the limit to 0 will make libcurl refuse any redirect.
-         * Set it to -1 for an infinite number of redirects.
-         *)
-        property MaxRedirects : Longint write SetMaxRedirects default -1;
-
-        (**
          * Do the download request without getting the body
          *
          * Tells libcurl to not include the body-part in the output when doing
@@ -1307,17 +1268,6 @@ type
          * unconditionally cause libcurl to report error.
          *)
         property IgnoreContentLength : Boolean write SetIgnoreContentLength
-          default False;
-
-        (**
-         * Ask for HTTP Transfer Encoding
-         *
-         * Add a request for compressed Transfer Encoding in the outgoing HTTP
-         * request. If the server supports this and so desires, it can respond
-         * with the HTTP response sent using a compressed Transfer-Encoding that
-         * will be automatically uncompressed by libcurl on reception.
-         *)
-        property TransferEncoding : Boolean write SetTransferEncoding
           default False;
 
         (**
@@ -2873,6 +2823,28 @@ type
 
       TAltSvcs = set of TAltSvc;
 
+     (**
+      * Options of how to deal with headers
+      *)
+      TSendHeaderOptions = (
+       (**
+        * The headers specified in CURLOPT_HTTPHEADER will be used in requests
+        * both to servers and proxies. With this option enabled,
+        * CURLOPT_PROXYHEADER will not have any effect.
+        *)
+        HEADER_UNIFIED                 = Longint(CURLHEADER_UNIFIED),
+
+       (**
+        * Makes CURLOPT_HTTPHEADER headers only get sent to a server and not to
+        * a proxy. Proxy headers must be set with CURLOPT_PROXYHEADER to get
+        * used. Note that if a non-CONNECT request is sent to a proxy, libcurl
+        * will send both server headers and proxy headers. When doing CONNECT,
+        * libcurl will send CURLOPT_PROXYHEADER headers only to the proxy and
+        * then CURLOPT_HTTPHEADER headers only to the server.
+        *)
+        HEADER_SEPARATE                = Longint(CURLHEADER_SEPARATE)
+      );
+
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
@@ -2887,6 +2859,7 @@ type
         procedure SetPostMethod (AEnable : Boolean);
         procedure SetPostFields (AData : string);
         procedure SetPostFieldsSize (ASize : Longint);
+        procedure SetCopyPostFields (AData : string);
         procedure SetAcceptEncoding (AEncodings : TEncodings);
         procedure SetTransferEncoding (AEnable : Boolean);
         procedure SetReferer (AWhere : string);
@@ -2914,6 +2887,12 @@ type
         procedure SetHAProxyHeader (ASend : Boolean);
         procedure SetProxyHTTPAuth (AMethod : TSecurityProperty.TAuthMethods);
         procedure SetAuthServiceName (AName : string);
+        procedure SetFollowRedirect (AFollow : Boolean);
+        procedure SetMaxRedirects (AAmount : Longint);
+        procedure SetHeaders (AHeader : TLinkedList);
+        procedure SetProxyHeaders (AHeader : TLinkedList);
+        procedure SetHeaderOptions (AOptions : TSendHeaderOptions);
+        procedure SetHTTP200Aliases (AAliases : TLinkedList);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -2993,6 +2972,24 @@ type
          * strlen() to get the size.
          *)
         property PostFieldsSize : Longint write SetPostFieldsSize default -1;
+
+        (**
+         * Have libcurl copy data to POST
+         *
+         * Pass a char * as parameter, which should be the full data to post in
+         * a HTTP POST operation. It behaves as the CURLOPT_POSTFIELDS option,
+         * but the original data is instead copied by the library, allowing the
+         * application to overwrite the original data after setting this option.
+         * Because data are copied, care must be taken when using this option in
+         * conjunction with CURLOPT_POSTFIELDSIZE or
+         * CURLOPT_POSTFIELDSIZE_LARGE: If the size has not been set prior to
+         * CURLOPT_COPYPOSTFIELDS, the data is assumed to be a zero terminated
+         * string; else the stored size informs the library about the byte count
+         * to copy. In any case, the size must not be changed after
+         * CURLOPT_COPYPOSTFIELDS, unless another CURLOPT_POSTFIELDS or
+         * CURLOPT_COPYPOSTFIELDS option is issued.
+         *)
+        property CopyPostFields : string write SetCopyPostFields;
 
         (**
          * Enables automatic decompression of HTTP
@@ -3372,6 +3369,95 @@ type
          * change them.
          *)
         property AuthServiceName : string write SetAuthServiceName;
+
+        (**
+         * Follow HTTP 3XXX redirects
+         *
+         * Tells the library to follow any Location: header that the server
+         * sends as part of an HTTP header in a 3xx response. The Location:
+         * header can specify a relative or an absolute URL to follow.
+         * libcurl will issue another request for the new URL and follow new
+         * Location: headers all the way until no more such headers are
+         * returned. libcurl limits what protocols it automatically follows to.
+         * By default libcurl will allow HTTP, HTTPS, FTP and FTPS on redirect.
+         *)
+        property FollowRedirect : Boolean write SetFollowRedirect default True;
+
+        (**
+         * Meximum numbers of redirects allowed
+         *
+         * Setting the limit to 0 will make libcurl refuse any redirect.
+         * Set it to -1 for an infinite number of redirects.
+         *)
+        property MaxRedirects : Longint write SetMaxRedirects default -1;
+
+        (**
+         * Set custom HTTP headers
+         *
+         * Pass a linked list of HTTP headers to pass to the server and/or proxy
+         * in your HTTP request. The same list can be used for both host and
+         * proxy requests!
+         * If you add a header that is otherwise generated and used by libcurl
+         * internally, your added one will be used instead. If you add a header
+         * with no content as in 'Accept:' (no data on the right side of the
+         * colon), the internally used header will get disabled. With this
+         * option you can add new headers, replace internal headers and remove
+         * internal headers. To add a header with no content (nothing to the
+         * right side of the colon), use the form 'MyHeader;' (note the ending
+         * semicolon).
+         * The headers included in the linked list must not be CRLF-terminated,
+         * because libcurl adds CRLF after each header item. Failure to comply
+         * with this will result in strange bugs because the server will most
+         * likely ignore part of the headers you specified.
+         * The first line in a request (containing the method, usually a GET or
+         * POST) is not a header and cannot be replaced using this option. Only
+         * the lines following the request-line are headers. Adding this method
+         * line in this list of headers will only cause your request to send an
+         * invalid header. Use CURLOPT_CUSTOMREQUEST to change the method.
+         * By default, this option makes libcurl send the given headers in all
+         * HTTP requests done by this handle. You should therefore use this
+         * option with caution if you for example connect to the remote site
+         * using a proxy and a CONNECT request, you should to consider if that
+         * proxy is supposed to also get the headers. They may be private or
+         * otherwise sensitive to leak.
+         *)
+        property Headers : TLinkedList write SetHeaders;
+
+       (**
+        * Custom HTTP headers to pass to proxy
+        *
+        * Pass a linked list of HTTP headers to pass in your HTTP request sent
+        * to a proxy. The rules for this list is identical to the
+        * CURLOPT_HTTPHEADER option's.
+        * The headers set with this option is only ever used in requests sent to
+        * a proxy - when there's also a request sent to a host.
+        * The first line in a request (containing the method, usually a GET or
+        * POST) is NOT a header and cannot be replaced using this option. Only
+        * the lines following the request-line are headers. Adding this method
+        * line in this list of headers will only cause your request to send an
+        * invalid header.
+        *)
+        property ProxyHeaders : TLinkedList write SetProxyHeaders;
+
+       (**
+        * Set how to send HTTP headers
+        *)
+        property HeadersOptions : TSendHeaderOptions write SetHeaderOptions;
+
+       (**
+        * Specify alternative matches for HTTP 200 OK
+        *
+        * Pass a linked list of aliases to be treated as valid HTTP 200
+        * responses. Some servers respond with a custom header response line.
+        * For example, SHOUTcast servers respond with "ICY 200 OK". Also some
+        * very old Icecast 1.3.x servers will respond like that for certain user
+        * agent headers or in absence of such. By including this string in your
+        * list of aliases, the response will be treated as a valid HTTP header
+        * line such as "HTTP/1.0 200 OK".
+        * The alias itself is not parsed for any version strings. The protocol
+        * is assumed to match HTTP 1.0 when an alias match.
+        *)
+        property HTTP200Aliases : TLinkedList write SetHTTP200Aliases;
       end;
 
       { TIMAPProperty }
@@ -4986,7 +5072,6 @@ type
     FHandle : CURL;
     FErrorStack : TErrorStack;
     FBuffer : TMemoryStream;
-    FUploadOffset : Int64;
     FOptions : TOptionsProperty;
     FProtocol : TProtocolProperty;
     FTCP : TTCPProperty;
@@ -5063,6 +5148,7 @@ type
     property TFTP : TTFTPProperty read FTFTP write FTFTP;
     property SMTP : TSMTPProperty read FSMTP write FSMTP;
     property RTSP : TRTSPProperty read FRTSP write FRTSP;
+    property POP : TPOP3Property read FPOP3 write FPOP3;
 
     (**
      * Check if session opened and correctly
@@ -5108,7 +5194,7 @@ type
      *)
      property Port : Word write SetLocalPort;
 
-     (**
+    (**
      * Number of additional local ports to try
      *
      * Pass a long. The range argument is the number of attempts libcurl will
@@ -5120,7 +5206,6 @@ type
      * connection setup failures.
      *)
      property PortRange : Longint write SetLocalPortRange default 1;
-  public
 
     (**
      * Connect to a specific host and port instead of thr URL's host and port
@@ -5165,6 +5250,12 @@ type
      * handle for a transfer before you call curl_slist_free_all on the list.
      *)
     property ConnectTo : TLinkedList write SetConnectTo;
+
+    (**
+     * Stack which contains all curl_easy_setopt function errors
+     *)
+    property ErrorStack : TErrorStack read FErrorStack write FErrorStack;
+  public
 
     (**
      * Callback for writing received data
@@ -5618,9 +5709,10 @@ begin
   inherited Destroy;
 end;
 
-procedure TSession.TLinkedList.Append(AString: string);
+function TSession.TLinkedList.Append(AString: string) : TLinkedList;
 begin
   FList := curl_slist_append(FList, PChar(AString));
+  Result := Self;
 end;
 
 { TDataSize }
@@ -6673,17 +6765,6 @@ begin
     PChar(protocol)));
 end;
 
-procedure TSession.TProtocolProperty.SetFollowRedirect(AFollow: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
-    Longint(AFollow)));
-end;
-
-procedure TSession.TProtocolProperty.SetMaxRedirects(AAmount: Longint);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount));
-end;
-
 procedure TSession.TProtocolProperty.SetNoBody(ANoBody: Boolean);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody)));
@@ -6706,12 +6787,6 @@ procedure TSession.TProtocolProperty.SetIgnoreContentLength(
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
     Longint(AIgnoreLength)));
-end;
-
-procedure TSession.TProtocolProperty.SetTransferEncoding(AEncoding: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_TRANSFER_ENCODING,
-    Longint(AEncoding)));
 end;
 
 procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
@@ -6821,9 +6896,22 @@ begin
 end;
 
 procedure TSession.THTTPProperty.SetPostFieldsSize(ASize: Longint);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE,
-    ASize));
+  Code := curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE_LARGE,
+    ASize);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_POSTFIELDSIZE, ASize);
+  end;
+  FErrorStack.Push(Code);
+end;
+
+procedure TSession.THTTPProperty.SetCopyPostFields(AData: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_COPYPOSTFIELDS,
+    PChar(AData)));
 end;
 
 procedure TSession.THTTPProperty.SetAcceptEncoding(AEncodings: TEncodings);
@@ -7084,6 +7172,41 @@ begin
     PChar(AName)));
 end;
 
+procedure TSession.THTTPProperty.SetFollowRedirect(AFollow: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
+    Longint(AFollow)));
+end;
+
+procedure TSession.THTTPProperty.SetMaxRedirects(AAmount: Longint);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXREDIRS, AAmount));
+end;
+
+procedure TSession.THTTPProperty.SetHeaders(AHeader: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTPHEADER,
+    AHeader.FList));
+end;
+
+procedure TSession.THTTPProperty.SetProxyHeaders(AHeader: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXYHEADER,
+    AHeader.FList));
+end;
+
+procedure TSession.THTTPProperty.SetHeaderOptions(AOptions: TSendHeaderOptions);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HEADEROPT,
+    Longint(AOptions)));
+end;
+
+procedure TSession.THTTPProperty.SetHTTP200Aliases(AAliases: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HTTP200ALIASES,
+    AAliases.FList));
+end;
+
 constructor TSession.THTTPProperty.Create(AHandle: CURL; AErrorStack :
   PErrorStack);
 begin
@@ -7147,12 +7270,6 @@ end;
 procedure TSession.TSecurityProperty.SetNetrcFile(AFile: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NETRC_FILE, PChar(AFile)));
-end;
-
-procedure TSession.TSecurityProperty.SetUnrestrictedAuth(AEnable: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UNRESTRICTED_AUTH,
-    Longint(AEnable)));
 end;
 
 procedure TSession.TSecurityProperty.SetSSLCertificate(ACertificate: string);
@@ -8216,8 +8333,8 @@ begin
     dataSize := size * nitems;
     if (dataSize > FBuffer.Size) then
       dataSize := FBuffer.Size;
-    Move(PChar(FBuffer.Memory)[FUploadOffset], buf[0], dataSize);
-    FUploadOffset := FUploadOffset + dataSize;
+    Move(PChar(FBuffer.Memory)[FBuffer.Position], buf[0], dataSize);
+    FBuffer.Seek(dataSize, soFromCurrent);
     Result := dataSize;
   end;
 end;
@@ -8229,7 +8346,6 @@ begin
   FHandle := curl_easy_init;
   FErrorStack := TErrorStack.Create;
   FBuffer := TMemoryStream.Create;
-  FUploadOffset := 0;
 
   FOptions := TOptionsProperty.Create(FHandle, @FErrorStack);
   FProtocol := TProtocolProperty.Create(FHandle, @FErrorStack);
@@ -8253,7 +8369,7 @@ begin
     curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self));
     curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
       @TSession.ReadFunctionCallback);
-    FProtocol.FollowRedirect := True;
+    FHTTP.FollowRedirect := True;
   end;
 end;
 
