@@ -910,6 +910,110 @@ type
           *)
           NETRC_REQUIRED                    = Longint(CURL_NETRC_REQUIRED)
         );
+
+       (**
+        * Make libcurl use your desired level of SSL for the transfer
+        *)
+        TSSLLevel = (
+         (**
+          * Don't attempt to use SSL.
+          *)
+          USESSL_NONE                       = Longint(CURLUSESSL_NONE),
+
+         (**
+          * Try using SSL, proceed as normal otherwise.
+          *)
+          USESSL_TRY                        = Longint(CURLUSESSL_TRY),
+
+         (**
+          * Require SSL for the control connection or fail with
+          * CURLE_USE_SSL_FAILED.
+          *)
+          USESSL_CONTROL                    = Longint(CURLUSESSL_CONTROL),
+
+         (**
+          * Require SSL for all communication or fail with
+          * CURLE_USE_SSL_FAILED.
+          *)
+          USESSL_ALL                        = Longint(CURLUSESSL_ALL)
+        );
+
+        (**
+         * Control which version range of SSL/TLS versions to use
+         *)
+        TSSLVersion = (
+
+          (**
+           * The default acceptable version range. The minimum acceptable
+           * version is by default TLS v1.0 since 7.39.0 (unless the TLS library
+           * has a stricter rule).
+           *)
+           SSLVERSION_DEFAULT            = Longint(CURL_SSLVERSION_DEFAULT),
+
+          (**
+           * TLS v1.0 or later
+           *)
+           SSLVERSION_TLSv1              = Longint(CURL_SSLVERSION_TLSv1),
+
+          (**
+           * SSL v2 (but not SSLv3)
+           *)
+           SSLVERSION_SSLv2              = Longint(CURL_SSLVERSION_SSLv2),
+
+          (**
+           * SSL v3 (but not SSLv2)
+           *)
+           SSLVERSION_SSLv3              = Longint(CURL_SSLVERSION_SSLv3),
+
+          (**
+           * TLS v1.0 or later
+           *)
+           SSLVERSION_TLSv1_0            = Longint(CURL_SSLVERSION_TLSv1_0),
+
+          (**
+           * TLS v1.1 or later
+           *)
+           SSLVERSION_TLSv1_1            = Longint(CURL_SSLVERSION_TLSv1_1),
+
+          (**
+           * TLS v1.2 or later
+           *)
+           SSLVERSION_TLSv1_2            = Longint(CURL_SSLVERSION_TLSv1_2),
+
+          (**
+           * TLS v1.3 or later
+           *)
+           SSLVERSION_TLSv1_3            = Longint(CURL_SSLVERSION_TLSv1_3),
+
+          (**
+           * The flag defines the maximum supported TLS version by libcurl, or
+           * the default value from the SSL library is used. libcurl will use a
+           * sensible default maximum, which was TLS v1.2 up to before 7.61.0
+           * and is TLS v1.3 since then - assuming the TLS library support it.
+           *)
+           SSLVERSION_MAX_DEFAULT        = Longint(CURL_SSLVERSION_MAX_DEFAULT),
+
+          (**
+           * The flag defines maximum supported TLS version as TLS v1.0.
+           *)
+           SSLVERSION_MAX_TLSv1_0        = Longint(CURL_SSLVERSION_MAX_TLSv1_0),
+
+          (**
+           * The flag defines maximum supported TLS version as TLS v1.1.
+           *)
+           SSLVERSION_MAX_TLSv1_1        = Longint(CURL_SSLVERSION_MAX_TLSv1_1),
+
+          (**
+           * The flag defines maximum supported TLS version as TLS v1.2.
+           *)
+           SSLVERSION_MAX_TLSv1_2        = Longint(CURL_SSLVERSION_MAX_TLSv1_2),
+
+          (**
+           * The flag defines maximum supported TLS version as TLS v1.3.
+           *)
+           SSLVERSION_MAX_TLSv1_3        = Longint(CURL_SSLVERSION_MAX_TLSv1_3)
+        );
+
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
@@ -926,6 +1030,19 @@ type
         procedure SetSSLCertificate (ACertificate : string);
         procedure SetSSLCertificateType (AType : string);
         procedure SetSSLKey (AKey : string);
+        procedure SetSSLLevel (ALevel : TSSLLevel);
+        procedure SetSSLKeyType (AType : string);
+        procedure SetKeyPassword (APassword : string);
+        procedure SetSSLALPN (AEnable : Boolean);
+        procedure SetSSLNPN (AEnable : Boolean);
+        procedure SetSSLEngine (AEngineId : string);
+        procedure SetSSLEngineDefault (AEnable : Boolean);
+        procedure SetTLSFalseStart (AEnable : Boolean);
+        procedure SetSSLVersion (AVersion : TSSLVersion);
+        procedure SetSSLVerifyHost (AEnable : Boolean);
+        procedure SetSSLVerifyPeer (AEnable : Boolean);
+        procedure SetSSLVerifyStatus (AEnable : Boolean);
+        procedure SetCertificateAuthority (APath : string);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -1075,6 +1192,188 @@ type
          * certificate.
          *)
         property SSLKey : string write SetSSLKey;
+
+       (**
+        * Set type of the private key file
+        *
+        * Pass a string as parameter. The string should be the format of your
+        * private key. Supported formats are "PEM", "DER" and "ENG".
+        * The format "ENG" enables you to load the private key from a crypto
+        * engine. In this case CURLOPT_SSLKEY is used as an identifier passed to
+        * the engine. You have to set the crypto engine with CURLOPT_SSLENGINE.
+        * "DER" format key file currently does not work because of a bug in
+        * OpenSSL.
+        *)
+        property SSLKeyType : string write SetSSLKeyType;
+
+       (**
+        * Request using SSL / TLS for the transfer
+        *)
+        property UseSSL : TSSLLevel write SetSSLLevel;
+
+       (**
+        * Set passphrase to private key
+        *
+        * Pass a pointer to a zero terminated string as parameter. It will be
+        * used as the password required to use the CURLOPT_SSLKEY or
+        * CURLOPT_SSH_PRIVATE_KEYFILE private key. You never needed a pass
+        * phrase to load a certificate but you need one to load your private
+        * key.
+        *)
+        property KeyPassword : string write SetKeyPassword;
+
+        (**
+         * Enable / disable ALPN
+         *
+         * This option enables/disables ALPN in the SSL handshake (if the SSL
+         * backend libcurl is built to use supports it), which can be used to
+         * negotiate http2.
+         *)
+        property SSLALPN : Boolean write SetSSLALPN default True;
+
+        (**
+         * Enable NPN
+         *
+         * This option enables/disables NPN in the SSL handshake (if the SSL
+         * backend libcurl is built to use supports it), which can be used to
+         * negotiate http2.
+         *)
+        property SSLNPN : Boolean write SetSSLNPN default True;
+
+        (**
+         * Set SSL engine identifier
+         *
+         * Pass a string as parameter. It will be used as the identifier for the
+         * crypto engine you want to use for your private key.
+         *)
+        property SSLEngineID : string write SetSSLEngine;
+
+        (**
+         * Make SSL engine default
+         *
+         * To make the already specified crypto engine the default for
+         * (asymmetric) crypto operations.
+         * This option has no effect unless set after SSLEngineID.
+         *)
+        property SSLEngineDefault : Boolean write SetSSLEngineDefault;
+
+        (**
+         * Enable TLS false start
+         *
+         * This option determines whether libcurl should use false start during
+         * the TLS handshake. False start is a mode where a TLS client will
+         * start sending application data before verifying the server's Finished
+         * message, thus saving a round trip when performing a full handshake.
+         *)
+        property TLSFalseStart : Boolean write SetTLSFalseStart default False;
+
+        (**
+         * Set preferred TLS/SSL version
+         *
+         * Control which version range of SSL/TLS versions to use.
+         *)
+        property SSLVersion : TSSLVersion write SetSSLVersion
+          default SSLVERSION_DEFAULT;
+
+        (**
+         * Verify the certificate's name qgainst host
+         *
+         * This option determines whether libcurl verifies that the server cert
+         * is for the server it is known as.
+         * When negotiating TLS and SSL connections, the server sends a
+         * certificate indicating its identity.
+         * When CURLOPT_SSL_VERIFYHOST is True, that certificate must indicate
+         * that the server is the server to which you meant to connect, or the
+         * connection fails. Simply put, it means it has to have the same name
+         * in the certificate as is in the URL you operate against.
+         * Curl considers the server the intended one when the Common Name field
+         * or a Subject Alternate Name field in the certificate matches the host
+         * name in the URL to which you told Curl to connect.
+         * When the verify value is False, the connection succeeds regardless of
+         * the names in the certificate. Use that ability with caution!
+         *)
+        property SSLVerifyHost : Boolean write SetSSLVerifyHost default True;
+
+        (**
+         * Verify the peer's SSL certificate
+         *
+         * This option determines whether curl verifies the authenticity of the
+         * peer's certificate. A value of True means curl verifies; False means
+         * it doesn't.
+         * When negotiating a TLS or SSL connection, the server sends a
+         * certificate indicating its identity. Curl verifies whether the
+         * certificate is authentic, i.e. that you can trust that the server is
+         * who the certificate says it is. This trust is based on a chain of
+         * digital signatures, rooted in certification authority (CA)
+         * certificates you supply. curl uses a default bundle of CA
+         * certificates (the path for that is determined at build time) and you
+         * can specify alternate certificates with the CURLOPT_CAINFO option or
+         * the CURLOPT_CAPATH option.
+         * When CURLOPT_SSL_VERIFYPEER is enabled, and the verification fails to
+         * prove that the certificate is authentic, the connection fails. When
+         * the option is zero, the peer certificate verification succeeds
+         * regardless.
+         * Authenticating the certificate is not enough to be sure about the
+         * server. You typically also want to ensure that the server is the
+         * server you mean to be talking to. Use CURLOPT_SSL_VERIFYHOST for
+         * that. The check that the host name in the certificate is valid for
+         * the host name you're connecting to is done independently of the
+         * CURLOPT_SSL_VERIFYPEER option.
+         * WARNING: disabling verification of the certificate allows bad guys to
+         * man-in-the-middle the communication without you knowing it. Disabling
+         * verification makes the communication insecure. Just having encryption
+         * on a transfer is not enough as you cannot be sure that you are
+         * communicating with the correct end-point.
+         * NOTE: even when this option is disabled, depending on the used TLS
+         * backend, curl may still load the certificate file specified in
+         * CURLOPT_CAINFO. curl default settings in some distributions might use
+         * quite a large file as a default setting for CURLOPT_CAINFO, so
+         * loading the file can be quite expensive, especially when dealing with
+         * many connections. Thus, in some situations, you might want to disable
+         * verification fully to save resources by setting CURLOPT_CAINFO to
+         * NULL - but please also consider the warning above!
+         *)
+        property SSLVerifyPeer : Boolean write SetSSLVerifyPeer default True;
+
+        (**
+         * Verify the certificate's status
+         *
+         * This option determines whether libcurl verifies the status of the
+         * server cert using the "Certificate Status Request" TLS extension
+         * (aka. OCSP stapling).
+         * Note that if this option is enabled but the server does not support
+         * the TLS extension, the verification will fail.
+         *)
+        property SSLVerifyStatus : Boolean write SetSSLVerifyStatus
+          default False;
+
+        (**
+         * Path to Certificate Authority (CA) bundle
+         *
+         * Pass a string naming a file holding one or more certificates to
+         * verify the peer with.
+         * If CURLOPT_SSL_VERIFYPEER is zero and you avoid verifying the
+         * server's certificate, CURLOPT_CAINFO need not even indicate an
+         * accessible file.
+         * This option is by default set to the system path where libcurl's
+         * cacert bundle is assumed to be stored, as established at build time.
+         * If curl is built against the NSS SSL library, the NSS PEM PKCS#11
+         * module (libnsspem.so) needs to be available for this option to work
+         * properly. Starting with curl-7.55.0, if both CURLOPT_CAINFO and
+         * CURLOPT_CAPATH are unset, NSS-linked libcurl tries to load
+         * libnssckbi.so, which contains a more comprehensive set of trust
+         * information than supported by nss-pem, because libnssckbi.so also
+         * includes information about distrusted certificates.
+         * (iOS and macOS) When curl uses Secure Transport this option is
+         * supported. If the option is not set, then curl will use the
+         * certificates in the system and user Keychain to verify the peer.
+         * (Schannel) This option is supported for Schannel in Windows 7 or
+         * later but we recommend not using it until Windows 8 since it works
+         * better starting then. If the option is not set, then curl will use
+         * the certificates in the Windows' store of root certificates (the
+         * default for Schannel).
+         *)
+        property CertificateAuthority : string write SetCertificateAuthority;
       end;
 
       { TProtocolProperty }
@@ -1499,6 +1798,12 @@ type
         procedure SetProxySSLCertificate (ACertificate : string);
         procedure SetProxySSLCertificateType (AType : string);
         procedure SetProxySSLKey (AKey : string);
+        procedure SetProxySSLKeyType (AType : string);
+        procedure SetProxyKeyPassword (APassword : string);
+        procedure SetProxySSLVersion (AVersion : TSecurityProperty.TSSLVersion);
+        procedure SetProxySSLVerifyHost (AEnable : Boolean);
+        procedure SetProxySSLVerifyPeer (AEnable : Boolean);
+        procedure SetCertificateAuthority (APath : string);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -1704,6 +2009,121 @@ type
          * certificate.
          *)
         property SSLKey : string write SetProxySSLKey;
+
+        (**
+         * Set type of the proxy private key file
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a pointer to a zero terminated string as parameter. The string
+         * should be the format of your private key. Supported formats are
+         * "PEM", "DER" and "ENG".
+         *)
+        property SSLKeyType : string write SetProxySSLKeyType;
+
+        (**
+         * Set passphrase to proxy private key
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a pointer to a zero terminated string as parameter. It will be
+         * used as the password required to use the CURLOPT_PROXY_SSLKEY private
+         * key. You never needed a pass phrase to load a certificate but you
+         * need one to load your private key.
+         *)
+        property KeyPassword : string write SetProxyKeyPassword;
+
+        (**
+         * Set preferred proxy TLS/SSL version
+         *
+         * Control which version of SSL/TLS to attempt to use when connecting to
+         * an HTTPS proxy.
+         *)
+        property SSLVersion : TSecurityProperty.TSSLVersion
+          write SetProxySSLVersion default SSLVERSION_DEFAULT;
+
+        (**
+         * Verify the certificate's name qgainst host
+         *
+         * This option determines whether libcurl verifies that the server cert
+         * is for the server it is known as.
+         * When negotiating TLS and SSL connections, the server sends a
+         * certificate indicating its identity.
+         * When CURLOPT_SSL_VERIFYHOST is True, that certificate must indicate
+         * that the server is the server to which you meant to connect, or the
+         * connection fails. Simply put, it means it has to have the same name
+         * in the certificate as is in the URL you operate against.
+         * Curl considers the server the intended one when the Common Name field
+         * or a Subject Alternate Name field in the certificate matches the host
+         * name in the URL to which you told Curl to connect.
+         * When the verify value is False, the connection succeeds regardless of
+         * the names in the certificate. Use that ability with caution!
+         *)
+        property SSLVerifyHost : Boolean write SetProxySSLVerifyHost
+          default True;
+
+        (**
+         * Verify the peer's SSL certificate
+         *
+         * This option determines whether curl verifies the authenticity of the
+         * peer's certificate. A value of True means curl verifies; False means
+         * it doesn't.
+         * When negotiating a TLS or SSL connection, the server sends a
+         * certificate indicating its identity. Curl verifies whether the
+         * certificate is authentic, i.e. that you can trust that the server is
+         * who the certificate says it is. This trust is based on a chain of
+         * digital signatures, rooted in certification authority (CA)
+         * certificates you supply. curl uses a default bundle of CA
+         * certificates (the path for that is determined at build time) and you
+         * can specify alternate certificates with the CURLOPT_CAINFO option or
+         * the CURLOPT_CAPATH option.
+         * When CURLOPT_SSL_VERIFYPEER is enabled, and the verification fails to
+         * prove that the certificate is authentic, the connection fails. When
+         * the option is zero, the peer certificate verification succeeds
+         * regardless.
+         * Authenticating the certificate is not enough to be sure about the
+         * server. You typically also want to ensure that the server is the
+         * server you mean to be talking to. Use CURLOPT_SSL_VERIFYHOST for
+         * that. The check that the host name in the certificate is valid for
+         * the host name you're connecting to is done independently of the
+         * CURLOPT_SSL_VERIFYPEER option.
+         * WARNING: disabling verification of the certificate allows bad guys to
+         * man-in-the-middle the communication without you knowing it. Disabling
+         * verification makes the communication insecure. Just having encryption
+         * on a transfer is not enough as you cannot be sure that you are
+         * communicating with the correct end-point.
+         * NOTE: even when this option is disabled, depending on the used TLS
+         * backend, curl may still load the certificate file specified in
+         * CURLOPT_CAINFO. curl default settings in some distributions might use
+         * quite a large file as a default setting for CURLOPT_CAINFO, so
+         * loading the file can be quite expensive, especially when dealing with
+         * many connections. Thus, in some situations, you might want to disable
+         * verification fully to save resources by setting CURLOPT_CAINFO to
+         * NULL - but please also consider the warning above!
+         *)
+        property SSLVerifyPeer : Boolean write SetProxySSLVerifyPeer
+          default True;
+
+        (**
+         * Path to proxy Certificate Authority (CA) bundle
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a string naming a file holding one or more certificates to
+         * verify the HTTPS proxy with.
+         * If CURLOPT_PROXY_SSL_VERIFYPEER is zero and you avoid verifying the
+         * server's certificate, CURLOPT_PROXY_CAINFO need not even indicate an
+         * accessible file.
+         * This option is by default set to the system path where libcurl's
+         * cacert bundle is assumed to be stored, as established at build time.
+         * If curl is built against the NSS SSL library, the NSS PEM PKCS#11
+         * module (libnsspem.so) needs to be available for this option to work
+         * properly.
+         * (iOS and macOS only) If curl is built against Secure Transport, then
+         * this option is supported for backward compatibility with other SSL
+         * engines, but it should not be set. If the option is not set, then
+         * curl will use the certificates in the system and user Keychain to
+         * verify the peer, which is the preferred method of verifying the
+         * peer's certificate chain.
+         *)
+        property CertificateAuthority : string write SetCertificateAuthority;
       end;
 
       { TDNSProperty }
@@ -7477,6 +7897,88 @@ begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLKEY, PChar(AKey)));
 end;
 
+procedure TSession.TSecurityProperty.SetSSLLevel(ALevel: TSSLLevel);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USE_SSL, Longint(ALevel)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLKeyType(AType: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLKEYTYPE, PChar(AType)));
+end;
+
+procedure TSession.TSecurityProperty.SetKeyPassword(APassword: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_KEYPASSWD,
+    PChar(APassword)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLALPN(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_ENABLE_ALPN,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLNPN(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_ENABLE_NPN,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLEngine(AEngineId: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLENGINE,
+    PChar(AEngineId)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLEngineDefault(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLENGINE_DEFAULT,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetTLSFalseStart(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_FALSESTART,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLVersion(AVersion: TSSLVersion);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSLVERSION,
+    Longint(AVersion)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLVerifyHost(AEnable: Boolean);
+begin
+  if AEnable then
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_VERIFYHOST,
+      Longint(2)));
+  end else
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_VERIFYHOST,
+      Longint(0)));
+  end;
+end;
+
+procedure TSession.TSecurityProperty.SetSSLVerifyPeer(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_VERIFYPEER,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetSSLVerifyStatus(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSL_VERIFYSTATUS,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSecurityProperty.SetCertificateAuthority(APath: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CAINFO, PChar(APath)));
+end;
+
 constructor TSession.TSecurityProperty.Create(AHandle: CURL; AErrorStack :
   PErrorStack);
 begin
@@ -7700,6 +8202,50 @@ procedure TSession.TProxyProperty.SetProxySSLKey(AKey: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY,
     PChar(AKey)));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLKeyType(AType: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEYTYPE,
+    PChar(AType)));
+end;
+
+procedure TSession.TProxyProperty.SetProxyKeyPassword(APassword: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_KEYPASSWD,
+    PChar(APassword)));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLVersion(
+  AVersion: TSecurityProperty.TSSLVersion);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLVERSION,
+    Longint(AVersion)));
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLVerifyHost(AEnable: Boolean);
+begin
+  if AEnable then
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
+      Longint(2)));
+  end else
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
+      Longint(0)));
+  end;
+end;
+
+procedure TSession.TProxyProperty.SetProxySSLVerifyPeer(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYPEER,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TProxyProperty.SetCertificateAuthority(APath: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAINFO,
+    PChar(APath)));
 end;
 
 constructor TSession.TProxyProperty.Create(AHandle: CURL; AErrorStack :
