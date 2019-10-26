@@ -367,6 +367,12 @@ type
         procedure SetIPResolve (AResolve : TIPResolve);
         procedure SetHappyEyeballsTimeout (ATime : TTimeInterval);
         procedure SetPrivateData (AData : Pointer);
+        procedure SetNoBody (ANoBody : Boolean);
+        procedure SetVerbose (AEnable : Boolean);
+        procedure SetIncludeHeader (AIncludeHeader : Boolean);
+        procedure SetRemotePort (APort : Word);
+        procedure SetUpload (AEnable : Boolean);
+        procedure SetCustomResolveHosts (AHosts : TLinkedList);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -695,6 +701,96 @@ type
          * libcurl itself never does anything with this data.
          *)
         property PrivateData : Pointer write SetPrivateData;
+
+        (**
+         * Do the download request without getting the body
+         *
+         * Tells libcurl to not include the body-part in the output when doing
+         * what would otherwise be a download. For HTTP(S), this makes libcurl
+         * do a HEAD request. For most other protocols it means just not asking
+         * to transfer the body data.
+         *)
+        property NoBody : Boolean write SetNoBody default False;
+
+        (**
+         * Set verbose mode on/off
+         *
+         * Make the library display a lot of verbose information about its
+         * operations. Very useful for libcurl and/or protocol debugging and
+         * understanding. The verbose information will be sent to stderr.
+         *)
+        property VerboseMode : Boolean write SetVerbose default False;
+
+        (**
+         * Pass headers to the data stream
+         *
+         * Ask libcurl to include the headers in the data stream.
+         * When asking to get the headers passed to the body, it is not possible
+         * to accurately separate them again without detailed knowledge about
+         * the protocol in use.
+         *)
+        property IncludeHeader : Boolean write SetIncludeHeader default False;
+
+        (**
+         * Set remote port number to work with
+         *
+         * This option sets number to be the remote port number to connect to,
+         * instead of the one specified in the URL or the default port for the
+         * used protocol.
+         * Usually, you just let the URL decide which port to use but this
+         * allows the application to override that.
+         *)
+        property Port : Word write SetRemotePort;
+
+        (**
+         * Enable data upload
+         *
+         * The long parameter upload set to True tells the library to prepare
+         * for and perform an upload. The CURLOPT_READDATA and
+         * CURLOPT_INFILESIZE or CURLOPT_INFILESIZE_LARGE options are also
+         * interesting for uploads. If the protocol is HTTP, uploading means
+         * using the PUT request unless you tell libcurl otherwise.
+         * Using PUT with HTTP 1.1 implies the use of a "Expect: 100-continue"
+         * header. You can disable this header with CURLOPT_HTTPHEADER as usual.
+         * If you use PUT to an HTTP 1.1 server, you can upload data without
+         * knowing the size before starting the transfer if you use chunked
+         * encoding. You enable this by adding a header like "Transfer-Encoding:
+         * chunked" with CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked
+         * transfer, you must specify the size.
+         *)
+        property Upload : Boolean write SetUpload default False;
+
+        (**
+         * Provide custom host name to IP address resolve
+         *
+         * Pass a linked list of strings with host name resolve information to
+         * use for requests with this handle.
+         * Each single name resolve string should be written using the format
+         * HOST:PORT:ADDRESS[,ADDRESS]... where HOST is the name libcurl will
+         * try to resolve, PORT is the port number of the service where libcurl
+         * wants to connect to the HOST and ADDRESS is one or more numerical IP
+         * addresses. If you specify multiple ip addresses they need to be
+         * separated by comma. If libcurl is built to support IPv6, each of the
+         * ADDRESS entries can of course be either IPv4 or IPv6 style
+         * addressing.
+         * This option effectively pre-populates the DNS cache with entries for
+         * the host+port pair so redirects and everything that operations
+         * against the HOST+PORT will instead use your provided ADDRESS.
+         * Addresses set with CURLOPT_RESOLVE will not time-out from the DNS
+         * cache like ordinary entries.
+         * If the DNS cache already have an entry for the given host+port pair,
+         * then this entry will be removed and a new entry will be created. This
+         * is because old entry may have have different addresses or be ordinary
+         * entries with time-outs.
+         * The provided ADDRESS set by this option will be used even if
+         * CURLOPT_IPRESOLVE is set to make libcurl use another IP version.
+         * Remove names from the DNS cache again, to stop providing these fake
+         * resolves, by including a string in the linked list that uses the
+         * format "-HOST:PORT". The host name must be prefixed with a dash, and
+         * the host name and port number must exactly match what was already
+         * added previously.
+         *)
+        property CustomResolvesHosts : TLinkedList write SetCustomResolveHosts;
       end;
 
       { TSecurityProperty }
@@ -1177,13 +1273,6 @@ type
         procedure SetAllowedProtocols (AProtocols : TProtocols);
         procedure SetAllowedRedirectProtocols (AProtocols : TProtocols);
         procedure SetDefaultProtocol (AProtocol : TProtocol);
-        procedure SetNoBody (ANoBody : Boolean);
-        procedure SetVerbose (AEnable : Boolean);
-        procedure SetIncludeHeader (AIncludeHeader : Boolean);
-        procedure SetIgnoreContentLength (AIgnoreLength : Boolean);
-
-        procedure SetRemotePort (APort : Word);
-        procedure SetUpload (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -1224,80 +1313,6 @@ type
          * Without this option libcurl would make a guess based on the host.
          *)
         property DefaultProtocol : TProtocol write SetDefaultProtocol;
-
-        (**
-         * Do the download request without getting the body
-         *
-         * Tells libcurl to not include the body-part in the output when doing
-         * what would otherwise be a download. For HTTP(S), this makes libcurl
-         * do a HEAD request. For most other protocols it means just not asking
-         * to transfer the body data.
-         *)
-        property NoBody : Boolean write SetNoBody default False;
-
-        (**
-         * Set verbose mode on/off
-         *
-         * Make the library display a lot of verbose information about its
-         * operations. Very useful for libcurl and/or protocol debugging and
-         * understanding. The verbose information will be sent to stderr.
-         *)
-        property VerboseMode : Boolean write SetVerbose default False;
-
-        (**
-         * Pass headers to the data stream
-         *
-         * Ask libcurl to include the headers in the data stream.
-         * When asking to get the headers passed to the body, it is not possible
-         * to accurately separate them again without detailed knowledge about
-         * the protocol in use.
-         *)
-        property IncludeHeader : Boolean write SetIncludeHeader default False;
-
-        (**
-         * Ignore content length
-         *
-         * Ignore the Content-Length header in the HTTP response and ignore
-         * asking for or relying on it for FTP transfers.
-         * This is useful for HTTP with Apache 1.x (and similar servers) which
-         * will report incorrect content length for files over 2 gigabytes. If
-         * this option is used, curl will not be able to accurately report
-         * progress, and will simply stop the download when the server ends the
-         * connection. It is also useful with FTP when for example the file is
-         * growing while the transfer is in progress which otherwise will
-         * unconditionally cause libcurl to report error.
-         *)
-        property IgnoreContentLength : Boolean write SetIgnoreContentLength
-          default False;
-
-        (**
-         * Set remote port number to work with
-         *
-         * This option sets number to be the remote port number to connect to,
-         * instead of the one specified in the URL or the default port for the
-         * used protocol.
-         * Usually, you just let the URL decide which port to use but this
-         * allows the application to override that.
-         *)
-        property Port : Word write SetRemotePort;
-
-        (**
-         * Enable data upload
-         *
-         * The long parameter upload set to True tells the library to prepare
-         * for and perform an upload. The CURLOPT_READDATA and
-         * CURLOPT_INFILESIZE or CURLOPT_INFILESIZE_LARGE options are also
-         * interesting for uploads. If the protocol is HTTP, uploading means
-         * using the PUT request unless you tell libcurl otherwise.
-         * Using PUT with HTTP 1.1 implies the use of a "Expect: 100-continue"
-         * header. You can disable this header with CURLOPT_HTTPHEADER as usual.
-         * If you use PUT to an HTTP 1.1 server, you can upload data without
-         * knowing the size before starting the transfer if you use chunked
-         * encoding. You enable this by adding a header like "Transfer-Encoding:
-         * chunked" with CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked
-         * transfer, you must specify the size.
-         *)
-        property Upload : Boolean write SetUpload default False;
       end;
 
       { TTCPProperty }
@@ -4302,6 +4317,8 @@ type
         procedure SetAcceptTimeout (ATime : TTimeInterval);
         procedure SetWildcardMatch (AMatch : Boolean);
         procedure SetAuthServiceName (AName : string);
+        procedure SetCommandBeforeTransfer (ACommands : TLinkedList);
+        procedure SetCommandAfterTransfer (ACommands : TLinkedList);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -4622,6 +4639,72 @@ type
          * change them.
          *)
         property AuthServiceName : string write SetAuthServiceName;
+
+        (**
+         * (S)FTP comands to run before transfer
+         *
+         * Pass a linked list of FTP or SFTP commands to pass to the server
+         * prior to your request. This will be done before any other commands
+         * are issued (even before the CWD command for FTP). The linked list
+         * should be a fully valid list of 'struct curl_slist' structs properly
+         * filled in with text strings. Use curl_slist_append to append strings
+         * (commands) to the list, and clear the entire list afterwards with
+         * curl_slist_free_all. Disable this operation again by setting a NULL
+         * to this option. When speaking to an FTP server, prefix the command
+         * with an asterisk [*] to make libcurl continue even if the command
+         * fails as by default libcurl will stop at first failure.
+         * The set of valid FTP commands depends on the server (see RFC 959 for
+         * a list of mandatory commands).
+         *
+         * The valid SFTP commands are:
+         *   chgrp group file
+         *   The chgrp command sets the group ID of the file named by the file
+         * operand to the group ID specified by the group operand. The group
+         * operand is a decimal integer group ID.
+         *   chmod mode file
+         *   The chmod command modifies the file mode bits of the specified
+         * file. The mode operand is an octal integer mode number.
+         *   chown user file
+         *   The chown command sets the owner of the file named by the file
+         * operand to the user ID specified by the user operand. The user
+         * operand is a decimal integer user ID.
+         *   ln source_file target_file
+         *   The ln and symlink commands create a symbolic link at the
+         * target_file location pointing to the source_file location.
+         *   mkdir directory_name
+         *   The mkdir command creates the directory named by the directory_name
+         * operand.
+         *   pwd
+         *   The pwd command returns the absolute pathname of the current
+         * working directory.
+         *   rename source target
+         *   The rename command renames the file or directory named by the
+         * source operand to the destination path named by the target operand.
+         *   rm file
+         *   The rm command removes the file specified by the file operand.
+         *   rmdir directory
+         *   The rmdir command removes the directory entry specified by the
+         * directory operand, provided it is empty.
+         *   statvfs file
+         *   The statvfs command returns statistics on the file system in which
+         * specified file resides. (Added in 7.49.0)
+         *   symlink source_file target_file
+         *   See ln.
+         *)
+        property CommandBeforeTransfer : TLinkedList
+          write SetCommandBeforeTransfer;
+
+        (**
+         * (S)FTP commands to run after the transfer
+         *
+         * Pass a linked list of FTP or SFTP commands to pass to the server
+         * after your FTP transfer request. The commands will only be run if no
+         * error occurred. The linked list should be a fully valid list of
+         * struct curl_slist structs properly filled in as described for
+         * CURLOPT_QUOTE.
+         *)
+        property CommandAfterTransfer : TLinkedList
+          write SetCommandAfterTransfer;
       end;
 
       { TSMTPProperty }
@@ -4632,6 +4715,7 @@ type
         FErrorStack : TErrorStack;
 
         procedure SetMailFrom (AFrom : string);
+        procedure SetMailRecients (AList : TLinkedList);
         procedure SetMailAuth (AAuth : string);
         procedure SetCustomRequest (ARequest : string);
         procedure SetConnectOnly (AEnable : Boolean);
@@ -4655,6 +4739,25 @@ type
          * to the mail server which may cause the email to be rejected.
          *)
         property From : string write SetMailFrom;
+
+        (**
+         * List of SMTP mail recipients
+         *
+         * Pass a linked list of recipients to pass to the server in your SMTP
+         * mail request.
+         * When performing a mail transfer, each recipient should be specified
+         * within a pair of angled brackets (<>), however, should you not use an
+         * angled bracket as the first character libcurl will assume you
+         * provided a single email address and enclose that address within
+         * brackets for you.
+         * When performing an address verification (VRFY command), each
+         * recipient should be specified as the user name or user name and
+         * domain (as per Section 3.5 of RFC 5321).
+         * When performing a mailing list expand (EXPN command), each recipient
+         * should be specified using the mailing list name, such as "Friends" or
+         * "London-Office".
+         *)
+         property Recipients : TLinkedList write SetMailRecients;
 
         (**
          * SMTP authentication address
@@ -5008,6 +5111,9 @@ type
         procedure SetSASLIR (ASend : Boolean);
         procedure SetXOAuth2Bearer (AToken : string);
         procedure SetAuthServiceName (AName : string);
+        procedure SetCustomRequest (ARequest : string);
+        procedure SetDirListOnly (AEnable : Boolean);
+        procedure SetConnectOnly (AEnable : Boolean);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -5066,6 +5172,54 @@ type
         * change them.
         *)
        property AuthServiceName : string write SetAuthServiceName;
+
+        (**
+         * Custom string for request
+         *
+         * When you change the request method by setting CustomRequest to
+         * something, you don't actually change how libcurl behaves or acts in
+         * regards to the particular request method, it will only change the
+         * actual string sent in the request.
+         * Instead of a HELP or VRFY when issuing SMTP based requests.
+         * For example:
+         * Normally a multiline response is returned which can be used, in
+         * conjunction with CURLOPT_MAIL_RCPT, to specify an EXPN request. If
+         * the CURLOPT_NOBODY option is specified then the request can be used
+         * to issue NOOP and RSET commands.
+         *)
+        property CustomRequest : string write SetCustomRequest;
+
+        (**
+         * Ask for names only in a directory listing
+         *
+         * For FTP and SFTP based URLs a parameter set to True tells the library
+         * to list the names of files in a directory, rather than performing a
+         * full directory listing that would normally include file sizes, dates
+         * etc.
+         * Note: For FTP this causes a NLST command to be sent to the FTP
+         * server. Beware that some FTP servers list only files in their
+         * response to NLST; they might not include subdirectories and symbolic
+         * links.
+         * Setting this option to 1 also implies a directory listing even if the
+         * URL doesn't end with a slash, which otherwise is necessary.
+         *)
+        property DirListOnly : Boolean write SetDirListOnly default False;
+
+        (**
+         * Stop when connected to target server
+         *
+         * Tells the library to perform all the required proxy authentication
+         * and connection setup, but no data transfer, and then return.
+         * The option can be used to simply test a connection to a server, but
+         * is more useful when used with the CURLINFO_ACTIVESOCKET option to
+         * curl_easy_getinfo as the library can set up the connection and then
+         * the application can obtain the most recently used socket for special
+         * data transfers.
+         * Transfers marked connect only will not reuse any existing connections
+         * and connections marked connect only will not be allowed to get
+         * reused.
+         *)
+        property ConnectOnly : Boolean write SetConnectOnly default False;
       end;
 
   protected
@@ -5684,6 +5838,27 @@ begin
     PChar(AName)));
 end;
 
+procedure TSession.TPOP3Property.SetCustomRequest(ARequest: string);
+begin
+  if ARequest <> '' then
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST,
+      PChar(ARequest)))
+  else
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CUSTOMREQUEST, 0));
+end;
+
+procedure TSession.TPOP3Property.SetDirListOnly(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DIRLISTONLY,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TPOP3Property.SetConnectOnly(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_CONNECT_ONLY,
+    Longint(AEnable)));
+end;
+
 constructor TSession.TPOP3Property.Create(AHandle: CURL; AErrorStack :
   PErrorStack);
 begin
@@ -6300,6 +6475,12 @@ begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAIL_FROM, PChar(AFrom)));
 end;
 
+procedure TSession.TSMTPProperty.SetMailRecients(AList: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAIL_RCPT,
+    AList.FList));
+end;
+
 procedure TSession.TSMTPProperty.SetMailAuth(AAuth: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAIL_AUTH, PChar(AAuth)));
@@ -6501,8 +6682,15 @@ begin
 end;
 
 procedure TSession.TFTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom));
+  Code := curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM, AFrom);
+  end;
+  FErrorStack.Push(Code);
 end;
 
 procedure TSession.TFTPProperty.SetCustomRequest(ARequest: string);
@@ -6527,9 +6715,16 @@ begin
 end;
 
 procedure TSession.TFTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
-    ASize.Bytes));
+  Code := curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
+    ASize.Bytes);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE, ASize.Bytes);
+  end;
+  FErrorStack.Push(Code);
 end;
 
 procedure TSession.TFTPProperty.SetAcceptTimeout(ATime: TTimeInterval);
@@ -6548,6 +6743,19 @@ procedure TSession.TFTPProperty.SetAuthServiceName(AName: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SERVICE_NAME,
     PChar(AName)));
+end;
+
+procedure TSession.TFTPProperty.SetCommandBeforeTransfer(ACommands: TLinkedList
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_QUOTE,
+    ACommands.FList));
+end;
+
+procedure TSession.TFTPProperty.SetCommandAfterTransfer(ACommands: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_POSTQUOTE,
+    ACommands.FList));
 end;
 
 constructor TSession.TFTPProperty.Create(AHandle: CURL; AErrorStack :
@@ -6763,40 +6971,6 @@ begin
     Length(protocol) - Length('PROTOCOL_') + 1));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DEFAULT_PROTOCOL,
     PChar(protocol)));
-end;
-
-procedure TSession.TProtocolProperty.SetNoBody(ANoBody: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody)));
-end;
-
-procedure TSession.TProtocolProperty.SetVerbose(AEnable: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_VERBOSE,
-    Longint(AEnable)));
-end;
-
-procedure TSession.TProtocolProperty.SetIncludeHeader(AIncludeHeader: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HEADER,
-    Longint(AIncludeHeader)));
-end;
-
-procedure TSession.TProtocolProperty.SetIgnoreContentLength(
-  AIgnoreLength: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_IGNORE_CONTENT_LENGTH,
-    Longint(AIgnoreLength)));
-end;
-
-procedure TSession.TProtocolProperty.SetRemotePort(APort: Word);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort)));
-end;
-
-procedure TSession.TProtocolProperty.SetUpload(AEnable: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UPLOAD, Longint(AEnable)));
 end;
 
 constructor TSession.TProtocolProperty.Create(AHandle: CURL; AErrorStack :
@@ -7090,8 +7264,15 @@ begin
 end;
 
 procedure TSession.THTTPProperty.SetStartTransferFrom(AFrom: curl_off_t);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom));
+  Code := curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM_LARGE, AFrom);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_RESUME_FROM, AFrom);
+  end;
+  FErrorStack.Push(Code);
 end;
 
 procedure TSession.THTTPProperty.SetCustomRequest(ARequest: string);
@@ -7110,9 +7291,16 @@ begin
 end;
 
 procedure TSession.THTTPProperty.SetMaxDownloadFileSize(ASize: TDataSize);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
-    ASize.Bytes));
+  Code := curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE_LARGE,
+    ASize.Bytes);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_MAXFILESIZE, ASize.Bytes);
+  end;
+  FErrorStack.Push(Code);
 end;
 
 procedure TSession.THTTPProperty.SetConnectOnly(AEnable: Boolean);
@@ -7639,8 +7827,15 @@ begin
 end;
 
 procedure TSession.TOptionsProperty.SetUploadFileSize(ASize: curl_off_t);
+var
+  Code : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_INFILESIZE_LARGE, ASize));
+  Code := curl_easy_setopt(FHandle, CURLOPT_INFILESIZE_LARGE, ASize);
+  if Code = CURLE_UNKNOWN_OPTION then
+  begin
+    Code := curl_easy_setopt(FHandle, CURLOPT_INFILESIZE, ASize);
+  end;
+  FErrorStack.Push(Code);
 end;
 
 procedure TSession.TOptionsProperty.SetUploadBufferSize(ASize: TDataSize);
@@ -7734,6 +7929,38 @@ end;
 procedure TSession.TOptionsProperty.SetPrivateData(AData: Pointer);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PRIVATE, AData));
+end;
+
+procedure TSession.TOptionsProperty.SetNoBody(ANoBody: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_NOBODY, Longint(ANoBody)));
+end;
+
+procedure TSession.TOptionsProperty.SetVerbose(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_VERBOSE,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TOptionsProperty.SetIncludeHeader(AIncludeHeader: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_HEADER,
+    Longint(AIncludeHeader)));
+end;
+
+procedure TSession.TOptionsProperty.SetRemotePort(APort: Word);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PORT, Longint(APort)));
+end;
+
+procedure TSession.TOptionsProperty.SetUpload(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_UPLOAD, Longint(AEnable)));
+end;
+
+procedure TSession.TOptionsProperty.SetCustomResolveHosts(AHosts: TLinkedList);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_RESOLVE, AHosts.FList));
 end;
 
 procedure TSession.TOptionsProperty.SetUpkeepInterval(ATime: TTimeInterval);
