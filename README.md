@@ -1,16 +1,16 @@
 libPasCURL
 ==========
-object pascal wrapper around cURL library
+It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/).
+
+### Bindings
+
+[libpascurl.pas](https://github.com/isemenkov/libpascurl/blob/master/source/libpascurl.pas) file contains the cURL translated headers to use this library in pascal programs. You can find C API documentation at [cURL website](https://curl.haxx.se/libcurl/c/).
 
 #### Usage example
 
 ```pascal
-  program console;
-
-  {$mode objfpc}{$H+}
-  
   uses
-    Classes, libpascurl;
+    libpascurl;
 
   var
     handle : CURL;
@@ -26,47 +26,51 @@ object pascal wrapper around cURL library
   end;
 
   begin
-    if ParamCount == 2 then
+    curl_global_init(CURL_GLOBAL_ALL);
+    curl_easy_setopt(handle, CURLOPT_URL, PChar('https://example.dev');
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @WriteFunctionCallback);
+    buffer := TStringStream.Create('');
+
+    if curl_easy_perform = CURLE_OK then
     begin
-      curl_global_init(CURL_GLOBAL_ALL);
-      curl_easy_setopt(handle, CURLOPT_URL, PChar(ParamStr(1));
-      curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, @WriteFunctionCallback);
-      buffer := TStringStream.Create('');
+      New(effectiveUrl);
+      New(contentType);
+      New(ip);
+  
+      curl_easy_getinfo(handle, CURLINFO_EFFECTIVE_URL, @effectiveUrl);
+      curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, @responseCode);
+      curl_easy_getinfo(handle, CURLINFO_HEADER_SIZE, @headerSize);
+      curl_easy_getinfo(handle, CURLINFO_CONTENT_TYPE, @contentType);
+      curl_easy_getinfo(handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @contentLength);
+      curl_easy_getinfo(handle, CURLINFO_LOCAL_IP, @ip);
+      curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME_T, @totalTime);
 
-      if curl_easy_perform = CURLE_OK then
-      begin
-        New(effectiveUrl);
-        New(contentType);
-        New(ip);
-
-        curl_easy_getinfo(handle, CURLINFO_EFFECTIVE_URL, @effectiveUrl);
-        curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, @responseCode);
-        curl_easy_getinfo(handle, CURLINFO_HEADER_SIZE, @headerSize);
-        curl_easy_getinfo(handle, CURLINFO_CONTENT_TYPE, @contentType);
-        curl_easy_getinfo(handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @contentLength);
-        curl_easy_getinfo(handle, CURLINFO_LOCAL_IP, @ip);
-        curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME_T, @totalTime);
-
-        writeln('URL: ':20,                 effectiveUrl);
-        writeln('Response code: ':20,       responseCode);
-        writeln('Header size, kB: ':20,     FormatFloat('0.00', headerSize / 1024));
-        writeln('Content type: ',           contentType);
-        writeln('Content length, kB: ':20,  FormatFloat('0.00', contentLength / 1024));
-        writeln('IP: ':20,                  ip);
-        writeln('Total time, ms: ':20,      totalTime);
-        writeln('==== Content ====');
-        writeln(buffer.DataString);
-      end;
-
-      curl_global_cleanup; 
+      writeln('URL: ':20,                 effectiveUrl);
+      writeln('Response code: ':20,       responseCode);
+      writeln('Header size, kB: ':20,     FormatFloat('0.00', headerSize / 1024));
+      writeln('Content type: ',           contentType);
+      writeln('Content length, kB: ':20,  FormatFloat('0.00', contentLength / 1024));
+      writeln('IP: ':20,                  ip);
+      writeln('Total time, ms: ':20,      totalTime);
+      writeln('==== Content ====');
+      writeln(buffer.DataString);
     end;
-  end.
+
+    curl_global_cleanup; 
+
+  end;
 ```
+
+### Object wrapper
+
+[pascurl.pas](https://github.com/isemenkov/libpascurl/blob/master/source/pascurl.pas) file contains the cURL object wrapper.
 
 #### Usage example
 
 ```pascal
-  
+  uses 
+    pascurl;
+
   var
     FSession : TSession;
     FResponse : TResponse;
@@ -96,19 +100,21 @@ object pascal wrapper around cURL library
         writeln('HTTP version :', FResponse.HTTPVersion);
       end; 
 
-      writeln('Url :', FResponse.EffectiveUrl);
+      writeln('Url :',            FResponse.EffectiveUrl);
       writeln('Redirect count :', FResponse.RedirectCount);
-      writeln('Redirect url :', FResponse.RedirectUrl);
-      writeln('Request size :', FResponse.RequestSize.ToString);
-      writeln('Header size :', FResponse.HeaderSize.ToString);
-      writeln('Content size :', FResponse.Downloaded.ToString);
+      writeln('Redirect url :',   FResponse.RedirectUrl);
+      writeln('Request size :',   FResponse.RequestSize.ToString);
+      writeln('Header size :',    FResponse.HeaderSize.ToString);
+      writeln('Content size :',   FResponse.Downloaded.ToString);
       writeln('Download speed :', FResponse.DownloadSpeed.ToString('/s'));
-      writeln('Total time :', FResponse.TotalTime.ToString);
+      writeln('Total time :',     FResponse.TotalTime.ToString);
 
       writeln(FResponse.Content); 
 
       FreeAndNil(FResponse);
       FreeAndNil(FSession);
-    end
+    end else
+      writeln(FResponse.ErrorMessage);
+  end;
 
 ```
