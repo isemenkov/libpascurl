@@ -945,42 +945,42 @@ type
            * version is by default TLS v1.0 since 7.39.0 (unless the TLS library
            * has a stricter rule).
            *)
-           SSLVERSION_DEFAULT            = Longint(CURL_SSLVERSION_DEFAULT),
+           SSLVERSION_DEFAULT           = Longint(CURL_SSLVERSION_DEFAULT),
 
           (**
            * TLS v1.0 or later
            *)
-           SSLVERSION_TLSv1              = Longint(CURL_SSLVERSION_TLSv1),
+           SSLVERSION_TLSv1             = Longint(CURL_SSLVERSION_TLSv1),
 
           (**
            * SSL v2 (but not SSLv3)
            *)
-           SSLVERSION_SSLv2              = Longint(CURL_SSLVERSION_SSLv2),
+           SSLVERSION_SSLv2             = Longint(CURL_SSLVERSION_SSLv2),
 
           (**
            * SSL v3 (but not SSLv2)
            *)
-           SSLVERSION_SSLv3              = Longint(CURL_SSLVERSION_SSLv3),
+           SSLVERSION_SSLv3             = Longint(CURL_SSLVERSION_SSLv3),
 
           (**
            * TLS v1.0 or later
            *)
-           SSLVERSION_TLSv1_0            = Longint(CURL_SSLVERSION_TLSv1_0),
+           SSLVERSION_TLSv1_0           = Longint(CURL_SSLVERSION_TLSv1_0),
 
           (**
            * TLS v1.1 or later
            *)
-           SSLVERSION_TLSv1_1            = Longint(CURL_SSLVERSION_TLSv1_1),
+           SSLVERSION_TLSv1_1           = Longint(CURL_SSLVERSION_TLSv1_1),
 
           (**
            * TLS v1.2 or later
            *)
-           SSLVERSION_TLSv1_2            = Longint(CURL_SSLVERSION_TLSv1_2),
+           SSLVERSION_TLSv1_2           = Longint(CURL_SSLVERSION_TLSv1_2),
 
           (**
            * TLS v1.3 or later
            *)
-           SSLVERSION_TLSv1_3            = Longint(CURL_SSLVERSION_TLSv1_3),
+           SSLVERSION_TLSv1_3           = Longint(CURL_SSLVERSION_TLSv1_3),
 
          (**
           * The flag defines the maximum supported TLS version by libcurl, or
@@ -993,7 +993,7 @@ type
          (**
           * The flag defines maximum supported TLS version as TLS v1.0.
           *)
-           SSLVERSION_MAX_TLSv1_0        = Longint(CURL_SSLVERSION_MAX_TLSv1_0),
+           SSLVERSION_MAX_TLSv1_0       = Longint(CURL_SSLVERSION_MAX_TLSv1_0),
 
          (**
           * The flag defines maximum supported TLS version as TLS v1.1.
@@ -1032,6 +1032,55 @@ type
         );
 
         TSSLOptions = set of TSSLOption;
+
+        TSSHAuthType = (
+          (**
+           * All types supported by the server
+           *)
+          SSH_AUTH_ANY,
+
+          (**
+           * None allowed, silly but complete
+           *)
+          SSH_AUTH_NONE,
+
+          (**
+           * Public/private key files
+           *)
+          SSH_AUTH_PUBLICKEY,
+
+          (**
+           * Password
+           *)
+          SSH_AUTH_PASSWORD,
+
+          (**
+           * Host key files
+           *)
+          SSH_AUTH_HOST,
+
+          (**
+           * Keyboard interactive
+           *)
+          SSH_AUTH_KEYBOARD,
+
+          (**
+           * Agent (ssh-agent, pageant...)
+           *)
+          SSH_AUTH_AGENT,
+
+          (**
+           * GSSAPI (kerberos, ...)
+           *)
+          SSH_AUTH_GSSAPI,
+
+          (**
+           * Default
+           *)
+          SSH_AUTH_DEFAULT
+        );
+
+        TSSHAuthTypes = set of TSSHAuthType;
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
@@ -1917,68 +1966,13 @@ type
         property GSSAPINegotiation : Boolean write SetSOCKS5GSSAPINegotiation;
       end;
 
-      { TProxyProperty }
+      { TProxySecurityProperty }
 
-      TProxyProperty = class
-      public
-        type
-          (**
-           * Proxy protocol type
-           *)
-          TProxyType = (
-            (**
-             * HTTP Proxy
-             *)
-            PROXY_HTTP                        = Longint(CURLPROXY_HTTP),
-
-            (**
-             * HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it
-             * uses HTTP/1.0 for any CONNECT tunnelling. It does not change the
-             * HTTP version of the actual HTTP requests
-             *)
-            PROXY_HTTP_1_0                    = Longint(CURLPROXY_HTTP_1_0),
-
-            (**
-             * HTTPS Proxy
-             *)
-            PROXY_HTTPS                       = Longint(CURLPROXY_HTTPS),
-
-            (**
-             * SOCKS4 Proxy
-             *)
-            PROXY_SOCKS4                      = Longint(CURLPROXY_SOCKS4),
-
-            (**
-             * SOCKS5 Proxy
-             *)
-            PROXY_SOCKS5                      = Longint(CURLPROXY_SOCKS5),
-
-            (**
-             * SOCKS4a Proxy. Proxy resolves URL hostname
-             *)
-            PROXY_SOCKS4A                     = Longint(CURLPROXY_SOCKS4A),
-
-            (**
-             * SOCKS5 Proxy. Proxy resolves URL hostname.
-             *)
-            PROXY_SOCKS5_HOSTNAME
-              = Longint(CURLPROXY_SOCKS5_HOSTNAME)
-          );
+      TProxySecurityProperty = class
       private
         FHandle : CURL;
         FErrorStack : TErrorStack;
-        FSOCKS5 : TSOCKS5Property;
 
-        procedure SetPreProxy (APreProxy : string);
-        procedure SetProxy (AProxy : string);
-        procedure SetPort (APort : Longint);
-        procedure SetProxyType (AType : TProxyType);
-        procedure SetProxyServiceName (AName : string);
-        procedure SetNoProxyHosts (AHosts : string);
-        procedure SetHttpProxyTunnel (AEnable : Boolean);
-        procedure SetProxyUserPassword (AUserpwd : string);
-        procedure SetProxyUsername (AName : string);
-        procedure SetProxyPassword (APassword : string);
         procedure SetProxyTLSUsername (AName : string);
         procedure SetProxyTLSPassword (APassword : string);
         procedure SetProxyTLSAuth (AMethod : TSecurityProperty.TTLSAuthMethod);
@@ -1986,7 +1980,6 @@ type
         procedure SetProxySSLCertificateType (AType : string);
         procedure SetProxySSLKey (AKey : string);
         procedure SetProxySSLKeyType (AType : string);
-        procedure SetProxyKeyPassword (APassword : string);
         procedure SetProxySSLVersion (AVersion : TSecurityProperty.TSSLVersion);
         procedure SetProxySSLVerifyHost (AEnable : Boolean);
         procedure SetProxySSLVerifyPeer (AEnable : Boolean);
@@ -2000,144 +1993,6 @@ type
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
-
-        property SOCKS5 : TSOCKS5Property read FSOCKS5 write FSOCKS5;
-
-        (**
-         * Set pre-proxy to use
-         *
-         * Set the preproxy to use for the upcoming request. The parameter
-         * should be a string holding the host name or dotted numerical IP
-         * address. A numerical IPv6 address must be written within [brackets].
-         * To specify port number in this string, append :[port] to the end of
-         * the host name. The proxy's port number may optionally be specified
-         * with the separate option Proxy. If not specified, libcurl will
-         * default to using port 1080 for proxies.
-         * A pre proxy is a SOCKS proxy that curl connects to before it connects
-         * to the HTTP(S) proxy specified in the CURLOPT_PROXY option. The pre
-         * proxy can only be a SOCKS proxy.
-         * The pre proxy string should be prefixed with [scheme]:// to specify
-         * which kind of socks is used. Use socks4://, socks4a://, socks5:// or
-         * socks5h:// (the last one to enable socks5 and asking the proxy to do
-         * the resolving, also known as CURLPROXY_SOCKS5_HOSTNAME type) to
-         * request the specific SOCKS version to be used. Otherwise SOCKS4 is
-         * used as default. Setting the pre proxy string to "" (an empty string)
-         * will explicitly disable the use of a pre proxy.
-         *)
-        property PreProxy : string write SetPreProxy;
-
-        (**
-         * Set proxy to use
-         *
-         * Set the proxy to use for the upcoming request. The parameter should
-         * be a string holding the host name or dotted numerical IP address. A
-         * numerical IPv6 address must be written within [brackets].
-         * To specify port number in this string, append :[port] to the end of
-         * the host name. If not specified, libcurl will default to using port
-         * 1080 for proxies.
-         * The proxy string may be prefixed with [scheme]:// to specify which
-         * kind of proxy is used.
-         * http://    HTTP Proxy. Default when no scheme or proxy type is
-         *            specified.
-         * https://   HTTPS Proxy.
-         * socks4://  SOCKS4 Proxy.
-         * socks4a:// SOCKS4a Proxy. Proxy resolves URL hostname.
-         * socks5://  SOCKS5 Proxy.
-         * socks5h:// SOCKS5 Proxy. Proxy resolves URL hostname.
-         * When you tell the library to use an HTTP proxy, libcurl will
-         * transparently convert operations to HTTP even if you specify an FTP
-         * URL etc.
-         * Setting the proxy string to "" (an empty string) will explicitly
-         * disable the use of a proxy, even if there is an environment variable
-         * set for it. A proxy host string can also include protocol scheme
-         * (http://) and embedded user + password.
-         *)
-        property Proxy : string write SetProxy;
-
-        (**
-         * Port number the proxy listens on
-         *
-         * Set the proxy port to connect to unless it is specified in the proxy
-         * string.
-         *)
-        property Port : Longint write SetPort;
-
-        (**
-         * Proxy protocol type
-         *)
-        property Protocol : TProxyType write SetProxyType default PROXY_HTTP;
-
-        (**
-         * Proxy authentication service name
-         *
-         * String holding the name of the service. The default service name is
-         * "HTTP" for HTTP based proxies and "rcmd" for SOCKS5. This option
-         * allows you to change it.
-         *)
-        property ServiceName : string write SetProxyServiceName;
-
-        (**
-         * Disable proxy use for specific hosts
-         *
-         * The string consists of a comma separated list of host names that do
-         * not require a proxy to get reached, even if one is specified. The
-         * only wildcard available is a single * character, which matches all
-         * hosts, and effectively disables the proxy. Each name in this list is
-         * matched as either a domain which contains the hostname, or the
-         * hostname itself. For example, example.com would match example.com,
-         * example.com:80, and www.example.com, but not www.notanexample.com or
-         * example.com.othertld. If the name in the noproxy list has a leading
-         * period, it is a domain match against the provided host name. This way
-         * ".example.com" will switch off proxy use for both "www.example.com"
-         * as well as for "foo.example.com".
-         * Setting the noproxy string to "" (an empty string) will explicitly
-         * enable the proxy for all host names, even if there is an environment
-         * variable set for it.
-         * Enter IPv6 numerical addresses in the list of host names without
-         * enclosing brackets: "example.com,::1,localhost"
-         *)
-        property NoProxyHosts : string write SetNoProxyHosts;
-
-        (**
-         * Tunnel through HTTP proxy
-         *
-         * Make libcurl tunnel all operations through the HTTP proxy (set with
-         * Proxy property). There is a big difference between using a proxy and
-         * to tunnel through it.
-         * Tunneling means that an HTTP CONNECT request is sent to the proxy,
-         * asking it to connect to a remote host on a specific port number and
-         * then the traffic is just passed through the proxy. Proxies tend to
-         * white-list specific port numbers it allows CONNECT requests to and
-         * often only port 80 and 443 are allowed.
-         *)
-        property HttpTunnel : Boolean write SetHttpProxyTunnel;
-
-        (**
-         * User name and password to use for proxy authentification
-         *
-         * Pass a parameter, which should be [user name]:[password] to use for
-         * the connection to the HTTP proxy. Both the name and the password will
-         * be URL decoded before use, so to include for example a colon in the
-         * user name you should encode it as %3A. (This is different to how
-         * UserPassword is used - beware.)
-         *)
-        property UserPassword : string write SetProxyUserPassword;
-
-        (**
-         * User name to use for proxy authentication
-         *
-         * Sets the user name to be used in protocol authentication with the
-         * proxy.
-         *)
-        property Username : string write SetProxyUsername;
-
-        (**
-         * Password to use with proxy authentication
-         *
-         * The option should be used in conjunction with the ProxyUsername
-         * option.
-         *)
-        property Password : string write SetProxyPassword;
 
         (**
          * User name to use for proxy TLS authentication
@@ -2212,17 +2067,6 @@ type
          * "PEM", "DER" and "ENG".
          *)
         property SSLKeyType : string write SetProxySSLKeyType;
-
-        (**
-         * Set passphrase to proxy private key
-         *
-         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
-         * Pass a pointer to a zero terminated string as parameter. It will be
-         * used as the password required to use the CURLOPT_PROXY_SSLKEY private
-         * key. You never needed a pass phrase to load a certificate but you
-         * need one to load your private key.
-         *)
-        property KeyPassword : string write SetProxyKeyPassword;
 
         (**
          * Set preferred proxy TLS/SSL version
@@ -2414,6 +2258,226 @@ type
          *)
         property SSLOptions : TSecurityProperty.TSSLOptions
           write SetProxySSLOptions;
+      end;
+
+      { TProxyProperty }
+
+      TProxyProperty = class
+      public
+        type
+          (**
+           * Proxy protocol type
+           *)
+          TProxyType = (
+            (**
+             * HTTP Proxy
+             *)
+            PROXY_HTTP                        = Longint(CURLPROXY_HTTP),
+
+            (**
+             * HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it
+             * uses HTTP/1.0 for any CONNECT tunnelling. It does not change the
+             * HTTP version of the actual HTTP requests
+             *)
+            PROXY_HTTP_1_0                    = Longint(CURLPROXY_HTTP_1_0),
+
+            (**
+             * HTTPS Proxy
+             *)
+            PROXY_HTTPS                       = Longint(CURLPROXY_HTTPS),
+
+            (**
+             * SOCKS4 Proxy
+             *)
+            PROXY_SOCKS4                      = Longint(CURLPROXY_SOCKS4),
+
+            (**
+             * SOCKS5 Proxy
+             *)
+            PROXY_SOCKS5                      = Longint(CURLPROXY_SOCKS5),
+
+            (**
+             * SOCKS4a Proxy. Proxy resolves URL hostname
+             *)
+            PROXY_SOCKS4A                     = Longint(CURLPROXY_SOCKS4A),
+
+            (**
+             * SOCKS5 Proxy. Proxy resolves URL hostname.
+             *)
+            PROXY_SOCKS5_HOSTNAME
+              = Longint(CURLPROXY_SOCKS5_HOSTNAME)
+          );
+      private
+        FHandle : CURL;
+        FErrorStack : TErrorStack;
+        FSOCKS5 : TSOCKS5Property;
+        FProxySecurity : TProxySecurityProperty;
+
+        procedure SetPreProxy (APreProxy : string);
+        procedure SetProxy (AProxy : string);
+        procedure SetPort (APort : Longint);
+        procedure SetProxyType (AType : TProxyType);
+        procedure SetProxyServiceName (AName : string);
+        procedure SetNoProxyHosts (AHosts : string);
+        procedure SetHttpProxyTunnel (AEnable : Boolean);
+        procedure SetProxyUserPassword (AUserpwd : string);
+        procedure SetProxyUsername (AName : string);
+        procedure SetProxyPassword (APassword : string);
+        procedure SetProxyKeyPassword (APassword : string);
+      public
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
+        destructor Destroy; override;
+
+        property SOCKS5 : TSOCKS5Property read FSOCKS5 write FSOCKS5;
+        property Security : TProxySecurityProperty read FProxySecurity
+          write FProxySecurity;
+
+        (**
+         * Set pre-proxy to use
+         *
+         * Set the preproxy to use for the upcoming request. The parameter
+         * should be a string holding the host name or dotted numerical IP
+         * address. A numerical IPv6 address must be written within [brackets].
+         * To specify port number in this string, append :[port] to the end of
+         * the host name. The proxy's port number may optionally be specified
+         * with the separate option Proxy. If not specified, libcurl will
+         * default to using port 1080 for proxies.
+         * A pre proxy is a SOCKS proxy that curl connects to before it connects
+         * to the HTTP(S) proxy specified in the CURLOPT_PROXY option. The pre
+         * proxy can only be a SOCKS proxy.
+         * The pre proxy string should be prefixed with [scheme]:// to specify
+         * which kind of socks is used. Use socks4://, socks4a://, socks5:// or
+         * socks5h:// (the last one to enable socks5 and asking the proxy to do
+         * the resolving, also known as CURLPROXY_SOCKS5_HOSTNAME type) to
+         * request the specific SOCKS version to be used. Otherwise SOCKS4 is
+         * used as default. Setting the pre proxy string to "" (an empty string)
+         * will explicitly disable the use of a pre proxy.
+         *)
+        property PreProxy : string write SetPreProxy;
+
+        (**
+         * Set proxy to use
+         *
+         * Set the proxy to use for the upcoming request. The parameter should
+         * be a string holding the host name or dotted numerical IP address. A
+         * numerical IPv6 address must be written within [brackets].
+         * To specify port number in this string, append :[port] to the end of
+         * the host name. If not specified, libcurl will default to using port
+         * 1080 for proxies.
+         * The proxy string may be prefixed with [scheme]:// to specify which
+         * kind of proxy is used.
+         * http://    HTTP Proxy. Default when no scheme or proxy type is
+         *            specified.
+         * https://   HTTPS Proxy.
+         * socks4://  SOCKS4 Proxy.
+         * socks4a:// SOCKS4a Proxy. Proxy resolves URL hostname.
+         * socks5://  SOCKS5 Proxy.
+         * socks5h:// SOCKS5 Proxy. Proxy resolves URL hostname.
+         * When you tell the library to use an HTTP proxy, libcurl will
+         * transparently convert operations to HTTP even if you specify an FTP
+         * URL etc.
+         * Setting the proxy string to "" (an empty string) will explicitly
+         * disable the use of a proxy, even if there is an environment variable
+         * set for it. A proxy host string can also include protocol scheme
+         * (http://) and embedded user + password.
+         *)
+        property Proxy : string write SetProxy;
+
+        (**
+         * Port number the proxy listens on
+         *
+         * Set the proxy port to connect to unless it is specified in the proxy
+         * string.
+         *)
+        property Port : Longint write SetPort;
+
+        (**
+         * Proxy protocol type
+         *)
+        property Protocol : TProxyType write SetProxyType default PROXY_HTTP;
+
+        (**
+         * Proxy authentication service name
+         *
+         * String holding the name of the service. The default service name is
+         * "HTTP" for HTTP based proxies and "rcmd" for SOCKS5. This option
+         * allows you to change it.
+         *)
+        property ServiceName : string write SetProxyServiceName;
+
+        (**
+         * Disable proxy use for specific hosts
+         *
+         * The string consists of a comma separated list of host names that do
+         * not require a proxy to get reached, even if one is specified. The
+         * only wildcard available is a single * character, which matches all
+         * hosts, and effectively disables the proxy. Each name in this list is
+         * matched as either a domain which contains the hostname, or the
+         * hostname itself. For example, example.com would match example.com,
+         * example.com:80, and www.example.com, but not www.notanexample.com or
+         * example.com.othertld. If the name in the noproxy list has a leading
+         * period, it is a domain match against the provided host name. This way
+         * ".example.com" will switch off proxy use for both "www.example.com"
+         * as well as for "foo.example.com".
+         * Setting the noproxy string to "" (an empty string) will explicitly
+         * enable the proxy for all host names, even if there is an environment
+         * variable set for it.
+         * Enter IPv6 numerical addresses in the list of host names without
+         * enclosing brackets: "example.com,::1,localhost"
+         *)
+        property NoProxyHosts : string write SetNoProxyHosts;
+
+        (**
+         * Tunnel through HTTP proxy
+         *
+         * Make libcurl tunnel all operations through the HTTP proxy (set with
+         * Proxy property). There is a big difference between using a proxy and
+         * to tunnel through it.
+         * Tunneling means that an HTTP CONNECT request is sent to the proxy,
+         * asking it to connect to a remote host on a specific port number and
+         * then the traffic is just passed through the proxy. Proxies tend to
+         * white-list specific port numbers it allows CONNECT requests to and
+         * often only port 80 and 443 are allowed.
+         *)
+        property HttpTunnel : Boolean write SetHttpProxyTunnel;
+
+        (**
+         * User name and password to use for proxy authentification
+         *
+         * Pass a parameter, which should be [user name]:[password] to use for
+         * the connection to the HTTP proxy. Both the name and the password will
+         * be URL decoded before use, so to include for example a colon in the
+         * user name you should encode it as %3A. (This is different to how
+         * UserPassword is used - beware.)
+         *)
+        property UserPassword : string write SetProxyUserPassword;
+
+        (**
+         * User name to use for proxy authentication
+         *
+         * Sets the user name to be used in protocol authentication with the
+         * proxy.
+         *)
+        property Username : string write SetProxyUsername;
+
+        (**
+         * Password to use with proxy authentication
+         *
+         * The option should be used in conjunction with the ProxyUsername
+         * option.
+         *)
+        property Password : string write SetProxyPassword;
+
+        (**
+         * Set passphrase to proxy private key
+         *
+         * This option is for connecting to an HTTPS proxy, not an HTTPS server.
+         * Pass a pointer to a zero terminated string as parameter. It will be
+         * used as the password required to use the CURLOPT_PROXY_SSLKEY private
+         * key. You never needed a pass phrase to load a certificate but you
+         * need one to load your private key.
+         *)
+        property KeyPassword : string write SetProxyKeyPassword;
       end;
 
       { TDNSProperty }
@@ -5066,6 +5130,12 @@ type
         procedure SetCommandBeforeTransfer (ACommands : TLinkedList);
         procedure SetCommandAfterTransfer (ACommands : TLinkedList);
         procedure SetKerberosSecurityLevel (ALevel : string);
+        procedure SetSSHAuthTypes (AType : TSecurityProperty.TSSHAuthTypes);
+        procedure SetSSHCompression (AEnable : Boolean);
+        procedure SetSSHHostPublicKeyMd5 (AMd5 : string);
+        procedure SetSSHPublicKeyFile (AFilename : string);
+        procedure SetSSHPrivateKeyFile (AFilename : string);
+        procedure SetSSHKnownHostsFile (AFilename : string);
       public
         constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
         destructor Destroy; override;
@@ -5463,6 +5533,61 @@ type
          * string to NULL to disable kerberos support for FTP.
          *)
         property KerberosSecurityLevel : string write SetKerberosSecurityLevel;
+
+        (**
+         * Set desired auth types for SFTP and SCP
+         *)
+        property SSHAuthTypes : TSecurityProperty.TSSHAuthTypes
+          write SetSSHAuthTypes default [SSH_AUTH_NONE];
+
+        (**
+         * Enable compression / decompression of SSH traffic
+         *
+         * Enables built-in SSH compression. This is a request, not an order;
+         * the server may or may not do it.
+         *)
+        property SSHCompression : Boolean write SetSSHCompression default False;
+
+        (**
+         * Checksum of SSH server public key
+         *
+         * Pass a string containing 32 hexadecimal digits. The string should be
+         * the 128 bit MD5 checksum of the remote host's public key, and libcurl
+         * will reject the connection to the host unless the md5sums match.
+         *)
+        property SSHHostPublicKeyMD5 : string write SetSSHHostPublicKeyMd5;
+
+        (**
+         * Set public key file for SSH auth
+         *
+         * Pass a filename for your public key. If not used, libcurl defaults to
+         * $HOME/.ssh/id_dsa.pub if the HOME environment variable is set, and
+         * just "id_dsa.pub" in the current directory if HOME is not set.
+         *)
+        property SSHPublicKeyFile : string write SetSSHPublicKeyFile;
+
+        (**
+         * Set private key file for SSH auth
+         *
+         * Pass a filename for your private key. If not used, libcurl defaults
+         * to $HOME/.ssh/id_dsa if the HOME environment variable is set, and
+         * just "id_dsa" in the current directory if HOME is not set.
+         * If the file is password-protected, set the password with
+         * CURLOPT_KEYPASSWD.
+         *)
+        property SSHPrivateKeyFile : string write SetSSHPrivateKeyFile;
+
+        (**
+         * File name holding the SSH known hosts
+         *
+         * Pass a string holding the file name of the known_host file to use.
+         * The known_hosts file should use the OpenSSH file format as supported
+         * by libssh2. If this file is specified, libcurl will only accept
+         * connections with hosts that are known and present in that file, with
+         * a matching public key. Use CURLOPT_SSH_KEYFUNCTION to alter the
+         * default behavior on host and key (mis)matching.
+         *)
+        property SSHKnownHostsFile : string write SetSSHKnownHostsFile;
       end;
 
       { TSMTPProperty }
@@ -5980,6 +6105,79 @@ type
         property ConnectOnly : Boolean write SetConnectOnly default False;
       end;
 
+      { TSCPProperty }
+
+      TSCPProperty = class
+      private
+        FHandle : CURL;
+        FErrorStack : TErrorStack;
+
+        procedure SetSSHAuthTypes (AType : TSecurityProperty.TSSHAuthTypes);
+        procedure SetSSHCompression (AEnable : Boolean);
+        procedure SetSSHHostPublicKeyMd5 (AMd5 : string);
+        procedure SetSSHPublicKeyFile (AFilename : string);
+        procedure SetSSHPrivateKeyFile (AFilename : string);
+        procedure SetSSHKnownHostsFile (AFilename : string);
+      public
+        constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
+        destructor Destroy; override;
+
+        (**
+         * Set desired auth types for SFTP and SCP
+         *)
+        property SSHAuthTypes : TSecurityProperty.TSSHAuthTypes
+          write SetSSHAuthTypes default [SSH_AUTH_NONE];
+
+        (**
+         * Enable compression / decompression of SSH traffic
+         *
+         * Enables built-in SSH compression. This is a request, not an order;
+         * the server may or may not do it.
+         *)
+        property SSHCompression : Boolean write SetSSHCompression default False;
+
+        (**
+         * Checksum of SSH server public key
+         *
+         * Pass a string containing 32 hexadecimal digits. The string should be
+         * the 128 bit MD5 checksum of the remote host's public key, and libcurl
+         * will reject the connection to the host unless the md5sums match.
+         *)
+        property SSHHostPublicKeyMD5 : string write SetSSHHostPublicKeyMd5;
+
+        (**
+         * Set public key file for SSH auth
+         *
+         * Pass a filename for your public key. If not used, libcurl defaults to
+         * $HOME/.ssh/id_dsa.pub if the HOME environment variable is set, and
+         * just "id_dsa.pub" in the current directory if HOME is not set.
+         *)
+        property SSHPublicKeyFile : string write SetSSHPublicKeyFile;
+
+        (**
+         * Set private key file for SSH auth
+         *
+         * Pass a filename for your private key. If not used, libcurl defaults
+         * to $HOME/.ssh/id_dsa if the HOME environment variable is set, and
+         * just "id_dsa" in the current directory if HOME is not set.
+         * If the file is password-protected, set the password with
+         * CURLOPT_KEYPASSWD.
+         *)
+        property SSHPrivateKeyFile : string write SetSSHPrivateKeyFile;
+
+        (**
+         * File name holding the SSH known hosts
+         *
+         * Pass a string holding the file name of the known_host file to use.
+         * The known_hosts file should use the OpenSSH file format as supported
+         * by libssh2. If this file is specified, libcurl will only accept
+         * connections with hosts that are known and present in that file, with
+         * a matching public key. Use CURLOPT_SSH_KEYFUNCTION to alter the
+         * default behavior on host and key (mis)matching.
+         *)
+        property SSHKnownHostsFile : string write SetSSHKnownHostsFile;
+      end;
+
   protected
     FHandle : CURL;
     FErrorStack : TErrorStack;
@@ -5997,6 +6195,7 @@ type
     FSMTP : TSMTPProperty;
     FRTSP : TRTSPProperty;
     FPOP3 : TPOP3Property;
+    FSCP : TSCPProperty;
 
     FDownloadFunction : TDownloadFunction;
     FUploadFunction : TUploadFunction;
@@ -6529,6 +6728,219 @@ type
   end;
 
 implementation
+
+{ TSession.TSCPProperty }
+
+procedure TSession.TSCPProperty.SetSSHAuthTypes(
+  AType: TSecurityProperty.TSSHAuthTypes);
+var
+  Bitmask : Longint;
+begin
+  Bitmask := 0;
+  if SSH_AUTH_PUBLICKEY in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_PUBLICKEY;
+  if SSH_AUTH_PASSWORD in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_PASSWORD;
+  if SSH_AUTH_HOST in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_HOST;
+  if SSH_AUTH_KEYBOARD in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_KEYBOARD;
+  if SSH_AUTH_AGENT in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_AGENT;
+  if SSH_AUTH_GSSAPI in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_GSSAPI;
+  if SSH_AUTH_ANY in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_ANY;
+  if SSH_AUTH_DEFAULT in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_DEFAULT;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_AUTH_TYPES, Bitmask));
+end;
+
+procedure TSession.TSCPProperty.SetSSHCompression(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_COMPRESSION,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TSCPProperty.SetSSHHostPublicKeyMd5(AMd5: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_HOST_PUBLIC_KEY_MD5,
+    PChar(AMd5)));
+end;
+
+procedure TSession.TSCPProperty.SetSSHPublicKeyFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_PUBLIC_KEYFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TSCPProperty.SetSSHPrivateKeyFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_PRIVATE_KEYFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TSCPProperty.SetSSHKnownHostsFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_KNOWNHOSTS,
+    PChar(AFilename)));
+end;
+
+constructor TSession.TSCPProperty.Create(AHandle: CURL; AErrorStack: PErrorStack
+  );
+begin
+  FHandle := AHandle;
+  FErrorStack := AErrorStack^;
+end;
+
+destructor TSession.TSCPProperty.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TSession.TProxySecurityProperty }
+
+procedure TSession.TProxySecurityProperty.SetProxyTLSUsername(AName: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_USERNAME,
+    PChar(AName)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxyTLSPassword(APassword: string
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD,
+    PChar(APassword)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxyTLSAuth(
+  AMethod: TSecurityProperty.TTLSAuthMethod);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
+    PChar(GetEnumName(TypeInfo(TSecurityProperty.TTLSAuthMethod),
+    ord(AMethod)))));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLCertificate(
+  ACertificate: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERT,
+    PChar(ACertificate)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLCertificateType(
+  AType: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERTTYPE,
+    PChar(AType)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLKey(AKey: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY,
+    PChar(AKey)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLKeyType(AType: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEYTYPE,
+    PChar(AType)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLVersion(
+  AVersion: TSecurityProperty.TSSLVersion);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLVERSION,
+    Longint(AVersion)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLVerifyHost(AEnable: Boolean
+  );
+begin
+  if AEnable then
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
+      Longint(2)));
+  end else
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
+      Longint(0)));
+  end;
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLVerifyPeer(AEnable: Boolean
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYPEER,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetCertificateAuthority(APath: string
+  );
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAINFO,
+    PChar(APath)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetCertificateAuthorityDirectory(
+  ADirectory: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAPATH,
+    PChar(ADirectory)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetCertificateRevocationList(
+  AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CRLFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxyPinnedPublicKey(AKey: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_PINNEDPUBLICKEY,
+    PChar(AKey)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLCipherList(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_CIPHER_LIST,
+    PChar(AList)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxyTLS13Ciphers(AList: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLS13_CIPHERS,
+    PChar(AList)));
+end;
+
+procedure TSession.TProxySecurityProperty.SetProxySSLOptions(
+  AOptions: TSecurityProperty.TSSLOptions);
+var
+  Bitmask : Longint;
+begin
+  Bitmask := 0;
+  if SSLOPTIONS_ALLOW_BEAST in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_ALLOW_BEAST;
+  if SSLOPTIONS_NO_REVOKE in AOptions then
+    Bitmask := Bitmask or CURLSSLOPT_NO_REVOKE;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_OPTIONS,
+    Bitmask));
+end;
+
+constructor TSession.TProxySecurityProperty.Create(AHandle: CURL;
+  AErrorStack: PErrorStack);
+begin
+  FHandle := AHandle;
+  FErrorStack := AErrorStack^;
+end;
+
+destructor TSession.TProxySecurityProperty.Destroy;
+begin
+  inherited Destroy;
+end;
 
 { TSession.TErrorStack }
 
@@ -7519,6 +7931,62 @@ end;
 procedure TSession.TFTPProperty.SetKerberosSecurityLevel(ALevel: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_KRBLEVEL, PChar(ALevel)));
+end;
+
+procedure TSession.TFTPProperty.SetSSHAuthTypes(
+  AType: TSecurityProperty.TSSHAuthTypes);
+var
+  Bitmask : Longint;
+begin
+  Bitmask := 0;
+  if SSH_AUTH_PUBLICKEY in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_PUBLICKEY;
+  if SSH_AUTH_PASSWORD in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_PASSWORD;
+  if SSH_AUTH_HOST in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_HOST;
+  if SSH_AUTH_KEYBOARD in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_KEYBOARD;
+  if SSH_AUTH_AGENT in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_AGENT;
+  if SSH_AUTH_GSSAPI in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_GSSAPI;
+  if SSH_AUTH_ANY in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_ANY;
+  if SSH_AUTH_DEFAULT in AType then
+    Bitmask := Bitmask or CURLSSH_AUTH_DEFAULT;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_AUTH_TYPES, Bitmask));
+end;
+
+procedure TSession.TFTPProperty.SetSSHCompression(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_COMPRESSION,
+    Longint(AEnable)));
+end;
+
+procedure TSession.TFTPProperty.SetSSHHostPublicKeyMd5(AMd5: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_HOST_PUBLIC_KEY_MD5,
+    PChar(AMd5)));
+end;
+
+procedure TSession.TFTPProperty.SetSSHPublicKeyFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_PUBLIC_KEYFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TFTPProperty.SetSSHPrivateKeyFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_PRIVATE_KEYFILE,
+    PChar(AFilename)));
+end;
+
+procedure TSession.TFTPProperty.SetSSHKnownHostsFile(AFilename: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_SSH_KNOWNHOSTS,
+    PChar(AFilename)));
 end;
 
 constructor TSession.TFTPProperty.Create(AHandle: CURL; AErrorStack :
@@ -8593,133 +9061,10 @@ begin
     PChar(APassword)));
 end;
 
-procedure TSession.TProxyProperty.SetProxyTLSUsername(AName: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_USERNAME,
-    PChar(AName)));
-end;
-
-procedure TSession.TProxyProperty.SetProxyTLSPassword(APassword: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_PASSWORD,
-    PChar(APassword)));
-end;
-
-procedure TSession.TProxyProperty.SetProxyTLSAuth(
-  AMethod: TSecurityProperty.TTLSAuthMethod);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLSAUTH_TYPE,
-    PChar(GetEnumName(TypeInfo(TSecurityProperty.TTLSAuthMethod),
-    ord(AMethod)))));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLCertificate(ACertificate: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERT,
-    PChar(ACertificate)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLCertificateType(AType: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLCERTTYPE,
-    PChar(AType)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLKey(AKey: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEY,
-    PChar(AKey)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLKeyType(AType: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLKEYTYPE,
-    PChar(AType)));
-end;
-
 procedure TSession.TProxyProperty.SetProxyKeyPassword(APassword: string);
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_KEYPASSWD,
     PChar(APassword)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLVersion(
-  AVersion: TSecurityProperty.TSSLVersion);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSLVERSION,
-    Longint(AVersion)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLVerifyHost(AEnable: Boolean);
-begin
-  if AEnable then
-  begin
-    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
-      Longint(2)));
-  end else
-  begin
-    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYHOST,
-      Longint(0)));
-  end;
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLVerifyPeer(AEnable: Boolean);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_VERIFYPEER,
-    Longint(AEnable)));
-end;
-
-procedure TSession.TProxyProperty.SetCertificateAuthority(APath: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAINFO,
-    PChar(APath)));
-end;
-
-procedure TSession.TProxyProperty.SetCertificateAuthorityDirectory(
-  ADirectory: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CAPATH,
-    PChar(ADirectory)));
-end;
-
-procedure TSession.TProxyProperty.SetCertificateRevocationList(AFilename: string
-  );
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_CRLFILE,
-    PChar(AFilename)));
-end;
-
-procedure TSession.TProxyProperty.SetProxyPinnedPublicKey(AKey: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_PINNEDPUBLICKEY,
-    PChar(AKey)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLCipherList(AList: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_CIPHER_LIST,
-    PChar(AList)));
-end;
-
-procedure TSession.TProxyProperty.SetProxyTLS13Ciphers(AList: string);
-begin
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_TLS13_CIPHERS,
-    PChar(AList)));
-end;
-
-procedure TSession.TProxyProperty.SetProxySSLOptions(
-  AOptions: TSecurityProperty.TSSLOptions);
-var
-  Bitmask : Longint;
-begin
-  Bitmask := 0;
-  if SSLOPTIONS_ALLOW_BEAST in AOptions then
-    Bitmask := Bitmask or CURLSSLOPT_ALLOW_BEAST;
-  if SSLOPTIONS_NO_REVOKE in AOptions then
-    Bitmask := Bitmask or CURLSSLOPT_NO_REVOKE;
-
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_PROXY_SSL_OPTIONS,
-    Bitmask));
 end;
 
 constructor TSession.TProxyProperty.Create(AHandle: CURL; AErrorStack :
@@ -8728,10 +9073,13 @@ begin
   FHandle := AHandle;
   FErrorStack := AErrorStack^;
   FSOCKS5 := TSOCKS5Property.Create(AHandle, AErrorStack);
+  FProxySecurity := TProxySecurityProperty.Create(AHandle, AErrorStack);
 end;
 
 destructor TSession.TProxyProperty.Destroy;
 begin
+  FreeAndNil(FSOCKS5);
+  FreeAndNil(FProxySecurity);
   inherited Destroy;
 end;
 
@@ -9607,6 +9955,7 @@ begin
   FSMTP := TSMTPProperty.Create(FHandle, @FErrorStack);
   FRTSP := TRTSPProperty.Create(FHandle, @FErrorStack);
   FPOP3 := TPOP3Property.Create(FHandle, @FErrorStack);
+  FSCP := TSCPProperty.Create(FHandle, @FErrorStack);
 
   if Opened then
   begin
