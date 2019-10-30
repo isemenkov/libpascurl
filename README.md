@@ -2,6 +2,8 @@ libPasCURL
 ==========
 It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/).
 
+Documentaion you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
+
 ### Bindings
 
 [libpascurl.pas](https://github.com/isemenkov/libpascurl/blob/master/source/libpascurl.pas) file contains the cURL translated headers to use this library in pascal programs. You can find C API documentation at [cURL website](https://curl.haxx.se/libcurl/c/).
