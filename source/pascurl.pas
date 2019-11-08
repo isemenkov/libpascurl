@@ -6259,7 +6259,8 @@ type
     property TFTP : TTFTPProperty read FTFTP write FTFTP;
     property SMTP : TSMTPProperty read FSMTP write FSMTP;
     property RTSP : TRTSPProperty read FRTSP write FRTSP;
-    property POP : TPOP3Property read FPOP3 write FPOP3;
+    property POP3 : TPOP3Property read FPOP3 write FPOP3;
+    property SCP : TSCPProperty read FSCP write FSCP;
 
     (**
      * Check if session opened and correctly

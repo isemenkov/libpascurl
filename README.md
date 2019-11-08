@@ -2,7 +2,7 @@ libPasCURL
 ==========
 It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/).
 
-Documentaion you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
+Documentation you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
 
 ### Bindings
 
