@@ -2,6 +2,7 @@
 #build file for tests
 /examples/RemoteConnect/RemoteConnect
 /examples/RemoteConnectCStyle/RemoteConnectCStyle
+/examples/EmailClient/emailclient
 /unit-tests/libpascurl_testproject
 
 #unit-test
