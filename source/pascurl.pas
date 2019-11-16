@@ -9446,15 +9446,24 @@ end;
 
 function TResponse.GetContent: string;
 var
-  ContentLength : Longint = 0;
+  //ContentLength : Longint = 0;
+  Stream : TStringStream;
 begin
   if Opened then
   begin
+    Stream := TStringStream.Create('');
+    Stream.Write(session.FBuffer.Memory^, session.FBuffer.Size);
+    Result := Stream.DataString;
+    UniqueString(Result);
+    FreeAndNil(Stream);
+
+    {
     ContentLength := Length(string(PChar(session.FBuffer.Memory)));
     Result := '';
     UniqueString(Result);
     SetLength(Result, ContentLength);
     Move(PChar(session.FBuffer.Memory^), PChar(Result)[0], ContentLength);
+    }
   end;
 end;
 
