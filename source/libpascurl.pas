@@ -3,7 +3,7 @@
 (*                 object pascal wrapper around cURL library                  *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
-(* Copyright (c) 2019                                       Ivan Semenkov     *)
+(* Copyright (c) 2019 - 2020                                Ivan Semenkov     *)
 (* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)
 (*                                                          Ukraine           *)
 (******************************************************************************)
@@ -38,6 +38,102 @@ uses
   {$PACKRECORDS C}
 {$ENDIF}
 
+const
+  CURL_SOCKET_BAD                                                   = -1;
+
+  { specified content is a file name }
+  CURL_HTTPPOST_FILENAME                                            = 1 shl 0;
+  { specified content is a file name }
+  CURL_HTTPPOST_READFILE                                            = 1 shl 1;
+  { name is only stored pointer do not free in formfree }
+  CURL_HTTPPOST_PTRNAME                                             = 1 shl 2;
+  { contents is only stored pointer do not free in formfree }
+  CURL_HTTPPOST_PTRCONTENTS                                         = 1 shl 3;
+  { upload file from buffer }
+  CURL_HTTPPOST_BUFFER                                              = 1 shl 4;
+  { upload file from pointer contents }
+  CURL_HTTPPOST_PTRBUFFER                                           = 1 shl 5;
+  { upload file contents by using the regular read callback to get the data and
+    pass the given pointer as custom pointer }
+  CURL_HTTPPOST_CALLBACK                                            = 1 shl 6;
+  { use size in 'contentlen', added in 7.46.0 }
+  CURL_HTTPPOST_LARGE                                               = 1 shl 7;
+
+  { This is a return code for the progress callback that, when returned, will
+    signal libcurl to continue executing the default progress function }
+  CURL_PROGRESSFUNC_CONTINUE                                        = $10000001;
+
+  { The maximum receive buffer size configurable via CURLOPT_BUFFERSIZE. }
+  CURL_MAX_READ_SIZE                                                = 524288;
+
+  { Tests have proven that 20K is a very bad buffer size for uploads on
+    Windows, while 16K for some odd reason performed a lot better.
+    We do the ifndef check to allow this value to easier be changed at build
+    time for those who feel adventurous. The practical minimum is about
+    400 bytes since libcurl uses a buffer of this size as a scratch area
+    (unrelated to network send operations). }
+  CURL_MAX_WRITE_SIZE                                               = 16384;
+
+  { The only reason to have a max limit for this is to avoid the risk of a bad
+    server feeding libcurl with a never-ending header that will cause reallocs
+    infinitely }
+  CURL_MAX_HTTP_HEADER                                           = (100 * 1024);
+
+  { This is a magic return code for the write callback that, when returned,
+    will signal libcurl to pause receiving on the current transfer. }
+  CURL_WRITEFUNC_PAUSE                                              = $10000001;
+
+  CURLFINFOFLAG_KNOWN_FILENAME                                      = 1 shl 0;
+  CURLFINFOFLAG_KNOWN_FILETYPE                                      = 1 shl 1;
+  CURLFINFOFLAG_KNOWN_TIME                                          = 1 shl 2;
+  CURLFINFOFLAG_KNOWN_PERM                                          = 1 shl 3;
+  CURLFINFOFLAG_KNOWN_UID                                           = 1 shl 4;
+  CURLFINFOFLAG_KNOWN_GID                                           = 1 shl 5;
+  CURLFINFOFLAG_KNOWN_SIZE                                          = 1 shl 6;
+  CURLFINFOFLAG_KNOWN_HLINKCOUNT                                    = 1 shl 7;
+
+  { return codes for CURLOPT_CHUNK_BGN_FUNCTION }
+  CURL_CHUNK_BGN_FUNC_OK                                            = 0;
+  CURL_CHUNK_BGN_FUNC_FAIL      { tell the lib to end the task }    = 1;
+  CURL_CHUNK_BGN_FUNC_SKIP      { skip this chunk over }            = 2;
+
+  { return codes for CURLOPT_CHUNK_END_FUNCTION }
+  CURL_CHUNK_END_FUNC_OK                                            = 0;
+  CURL_CHUNK_END_FUNC_FAIL      { tell the lib to end the task }    = 1;
+
+  { return codes for FNMATCHFUNCTION }
+  CURL_FNMATCHFUNC_MATCH      { string corresponds to the pattern } = 0;
+  CURL_FNMATCHFUNC_NOMATCH    { pattern doesn't match the string }  = 1;
+  CURL_FNMATCHFUNC_FAIL       { an error occurred }                 = 2;
+
+  { These are the return codes for the seek callbacks }
+  CURL_SEEKFUNC_OK                                                  = 0;
+  CURL_SEEKFUNC_FAIL            { fail the entire transfer }        = 1;
+  CURL_SEEKFUNC_CANTSEEK        { tell libcurl seeking can't }      = 2;
+                                { be done, so libcurl might try other means }
+                                { instead }
+
+  { This is a return code for the read callback that, when returned, will
+    signal libcurl to immediately abort the current transfer. }
+  CURL_READFUNC_ABORT                                               = $10000000;
+  { This is a return code for the read callback that, when returned, will
+    signal libcurl to pause sending data on the current transfer. }
+  CURL_READFUNC_PAUSE                                               = $10000001;
+
+  { Return code for when the trailing headers' callback has terminated
+    without any errors }
+  CURL_TRAILERFUNC_OK                                               = 0;
+  { Return code for when was an error in the trailing header's list and we
+    want to abort the request }
+  CURL_TRAILERFUNC_ABORT                                            = 1;
+
+  { The return code from the sockopt_callback can signal information back
+    to libcurl: }
+  CURL_SOCKOPT_OK                                                   = 0;
+  CURL_SOCKOPT_ERROR            { causes libcurl to abort and  }    = 1;
+                                { return CURLE_ABORTED_BY_CALLBACK }
+  CURL_SOCKOPT_ALREADY_CONNECTED                                    = 2;
+
 type
   CURL = type Pointer;
   CURLSH = type Pointer;
@@ -45,7 +141,35 @@ type
   curl_socket_t = type Integer;
   curl_off_t = type Longint;
 
-  (* linked-list structure for the CURLOPT_QUOTE option (and other) *)
+  { enum for the different supported SSL backends }
+  curl_sslbackend = (
+    CURLSSLBACKEND_NONE                                             = 0,
+    CURLSSLBACKEND_OPENSSL                                          = 1,
+    { aliases for library clones and renames }
+    CURLSSLBACKEND_LIBRESSL = CURLSSLBACKEND_OPENSSL{%H-},
+    CURLSSLBACKEND_BORINGSSL = CURLSSLBACKEND_OPENSSL{%H-},
+    { end aliases }
+    CURLSSLBACKEND_GNUTLS                                           = 2,
+    CURLSSLBACKEND_NSS                                              = 3,
+    CURLSSLBACKEND_OBSOLETE4 { Was QSOSSL. }                        = 4,
+    CURLSSLBACKEND_GSKIT                                            = 5,
+    CURLSSLBACKEND_POLARSSL                                         = 6,
+    CURLSSLBACKEND_WOLFSSL                                          = 7,
+    { deprecated names: }
+    CURLSSLBACKEND_CYASSL = CURLSSLBACKEND_WOLFSSL{%H-},
+    { end deprecated }
+    CURLSSLBACKEND_SCHANNEL                                         = 8,
+    CURLSSLBACKEND_SECURETRANSPORT                                  = 9,
+    { deprecated names: }
+    CURLSSLBACKEND_DARWINSSL = CURLSSLBACKEND_SECURETRANSPORT{%H-},
+    { end deprecated }
+    CURLSSLBACKEND_AXTLS { never used since 7.63.0 }                = 10,
+    CURLSSLBACKEND_MBEDTLS                                          = 11,
+    CURLSSLBACKEND_MESALINK                                         = 12,
+    CURLSSLBACKEND_BEARSSL                                          = 13
+  );
+
+  { linked-list structure for the CURLOPT_QUOTE option (and other) }
   pcurl_slist = ^curl_slist;
   ppcurl_slist = ^pcurl_slist;
   curl_slist = record
@@ -56,77 +180,37 @@ type
   pcurl_httppost = ^curl_httppost;
   ppcurl_httppost = ^pcurl_httppost;
   curl_httppost = record
-    next : ^curl_httppost;      (* next entry in the list *)
-    name : PChar;               (* pointer to allocated name *)
-    namelength : Longint;       (* length of name length *)
-    contents : PChar;           (* pointer to allocated data contents *)
-    contentslength : Longint;   (* length of contents field, see also
-                                   CURL_HTTPPOST_LARGE *)
-    buffer : PChar;             (* pointer to allocated buffer contents *)
-    bufferLength : Longint;     (* length of buffer field *)
-    contenttype : PChar;        (* Content-Type *)
-    contentheader : ^curl_slist;(* list of extra headers for this form *)
-    more : ^curl_httppost;      (* if one field name has more than one
+    next : ^curl_httppost;      { next entry in the list }
+    name : PChar;               { pointer to allocated name }
+    namelength : Longint;       { length of name length }
+    contents : PChar;           { pointer to allocated data contents }
+    contentslength : Longint;   { length of contents field, see also
+                                   CURL_HTTPPOST_LARGE }
+    buffer : PChar;             { pointer to allocated buffer contents }
+    bufferLength : Longint;     { length of buffer field }
+    contenttype : PChar;        { Content-Type }
+    contentheader : ^curl_slist;{ list of extra headers for this form }
+    more : ^curl_httppost;      { if one field name has more than one
                                    file, this link should link to following
-                                   files *)
-    flags : Longint;            (* as defined below *)
-    showfilename : PChar;       (* The file name to show. If not set, the
+                                   files }
+    flags : Longint;            { as defined below }
+    showfilename : PChar;       { The file name to show. If not set, the
                                    actual file name will be used (if this
-                                   is a file part) *)
-    userp : Pointer;            (* custom pointer used for
-                                   HTTPPOST_CALLBACK posts *)
-    contentlen : curl_off_t;    (* alternative length of contents
+                                   is a file part) }
+    userp : Pointer;            { custom pointer used for
+                                   HTTPPOST_CALLBACK posts }
+    contentlen : curl_off_t;    { alternative length of contents
                                    field. Used if CURL_HTTPPOST_LARGE is
-                                   set. Added in 7.46.0 *)
+                                   set. Added in 7.46.0 }
   end;
 
-const
-  (* specified content is a file name *)
-  CURL_HTTPPOST_FILENAME                                            = 1 shl 0;
-  (* specified content is a file name *)
-  CURL_HTTPPOST_READFILE                                            = 1 shl 1;
-  (* name is only stored pointer do not free in formfree *)
-  CURL_HTTPPOST_PTRNAME                                             = 1 shl 2;
-  (* contents is only stored pointer do not free in formfree *)
-  CURL_HTTPPOST_PTRCONTENTS                                         = 1 shl 3;
-  (* upload file from buffer *)
-  CURL_HTTPPOST_BUFFER                                              = 1 shl 4;
-  (* upload file from pointer contents *)
-  CURL_HTTPPOST_PTRBUFFER                                           = 1 shl 5;
-  (* upload file contents by using the regular read callback to get the data and
-     pass the given pointer as custom pointer *)
-  CURL_HTTPPOST_CALLBACK                                            = 1 shl 6;
-  (* use size in 'contentlen', added in 7.46.0 *)
-  CURL_HTTPPOST_LARGE                                               = 1 shl 7;
-
-type
-  (* enum for the different supported SSL backends *)
-  curl_sslbackend = (
-    CURLSSLBACKEND_NONE                                             = 0,
-    CURLSSLBACKEND_OPENSSL                                          = 1,
-    CURLSSLBACKEND_LIBRESSL = CURLSSLBACKEND_OPENSSL{%H-},
-    CURLSSLBACKEND_BORINGSSL = CURLSSLBACKEND_OPENSSL,
-    CURLSSLBACKEND_GNUTLS                                           = 2,
-    CURLSSLBACKEND_NSS                                              = 3,
-    CURLSSLBACKEND_OBSOLETE4                                        = 4,
-    CURLSSLBACKEND_GSKIT                                            = 5,
-    CURLSSLBACKEND_POLARSSL                                         = 6,
-    CURLSSLBACKEND_WOLFSSL                                          = 7,
-    CURLSSLBACKEND_CYASSL = CURLSSLBACKEND_WOLFSSL,
-    CURLSSLBACKEND_SCHANNEL                                         = 8,
-    CURLSSLBACKEND_SECURETRANSPORT                                  = 9,
-    CURLSSLBACKEND_AXTLS (* never used since 7.63.0 *)              = 10,
-    CURLSSLBACKEND_MBEDTLS                                          = 11,
-    CURLSSLBACKEND_MESALINK                                         = 12
-  );
-
-  (* This is the CURLOPT_PROGRESSFUNCTION callback proto. It is now considered
-     deprecated but was the only choice up until 7.31.0 *)
+  { This is the CURLOPT_PROGRESSFUNCTION callback proto. It is now considered
+    deprecated but was the only choice up until 7.31.0 }
   curl_progress_callback = function (clientp : Pointer; dltotal : Double;
     dlnow : Double; ultotal : Double; ulnow : Double) : Integer of object;
 
-  (* This is the CURLOPT_XFERINFOFUNCTION callback proto. It was introduced in
-     7.32.0, it avoids floating point and provides more detailed information. *)
+  { This is the CURLOPT_XFERINFOFUNCTION callback proto. It was introduced in
+    7.32.0, it avoids floating point and provides more detailed information. }
   curl_xferinfo_callback = function (clientp : Pointer; dltotal : curl_off_t;
     dlnow : curl_off_t; ultotal : curl_off_t; ulnow : curl_off_t) : Integer
     of object;
@@ -134,7 +218,11 @@ type
   curl_write_callback = function (buffer : PChar; size : LongWord; nitems :
     LongWord; outstream : Pointer) : LongWord of object;
 
-  (* enumeration of file types *)
+  { This callback will be called when a new resolver request is made }
+  curl_resolver_start_callback = function (resolver_state : Pointer; reserved :
+    Pointer; userdata : Pointer) : Integer of object;
+
+  { enumeration of file types }
   curlfiletype = (
     CURLFILETYPE_FILE                                               = 0,
     CURLFILETYPE_DIRECTORY,
@@ -143,116 +231,57 @@ type
     CURLFILETYPE_DEVICE_CHAR,
     CURLFILETYPE_NAMEDPIPE,
     CURLFILETYPE_SOCKET,
-    CURLFILETYPE_DOOR, (* is possible only on Sun Solaris now *)
-    CURLFILETYPE_UNKNOWN (* should never occur *)
+    CURLFILETYPE_DOOR,          { is possible only on Sun Solaris now }
+    CURLFILETYPE_UNKNOWN        { should never occur }
   );
 
-const
-  CURLFINFOFLAG_KNOWN_FILENAME                                      = 1 shl 0;
-  CURLFINFOFLAG_KNOWN_FILETYPE                                      = 1 shl 1;
-  CURLFINFOFLAG_KNOWN_TIME                                          = 1 shl 2;
-  CURLFINFOFLAG_KNOWN_PERM                                          = 1 shl 3;
-  CURLFINFOFLAG_KNOWN_UID                                           = 1 shl 4;
-  CURLFINFOFLAG_KNOWN_GID                                           = 1 shl 5;
-  CURLFINFOFLAG_KNOWN_SIZE                                          = 1 shl 6;
-  CURLFINFOFLAG_KNOWN_HLINKCOUNT                                    = 1 shl 7;
-
-type
-  (* Content of this structure depends on information which is known and is
-   achievable (e.g. by FTP LIST parsing). Please see the url_easy_setopt(3) man
-   page for callbacks returning this structure -- some fields are mandatory,
-   some others are optional. The FLAG field has special meaning. *)
+  { Information about a single file, used when doing FTP wildcard matching }
   curl_fileinfo = record
     filename : PChar;
     filetype : curlfiletype;
-    time : Int64;
+    time : Int64;               { always zero! }
     perm : Cardinal;
     uid : Integer;
     gid : Integer;
     size : curl_off_t;
     hardlinks : Longint;
     strings : record
-      (* If some of these fields is not NULL, it is a pointer to b_data. *)
+      { If some of these fields is not NULL, it is a pointer to b_data. }
       time : PChar;
       perm : PChar;
       user : PChar;
       group : PChar;
-      target : PChar; (* pointer to the target filename of a symlink *)
+      target : PChar;           { pointer to the target filename of a symlink }
     end;
     flags : Cardinal;
-    (* used internally *)
+    { used internally }
     b_data : PChar;
     b_size : LongWord;
     b_used : LongWord;
   end;
 
-const
-  (* return codes for CURLOPT_CHUNK_BGN_FUNCTION *)
-  CURL_CHUNK_BGN_FUNC_OK                                            = 0;
-  CURL_CHUNK_BGN_FUNC_FAIL (* tell the lib to end the task *)       = 1;
-  CURL_CHUNK_BGN_FUNC_SKIP (* skip this chunk over *)               = 2;
-
-type
-  (* if splitting of data transfer is enabled, this callback is called before
-   download of an individual chunk started. Note that parameter "remains" works
-   only for FTP wildcard downloading (for now), otherwise is not used *)
+  { if splitting of data transfer is enabled, this callback is called before
+    download of an individual chunk started. Note that parameter "remains" works
+    only for FTP wildcard downloading (for now), otherwise is not used }
   curl_chunk_bgn_callback = function (const transfer_info : Pointer;
     ptr : Pointer; remains : Integer) : Longint of object;
 
-const
-  (* return codes for CURLOPT_CHUNK_END_FUNCTION *)
-  CURL_CHUNK_END_FUNC_OK                                            = 0;
-  CURL_CHUNK_END_FUNC_FAIL (* tell the lib to end the task *)       = 1;
-
-type
-  (* If splitting of data transfer is enabled this callback is called after
-   download of an individual chunk finished.
-   Note! After this callback was set then it have to be called FOR ALL chunks.
-   Even if downloading of this chunk was skipped in CHUNK_BGN_FUNC.
-   This is the reason why we don't need "transfer_info" parameter in this
-   callback and we are not interested in "remains" parameter too. *)
+  { If splitting of data transfer is enabled this callback is called after
+    download of an individual chunk finished.
+    Note! After this callback was set then it have to be called FOR ALL chunks.
+    Even if downloading of this chunk was skipped in CHUNK_BGN_FUNC.
+    This is the reason why we don't need "transfer_info" parameter in this
+    callback and we are not interested in "remains" parameter too. }
   curl_chunk_end_callback = function (ptr : Pointer) : Longint of object;
 
-const
-  (* return codes for FNMATCHFUNCTION *)
-  CURL_FNMATCHFUNC_MATCH (* string corresponds to the pattern *)    = 0;
-  CURL_FNMATCHFUNC_NOMATCH (* pattern doesn't match the string *)   = 1;
-  CURL_FNMATCHFUNC_FAIL (* an error occurred *)                     = 2;
-
-type
-  (* callback type for wildcard downloading pattern matching. If the
-   string matches the pattern, return CURL_FNMATCHFUNC_MATCH value, etc. *)
+  { callback type for wildcard downloading pattern matching. If the
+    string matches the pattern, return CURL_FNMATCHFUNC_MATCH value, etc. }
   curl_fnmatch_callback = function (ptr : Pointer; const pattern : PChar;
     const str : PChar) : Integer of object;
 
-const
-  (* These are the return codes for the seek callbacks *)
-  CURL_SEEKFUNC_OK                                                  = 0;
-  CURL_SEEKFUNC_FAIL (* fail the entire transfer *)                 = 1;
-  CURL_SEEKFUNC_CANTSEEK (* tell libcurl seeking can't be done, *)  = 2;
-                         (* so libcurl might try other means *)
-                         (* instead *)
-
-type
   curl_seek_callback = function (instream : Pointer; offset : curl_off_t;
     origin : Integer) : Integer of object;
 
-const
-  (* This is a return code for the read callback that, when returned, will
-   signal libcurl to immediately abort the current transfer. *)
-  CURL_READFUNC_ABORT                                               = $10000000;
-  (* This is a return code for the read callback that, when returned, will
-   signal libcurl to pause sending data on the current transfer. *)
-  CURL_READFUNC_PAUSE                                               = $10000001;
-
-  (* Return code for when the trailing headers' callback has terminated
-   without any errors*)
-  CURL_TRAILERFUNC_OK                                               = 0;
-  (* Return code for when was an error in the trailing header's list and we
-  want to abort the request *)
-  CURL_TRAILERFUNC_ABORT                                            = 1;
-
-type
   curl_read_callback = function (buffer : PChar; size : LongWord;
     nitems : LongWord; instream : Pointer) : LongWord of object;
 
@@ -260,20 +289,11 @@ type
     Integer of object;
 
   curlsocktype = (
-    CURLSOCKTYPE_IPCXN, (* socket created for a specific IP connection *)
-    CURLSOCKTYPE_ACCEPT, (* socket created by accept() call *)
-    CURLSOCKTYPE_LAST (* never use *)
+    CURLSOCKTYPE_IPCXN,         { socket created for a specific IP connection }
+    CURLSOCKTYPE_ACCEPT,        { socket created by accept() call }
+    CURLSOCKTYPE_LAST           { never use }
   );
 
-const
-  (* The return code from the sockopt_callback can signal information back
-   to libcurl: *)
-  CURL_SOCKOPT_OK                                                   = 0;
-  CURL_SOCKOPT_ERROR (* causes libcurl to abort and return *)       = 1;
-                     (* CURLE_ABORTED_BY_CALLBACK *)
-  CURL_SOCKOPT_ALREADY_CONNECTED                                    = 2;
-
-type
   curl_sockopt_callback = function (clientp : Pointer; curlfd : curl_socket_t;
     purpose : curlsocktype) : Integer of object;
 
@@ -282,9 +302,9 @@ type
     family : Integer;
     socktype : Integer;
     protocol : Integer;
-    addrlen : Cardinal; (* addrlen was a socklen_t type before 7.18.0 but it
-                           turned really ugly and painful on the systems that
-                           lack this type *)
+    addrlen : Cardinal;         { addrlen was a socklen_t type before 7.18.0 }
+                                { but it turned really ugly and painful on the }
+                                { systems that lack this type }
     addr : sockaddr;
   end;
 
@@ -295,25 +315,25 @@ type
     item : curl_socket_t) : Integer of object;
 
   curlioerr = (
-   CURLEIOE_OK,           (* I/O operation successful *)
-   CURLIOE_UNKNOWNCMD,    (* command was unknown to callback *)
-   CURLIOE_FAILRESTART,   (* failed to restart the read *)
-   CURLIOE_LAST           (* never use *)
- );
+   CURLEIOE_OK,                 { I/O operation successful }
+   CURLIOE_UNKNOWNCMD,          { command was unknown to callback }
+   CURLIOE_FAILRESTART,         { failed to restart the read }
+   CURLIOE_LAST                 { never use }
+  );
 
   curliocmd = (
-   CURLIOCMD_NOP,         (* no operation *)
-   CURLIOCMD_RESTARTREAD, (* restart the read stream from start *)
-   CURLIOCMD_LAST         (* never use *)
- );
+   CURLIOCMD_NOP,               { no operation }
+   CURLIOCMD_RESTARTREAD,       { restart the read stream from start }
+   CURLIOCMD_LAST               { never use }
+  );
 
   curl_ioctrl_callback = function (handle : CURL; cmd : Integer;
     clientp : Pointer) : curlioerr of object;
 
-  (* The following typedef's are signatures of malloc, free, realloc, strdup and
-     calloc respectively.  Function pointers of these types can be passed to the
-     curl_global_init_mem() function to set user defined memory management
-     callback routines. *)
+  { The following typedef's are signatures of malloc, free, realloc, strdup and
+    calloc respectively.  Function pointers of these types can be passed to the
+    curl_global_init_mem() function to set user defined memory management
+    callback routines. }
 
   curl_malloc_callback = function (size : QWord) : Pointer of object;
   curl_free_callback = procedure (ptr : Pointer) of object;
@@ -323,24 +343,24 @@ type
   curl_calloc_callback = function (nmemb : QWord; size : QWord) : Pointer of
     object;
 
-  (* the kind of data that is passed to information_callback *)
+  { the kind of data that is passed to information_callback }
   curl_infotype = (
     CURLINFO_TEXT                                                   = 0,
-    CURLINFO_HEADER_IN,     (* 1 *)
-    CURLINFO_HEADER_OUT,    (* 2 *)
-    CURLINFO_DATA_IN,       (* 3 *)
-    CURLINFO_DATA_OUT,      (* 4 *)
-    CURLINFO_SSL_DATA_IN,   (* 5 *)
-    CURLINFO_SSL_DATA_OUT,  (* 6 *)
+    CURLINFO_HEADER_IN,         { 1 }
+    CURLINFO_HEADER_OUT,        { 2 }
+    CURLINFO_DATA_IN,           { 3 }
+    CURLINFO_DATA_OUT,          { 4 }
+    CURLINFO_SSL_DATA_IN,       { 5 }
+    CURLINFO_SSL_DATA_OUT,      { 6 }
     CURLINFO_END
   );
 
   curl_debug_callback = function (
-    handle : CURL;               (* the handle/transfer this concerns *)
-    type_ : curl_infotype;       (* what kind of data *)
-    data : PChar;                (* points to the data *)
-    size: QWord;                 (* size of the data pointed to *)
-    userptr : Pointer)           (* whatever the user please *)
+    handle : CURL;              { the handle/transfer this concerns }
+    type_ : curl_infotype;      { what kind of data }
+    data : PChar;               { points to the data }
+    size: QWord;                { size of the data pointed to }
+    userptr : Pointer)          { whatever the user please }
   : Integer of object;
 
   (* All possible error codes from all sorts of curl functions. Future versions
@@ -351,134 +371,135 @@ type
 
   CURLcode = (
     CURLE_OK                                                        = 0,
-    CURLE_UNSUPPORTED_PROTOCOL,  (* 1 *)
-    CURLE_FAILED_INIT,           (* 2 *)
-    CURLE_URL_MALFORMAT,         (* 3 *)
-    CURLE_NOT_BUILT_IN,          (* 4 - [was obsoleted in August 2007 for
-                                    7.17.0, reused in April 2011 for 7.21.5] *)
-    CURLE_COULDNT_RESOLVE_PROXY, (* 5 *)
-    CURLE_COULDNT_RESOLVE_HOST,  (* 6 *)
-    CURLE_COULDNT_CONNECT,       (* 7 *)
-    CURLE_WEIRD_SERVER_REPLY,    (* 8 *)
-    CURLE_REMOTE_ACCESS_DENIED,  (* 9 a service was denied by the server
+    CURLE_UNSUPPORTED_PROTOCOL, { 1 }
+    CURLE_FAILED_INIT,          { 2 }
+    CURLE_URL_MALFORMAT,        { 3 }
+    CURLE_NOT_BUILT_IN,         { 4 - [was obsoleted in August 2007 for
+                                    7.17.0, reused in April 2011 for 7.21.5] }
+    CURLE_COULDNT_RESOLVE_PROXY,{ 5 }
+    CURLE_COULDNT_RESOLVE_HOST, { 6 }
+    CURLE_COULDNT_CONNECT,      { 7 }
+    CURLE_WEIRD_SERVER_REPLY,   { 8 }
+    CURLE_REMOTE_ACCESS_DENIED, { 9 a service was denied by the server
                                     due to lack of access - when login fails
-                                    this is not returned. *)
-    CURLE_FTP_ACCEPT_FAILED,     (* 10 - [was obsoleted in April 2006 for
-                                    7.15.4, reused in Dec 2011 for 7.24.0] *)
-    CURLE_FTP_WEIRD_PASS_REPLY,  (* 11 *)
-    CURLE_FTP_ACCEPT_TIMEOUT,    (* 12 - timeout occurred accepting server
-                                    [was obsoleted in August 2007 for 7.17.0,
-                                    reused in Dec 2011 for 7.24.0] *)
-    CURLE_FTP_WEIRD_PASV_REPLY,  (* 13 *)
-    CURLE_FTP_WEIRD_227_FORMAT,  (* 14 *)
-    CURLE_FTP_CANT_GET_HOST,     (* 15 *)
-    CURLE_HTTP2,                 (* 16 - A problem in the http2 framing layer.
-                                    [was obsoleted in August 2007 for 7.17.0,
-                                    reused in July 2014 for 7.38.0] *)
-    CURLE_FTP_COULDNT_SET_TYPE,  (* 17 *)
-    CURLE_PARTIAL_FILE,          (* 18 *)
-    CURLE_FTP_COULDNT_RETR_FILE, (* 19 *)
-    CURLE_OBSOLETE20,            (* 20 - NOT USED *)
-    CURLE_QUOTE_ERROR,           (* 21 - quote command failure *)
-    CURLE_HTTP_RETURNED_ERROR,   (* 22 *)
-    CURLE_WRITE_ERROR,           (* 23 *)
-    CURLE_OBSOLETE24,            (* 24 - NOT USED *)
-    CURLE_UPLOAD_FAILED,         (* 25 - failed upload "command" *)
-    CURLE_READ_ERROR,            (* 26 - couldn't open/read from file *)
-    CURLE_OUT_OF_MEMORY,         (* 27 *)
-    (* Note: CURLE_OUT_OF_MEMORY may sometimes indicate a conversion error
-             instead of a memory allocation error if CURL_DOES_CONVERSIONS
-             is defined *)
-    CURLE_OPERATION_TIMEDOUT,    (* 28 - the timeout time was reached *)
-    CURLE_OBSOLETE29,            (* 29 - NOT USED *)
-    CURLE_FTP_PORT_FAILED,       (* 30 - FTP PORT operation failed *)
-    CURLE_FTP_COULDNT_USE_REST,  (* 31 - the REST command failed *)
-    CURLE_OBSOLETE32,            (* 32 - NOT USED *)
-    CURLE_RANGE_ERROR,           (* 33 - RANGE "command" didn't work *)
-    CURLE_HTTP_POST_ERROR,       (* 34 *)
-    CURLE_SSL_CONNECT_ERROR,     (* 35 - wrong when connecting with SSL *)
-    CURLE_BAD_DOWNLOAD_RESUME,   (* 36 - couldn't resume download *)
-    CURLE_FILE_COULDNT_READ_FILE,(* 37 *)
-    CURLE_LDAP_CANNOT_BIND,      (* 38 *)
-    CURLE_LDAP_SEARCH_FAILED,    (* 39 *)
-    CURLE_OBSOLETE40,            (* 40 - NOT USED *)
-    CURLE_FUNCTION_NOT_FOUND,    (* 41 - NOT USED starting with 7.53.0 *)
-    CURLE_ABORTED_BY_CALLBACK,   (* 42 *)
-    CURLE_BAD_FUNCTION_ARGUMENT, (* 43 *)
-    CURLE_OBSOLETE44,            (* 44 - NOT USED *)
-    CURLE_INTERFACE_FAILED,      (* 45 - CURLOPT_INTERFACE failed *)
-    CURLE_OBSOLETE46,            (* 46 - NOT USED *)
-    CURLE_TOO_MANY_REDIRECTS,    (* 47 - catch endless re-direct loops *)
-    CURLE_UNKNOWN_OPTION,        (* 48 - User specified an unknown option *)
-    CURLE_TELNET_OPTION_SYNTAX,  (* 49 - Malformed telnet option *)
-    CURLE_OBSOLETE50,            (* 50 - NOT USED *)
-    CURLE_PEER_FAILED_VERIFICATION, (* 51 - peer's certificate or fingerprint
-                                     wasn't verified fine *)
-    CURLE_GOT_NOTHING,           (* 52 - when this is a specific error *)
-    CURLE_SSL_ENGINE_NOTFOUND,   (* 53 - SSL crypto engine not found *)
-    CURLE_SSL_ENGINE_SETFAILED,  (* 54 - can not set SSL crypto engine as
-                                    default *)
-    CURLE_SEND_ERROR,            (* 55 - failed sending network data *)
-    CURLE_RECV_ERROR,            (* 56 - failure in receiving network data *)
-    CURLE_OBSOLETE57,            (* 57 - NOT IN USE *)
-    CURLE_SSL_CERTPROBLEM,       (* 58 - problem with the local certificate *)
-    CURLE_SSL_CIPHER,            (* 59 - couldn't use specified cipher *)
-    CURLE_SSL_CACERT,            (* 60 - problem with the CA cert (path?) *)
-    CURLE_BAD_CONTENT_ENCODING,  (* 61 - Unrecognized/bad encoding *)
-    CURLE_LDAP_INVALID_URL,      (* 62 - Invalid LDAP URL *)
-    CURLE_FILESIZE_EXCEEDED,     (* 63 - Maximum file size exceeded *)
-    CURLE_USE_SSL_FAILED,        (* 64 - Requested FTP SSL level failed *)
-    CURLE_SEND_FAIL_REWIND,      (* 65 - Sending the data requires a rewind
-                                    that failed *)
-    CURLE_SSL_ENGINE_INITFAILED, (* 66 - failed to initialise ENGINE *)
-    CURLE_LOGIN_DENIED,          (* 67 - user, password or similar was not
-                                    accepted and we failed to login *)
-    CURLE_TFTP_NOTFOUND,         (* 68 - file not found on server *)
-    CURLE_TFTP_PERM,             (* 69 - permission problem on server *)
-    CURLE_REMOTE_DISK_FULL,      (* 70 - out of disk space on server *)
-    CURLE_TFTP_ILLEGAL,          (* 71 - Illegal TFTP operation *)
-    CURLE_TFTP_UNKNOWNID,        (* 72 - Unknown transfer ID *)
-    CURLE_REMOTE_FILE_EXISTS,    (* 73 - File already exists *)
-    CURLE_TFTP_NOSUCHUSER,       (* 74 - No such user *)
-    CURLE_CONV_FAILED,           (* 75 - conversion failed *)
-    CURLE_CONV_REQD,             (* 76 - caller must register conversion
-                                    callbacks using curl_easy_setopt options
-                                    CURLOPT_CONV_FROM_NETWORK_FUNCTION,
-                                    CURLOPT_CONV_TO_NETWORK_FUNCTION, and
-                                    CURLOPT_CONV_FROM_UTF8_FUNCTION *)
-    CURLE_SSL_CACERT_BADFILE,    (* 77 - could not load CACERT file, missing
-                                    or wrong format *)
-    CURLE_REMOTE_FILE_NOT_FOUND, (* 78 - remote file not found *)
-    CURLE_SSH,                   (* 79 - error from the SSH layer, somewhat
-                                    generic so the error message will be of
-                                    interest when this has happened *)
-    CURLE_SSL_SHUTDOWN_FAILED,   (* 80 - Failed to shut down the SSL
-                                    connection *)
-    CURLE_AGAIN,                 (* 81 - socket is not ready for send/recv,
-                                    wait till it's ready and try again (Added
-                                    in 7.18.2) *)
-    CURLE_SSL_CRL_BADFILE,       (* 82 - could not load CRL file, missing or
-                                    wrong format (Added in 7.19.0) *)
-    CURLE_SSL_ISSUER_ERROR,      (* 83 - Issuer check failed.  (Added in
-                                    7.19.0) *)
-    CURLE_FTP_PRET_FAILED,       (* 84 - a PRET command failed *)
-    CURLE_RTSP_CSEQ_ERROR,       (* 85 - mismatch of RTSP CSeq numbers *)
-    CURLE_RTSP_SESSION_ERROR,    (* 86 - mismatch of RTSP Session Ids *)
-    CURLE_FTP_BAD_FILE_LIST,     (* 87 - unable to parse FTP file list *)
-    CURLE_CHUNK_FAILED,          (* 88 - chunk callback reported error *)
-    CURLE_NO_CONNECTION_AVAILABLE,(* 89 - No connection available, the
-                                    session will be queued *)
-    CURLE_SSL_PINNEDPUBKEYNOTMATCH,(* 90 - specified pinned public key did not
-                                     match *)
-    CURLE_SSL_INVALIDCERTSTATUS, (* 91 - invalid certificate status *)
-    CURLE_HTTP2_STREAM,          (* 92 - stream error in HTTP/2 framing layer *)
-    CURLE_RECURSIVE_API_CALL,    (* 93 - an api function was called from
-                                    inside a callback *)
-    CURLE_AUTH_ERROR,            (* 94 - an authentication function returned an
-                                    error *)
-    CURL_LAST                    (* never use! *)
+                                    this is not returned. }
+    CURLE_FTP_ACCEPT_FAILED,    { 10 - [was obsoleted in April 2006 for
+                                     7.15.4, reused in Dec 2011 for 7.24.0] }
+    CURLE_FTP_WEIRD_PASS_REPLY, { 11 }
+    CURLE_FTP_ACCEPT_TIMEOUT,   { 12 - timeout occurred accepting server
+                                     [was obsoleted in August 2007 for 7.17.0,
+                                     reused in Dec 2011 for 7.24.0] }
+    CURLE_FTP_WEIRD_PASV_REPLY, { 13 }
+    CURLE_FTP_WEIRD_227_FORMAT, { 14 }
+    CURLE_FTP_CANT_GET_HOST,    { 15 }
+    CURLE_HTTP2,                { 16 - A problem in the http2 framing layer.
+                                     [was obsoleted in August 2007 for 7.17.0,
+                                     reused in July 2014 for 7.38.0] }
+    CURLE_FTP_COULDNT_SET_TYPE, { 17 }
+    CURLE_PARTIAL_FILE,         { 18 }
+    CURLE_FTP_COULDNT_RETR_FILE,{ 19 }
+    CURLE_OBSOLETE20,           { 20 - NOT USED }
+    CURLE_QUOTE_ERROR,          { 21 - quote command failure }
+    CURLE_HTTP_RETURNED_ERROR,  { 22 }
+    CURLE_WRITE_ERROR,          { 23 }
+    CURLE_OBSOLETE24,           { 24 - NOT USED }
+    CURLE_UPLOAD_FAILED,        { 25 - failed upload "command" }
+    CURLE_READ_ERROR,           { 26 - couldn't open/read from file }
+    CURLE_OUT_OF_MEMORY,        { 27 }
+    { Note: CURLE_OUT_OF_MEMORY may sometimes indicate a conversion error
+            instead of a memory allocation error if CURL_DOES_CONVERSIONS
+            is defined }
+    CURLE_OPERATION_TIMEDOUT,   { 28 - the timeout time was reached }
+    CURLE_OBSOLETE29,           { 29 - NOT USED }
+    CURLE_FTP_PORT_FAILED,      { 30 - FTP PORT operation failed }
+    CURLE_FTP_COULDNT_USE_REST, { 31 - the REST command failed }
+    CURLE_OBSOLETE32,           { 32 - NOT USED }
+    CURLE_RANGE_ERROR,          { 33 - RANGE "command" didn't work }
+    CURLE_HTTP_POST_ERROR,      { 34 }
+    CURLE_SSL_CONNECT_ERROR,    { 35 - wrong when connecting with SSL }
+    CURLE_BAD_DOWNLOAD_RESUME,  { 36 - couldn't resume download }
+    CURLE_FILE_COULDNT_READ_FILE,{ 37 }
+    CURLE_LDAP_CANNOT_BIND,     { 38 }
+    CURLE_LDAP_SEARCH_FAILED,   { 39 }
+    CURLE_OBSOLETE40,           { 40 - NOT USED }
+    CURLE_FUNCTION_NOT_FOUND,   { 41 - NOT USED starting with 7.53.0 }
+    CURLE_ABORTED_BY_CALLBACK,  { 42 }
+    CURLE_BAD_FUNCTION_ARGUMENT,{ 43 }
+    CURLE_OBSOLETE44,           { 44 - NOT USED }
+    CURLE_INTERFACE_FAILED,     { 45 - CURLOPT_INTERFACE failed }
+    CURLE_OBSOLETE46,           { 46 - NOT USED }
+    CURLE_TOO_MANY_REDIRECTS,   { 47 - catch endless re-direct loops }
+    CURLE_UNKNOWN_OPTION,       { 48 - User specified an unknown option }
+    CURLE_TELNET_OPTION_SYNTAX, { 49 - Malformed telnet option }
+    CURLE_OBSOLETE50,           { 50 - NOT USED }
+    CURLE_OBSOLETE51,           { 51 - NOT USED }
+    CURLE_GOT_NOTHING,          { 52 - when this is a specific error }
+    CURLE_SSL_ENGINE_NOTFOUND,  { 53 - SSL crypto engine not found }
+    CURLE_SSL_ENGINE_SETFAILED, { 54 - can not set SSL crypto engine as
+                                     default }
+    CURLE_SEND_ERROR,           { 55 - failed sending network data }
+    CURLE_RECV_ERROR,           { 56 - failure in receiving network data }
+    CURLE_OBSOLETE57,           { 57 - NOT IN USE }
+    CURLE_SSL_CERTPROBLEM,      { 58 - problem with the local certificate }
+    CURLE_SSL_CIPHER,           { 59 - couldn't use specified cipher }
+    CURLE_SSL_CACERT,           { 60 - problem with the CA cert (path?) }
+    CURLE_BAD_CONTENT_ENCODING, { 61 - Unrecognized/bad encoding }
+    CURLE_LDAP_INVALID_URL,     { 62 - Invalid LDAP URL }
+    CURLE_FILESIZE_EXCEEDED,    { 63 - Maximum file size exceeded }
+    CURLE_USE_SSL_FAILED,       { 64 - Requested FTP SSL level failed }
+    CURLE_SEND_FAIL_REWIND,     { 65 - Sending the data requires a rewind
+                                     that failed }
+    CURLE_SSL_ENGINE_INITFAILED,{ 66 - failed to initialise ENGINE }
+    CURLE_LOGIN_DENIED,         { 67 - user, password or similar was not
+                                     accepted and we failed to login }
+    CURLE_TFTP_NOTFOUND,        { 68 - file not found on server }
+    CURLE_TFTP_PERM,            { 69 - permission problem on server }
+    CURLE_REMOTE_DISK_FULL,     { 70 - out of disk space on server }
+    CURLE_TFTP_ILLEGAL,         { 71 - Illegal TFTP operation }
+    CURLE_TFTP_UNKNOWNID,       { 72 - Unknown transfer ID }
+    CURLE_REMOTE_FILE_EXISTS,   { 73 - File already exists }
+    CURLE_TFTP_NOSUCHUSER,      { 74 - No such user }
+    CURLE_CONV_FAILED,          { 75 - conversion failed }
+    CURLE_CONV_REQD,            { 76 - caller must register conversion
+                                     callbacks using curl_easy_setopt options
+                                     CURLOPT_CONV_FROM_NETWORK_FUNCTION,
+                                     CURLOPT_CONV_TO_NETWORK_FUNCTION, and
+                                     CURLOPT_CONV_FROM_UTF8_FUNCTION }
+    CURLE_SSL_CACERT_BADFILE,   { 77 - could not load CACERT file, missing
+                                    or wrong format }
+    CURLE_REMOTE_FILE_NOT_FOUND,{ 78 - remote file not found }
+    CURLE_SSH,                  { 79 - error from the SSH layer, somewhat
+                                     generic so the error message will be of
+                                     interest when this has happened }
+    CURLE_SSL_SHUTDOWN_FAILED,  { 80 - Failed to shut down the SSL
+                                     connection }
+    CURLE_AGAIN,                { 81 - socket is not ready for send/recv,
+                                     wait till it's ready and try again (Added
+                                     in 7.18.2) }
+    CURLE_SSL_CRL_BADFILE,      { 82 - could not load CRL file, missing or
+                                     wrong format (Added in 7.19.0) }
+    CURLE_SSL_ISSUER_ERROR,     { 83 - Issuer check failed.  (Added in
+                                     7.19.0) }
+    CURLE_FTP_PRET_FAILED,      { 84 - a PRET command failed }
+    CURLE_RTSP_CSEQ_ERROR,      { 85 - mismatch of RTSP CSeq numbers }
+    CURLE_RTSP_SESSION_ERROR,   { 86 - mismatch of RTSP Session Ids }
+    CURLE_FTP_BAD_FILE_LIST,    { 87 - unable to parse FTP file list }
+    CURLE_CHUNK_FAILED,         { 88 - chunk callback reported error }
+    CURLE_NO_CONNECTION_AVAILABLE,{ 89 - No connection available, the
+                                       session will be queued }
+    CURLE_SSL_PINNEDPUBKEYNOTMATCH,{ 90 - specified pinned public key did not
+                                        match }
+    CURLE_SSL_INVALIDCERTSTATUS,{ 91 - invalid certificate status }
+    CURLE_HTTP2_STREAM,         { 92 - stream error in HTTP/2 framing layer }
+    CURLE_RECURSIVE_API_CALL,   { 93 - an api function was called from
+                                     inside a callback }
+    CURLE_AUTH_ERROR,           { 94 - an authentication function returned an
+                                     error }
+    CURL_LAST                   { never use! }
   );
 
+
+type
   curl_conv_callback = function (buffer : PChar; length : QWord) : CURLcode of
     object;
 
@@ -2274,28 +2295,7 @@ type
     headers : pcurl_pushheaders; userp : Pointer) : Integer of object;
 
 const
-  CURL_SOCKET_BAD                                                   = -1;
   CURL_SOCKET_TIMEOUT                                         = CURL_SOCKET_BAD;
-
-  (* The maximum receive buffer size configurable via CURLOPT_BUFFERSIZE. *)
-  CURL_MAX_READ_SIZE                                                = 524288;
-
-  (* Tests have proven that 20K is a very bad buffer size for uploads on
-     Windows, while 16K for some odd reason performed a lot better.
-     We do the ifndef check to allow this value to easier be changed at build
-     time for those who feel adventurous. The practical minimum is about
-     400 bytes since libcurl uses a buffer of this size as a scratch area
-     (unrelated to network send operations). *)
-  CURL_MAX_WRITE_SIZE                                               = 16384;
-
-  (* The only reason to have a max limit for this is to avoid the risk of a bad
-   server feeding libcurl with a never-ending header that will cause reallocs
-   infinitely *)
-  CURL_MAX_HTTP_HEADER                                           = (100 * 1024);
-
-  (* This is a magic return code for the write callback that, when returned,
-   will signal libcurl to pause receiving on the current transfer. *)
-  CURL_WRITEFUNC_PAUSE                                              = $10000001;
 
   CURL_ERROR_SIZE                                                   = 256;
 
