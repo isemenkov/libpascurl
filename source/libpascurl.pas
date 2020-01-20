@@ -1082,578 +1082,578 @@ type
     { Provide a CURLShare for mutexing non-ts data }
     CURLOPT_SHARE                            = CURLOPTTYPE_OBJECTPOINT    + 100,
 
-    (* indicates type of proxy. accepted values are CURLPROXY_HTTP (default),
-       CURLPROXY_HTTPS, CURLPROXY_SOCKS4, CURLPROXY_SOCKS4A and
-       CURLPROXY_SOCKS5. *)
+    { Indicates type of proxy. accepted values are CURLPROXY_HTTP (default),
+      CURLPROXY_HTTPS, CURLPROXY_SOCKS4, CURLPROXY_SOCKS4A and
+      CURLPROXY_SOCKS5. }
     CURLOPT_PROXYTYPE                        = CURLOPTTYPE_LONG           + 101,
 
-    (* Set the Accept-Encoding string. Use this to tell a server you would like
-       the response to be compressed. Before 7.21.6, this was known as
-       CURLOPT_ENCODING *)
+    { Set the Accept-Encoding string. Use this to tell a server you would like
+      the response to be compressed. Before 7.21.6, this was known as
+      CURLOPT_ENCODING }
     CURLOPT_ACCEPT_ENCODING                  = CURLOPTTYPE_STRINGPOINT    + 102,
 
-    (* Set pointer to private data *)
+    { Set pointer to private data }
     CURLOPT_PRIVATE                          = CURLOPTTYPE_OBJECTPOINT    + 103,
 
-    (* Set aliases for HTTP 200 in the HTTP Response header *)
+    { Set aliases for HTTP 200 in the HTTP Response header }
     CURLOPT_HTTP200ALIASES                   = CURLOPTTYPE_OBJECTPOINT    + 104,
 
-    (* Continue to send authentication (user+password) when following locations,
-       even when hostname changed. This can potentially send off the name
-       and password to whatever host the server decides. *)
+    { Continue to send authentication (user+password) when following locations,
+      even when hostname changed. This can potentially send off the name
+      and password to whatever host the server decides. }
     CURLOPT_UNRESTRICTED_AUTH                = CURLOPTTYPE_LONG           + 105,
 
-    (* Specifically switch on or off the FTP engine's use of the EPRT command (
-       it also disables the LPRT attempt). By default, those ones will always be
-       attempted before the good old traditional PORT command. *)
+    { Specifically switch on or off the FTP engine's use of the EPRT command (
+      it also disables the LPRT attempt). By default, those ones will always be
+      attempted before the good old traditional PORT command. }
     CURLOPT_FTP_USE_EPRT                     = CURLOPTTYPE_LONG           + 106,
 
-    (* Set this to a bitmask value to enable the particular authentications
-       methods you like. Use this in combination with CURLOPT_USERPWD.
-       Note that setting multiple bits may cause extra network round-trips. *)
+    { Set this to a bitmask value to enable the particular authentications
+      methods you like. Use this in combination with CURLOPT_USERPWD.
+      Note that setting multiple bits may cause extra network round-trips. }
     CURLOPT_HTTPAUTH                         = CURLOPTTYPE_LONG           + 107,
 
-    (* Set the ssl context callback function, currently only for OpenSSL ssl_ctx
-       in second argument. The function must be matching the
-       curl_ssl_ctx_callback proto. *)
+    { Set the ssl context callback function, currently only for OpenSSL ssl_ctx
+      in second argument. The function must be matching the
+      curl_ssl_ctx_callback proto. }
     CURLOPT_SSL_CTX_FUNCTION                 = CURLOPTTYPE_FUNCTIONPOINT  + 108,
 
-    (* Set the userdata for the ssl context callback function's third
-       argument *)
+    { Set the userdata for the ssl context callback function's third
+      argument }
     CURLOPT_SSL_CTX_DATA                     = CURLOPTTYPE_OBJECTPOINT    + 109,
 
-    (* FTP Option that causes missing dirs to be created on the remote server.
-       In 7.19.4 we introduced the convenience enums for this option using the
-       CURLFTP_CREATE_DIR prefix. *)
+    { FTP Option that causes missing dirs to be created on the remote server.
+      In 7.19.4 we introduced the convenience enums for this option using the
+      CURLFTP_CREATE_DIR prefix. }
     CURLOPT_FTP_CREATE_MISSING_DIRS          = CURLOPTTYPE_LONG           + 110,
 
-    (* Set this to a bitmask value to enable the particular authentications
-       methods you like. Use this in combination with CURLOPT_PROXYUSERPWD.
-       Note that setting multiple bits may cause extra network round-trips. *)
+    { Set this to a bitmask value to enable the particular authentications
+      methods you like. Use this in combination with CURLOPT_PROXYUSERPWD.
+      Note that setting multiple bits may cause extra network round-trips. }
     CURLOPT_PROXYAUTH                        = CURLOPTTYPE_LONG           + 111,
 
-    (* FTP option that changes the timeout, in seconds, associated with
-       getting a response.  This is different from transfer timeout time and
-       essentially places a demand on the FTP server to acknowledge commands
-       in a timely manner. *)
+    { FTP option that changes the timeout, in seconds, associated with
+      getting a response.  This is different from transfer timeout time and
+      essentially places a demand on the FTP server to acknowledge commands
+      in a timely manner. }
     CURLOPT_FTP_RESPONSE_TIMEOUT             = CURLOPTTYPE_LONG           + 112,
     CURLOPT_SERVER_RESPONSE_TIMEOUT          = CURLOPT_FTP_RESPONSE_TIMEOUT,
 
-    (* Set this option to one of the CURL_IPRESOLVE_* defines (see below) to
-       tell libcurl to resolve names to those IP versions only. This only has
-       affect on systems with support for more than one, i.e IPv4 _and_ IPv6. *)
+    { Set this option to one of the CURL_IPRESOLVE_* defines (see below) to
+      tell libcurl to resolve names to those IP versions only. This only has
+      affect on systems with support for more than one, i.e IPv4 _and_ IPv6. }
     CURLOPT_IPRESOLVE                        = CURLOPTTYPE_LONG           + 113,
 
-    (* Set this option to limit the size of a file that will be downloaded from
-       an HTTP or FTP server.
+    { Set this option to limit the size of a file that will be downloaded from
+      an HTTP or FTP server.
 
-       Note there is also _LARGE version which adds large file support for
-       platforms which have larger off_t sizes.  See MAXFILESIZE_LARGE below. *)
+      Note there is also _LARGE version which adds large file support for
+      platforms which have larger off_t sizes.  See MAXFILESIZE_LARGE below. }
     CURLOPT_MAXFILESIZE                      = CURLOPTTYPE_LONG           + 114,
 
-    (* See the comment for INFILESIZE above, but in short, specifies
-       the size of the file being uploaded.  -1 means unknown. *)
+    { See the comment for INFILESIZE above, but in short, specifies
+      the size of the file being uploaded.  -1 means unknown. }
     CURLOPT_INFILESIZE_LARGE                 = CURLOPTTYPE_OFF_T          + 115,
 
-    (* Sets the continuation offset.  There is also a LONG version of this;
-       look above for RESUME_FROM. *)
+    { Sets the continuation offset.  There is also a LONG version of this;
+      look above for RESUME_FROM. }
     CURLOPT_RESUME_FROM_LARGE                = CURLOPTTYPE_OFF_T          + 116,
 
-    (* Sets the maximum size of data that will be downloaded from
-       an HTTP or FTP server.  See MAXFILESIZE above for the LONG version. *)
+    { Sets the maximum size of data that will be downloaded from
+      an HTTP or FTP server.  See MAXFILESIZE above for the LONG version. }
     CURLOPT_MAXFILESIZE_LARGE                = CURLOPTTYPE_OFF_T          + 117,
 
-    (* Set this option to the file name of your .netrc file you want libcurl
-       to parse (using the CURLOPT_NETRC option). If not set, libcurl will do
-       a poor attempt to find the user's home directory and check for a .netrc
-       file in there. *)
+    { Set this option to the file name of your .netrc file you want libcurl
+      to parse (using the CURLOPT_NETRC option). If not set, libcurl will do
+      a poor attempt to find the user's home directory and check for a .netrc
+      file in there. }
     CURLOPT_NETRC_FILE                       = CURLOPTTYPE_STRINGPOINT    + 118,
 
-    (* Enable SSL/TLS for FTP, pick one of:
-       CURLUSESSL_TRY     - try using SSL, proceed anyway otherwise
-       CURLUSESSL_CONTROL - SSL for the control connection or fail
-       CURLUSESSL_ALL     - SSL for all communication or fail *)
+    { Enable SSL/TLS for FTP, pick one of:
+      CURLUSESSL_TRY     - try using SSL, proceed anyway otherwise
+      CURLUSESSL_CONTROL - SSL for the control connection or fail
+      CURLUSESSL_ALL     - SSL for all communication or fail }
     CURLOPT_USE_SSL                          = CURLOPTTYPE_LONG           + 119,
 
-    (* The _LARGE version of the standard POSTFIELDSIZE option *)
+    { The _LARGE version of the standard POSTFIELDSIZE option }
     CURLOPT_POSTFIELDSIZE_LARGE              = CURLOPTTYPE_OFF_T          + 120,
 
-    (* Enable/disable the TCP Nagle algorithm *)
+    { Enable/disable the TCP Nagle algorithm }
     CURLOPT_TCP_NODELAY                      = CURLOPTTYPE_LONG           + 121,
 
-    (* 122 OBSOLETE, used in 7.12.3. Gone in 7.13.0 *)
-    (* 123 OBSOLETE. Gone in 7.16.0 *)
-    (* 124 OBSOLETE, used in 7.12.3. Gone in 7.13.0 *)
-    (* 125 OBSOLETE, used in 7.12.3. Gone in 7.13.0 *)
-    (* 126 OBSOLETE, used in 7.12.3. Gone in 7.13.0 *)
-    (* 127 OBSOLETE. Gone in 7.16.0 *)
-    (* 128 OBSOLETE. Gone in 7.16.0 *)
+    { 122 OBSOLETE, used in 7.12.3. Gone in 7.13.0 }
+    { 123 OBSOLETE. Gone in 7.16.0 }
+    { 124 OBSOLETE, used in 7.12.3. Gone in 7.13.0 }
+    { 125 OBSOLETE, used in 7.12.3. Gone in 7.13.0 }
+    { 126 OBSOLETE, used in 7.12.3. Gone in 7.13.0 }
+    { 127 OBSOLETE. Gone in 7.16.0 }
+    { 128 OBSOLETE. Gone in 7.16.0 }
 
-    (* When FTP over SSL/TLS is selected (with CURLOPT_USE_SSL), this option
-       can be used to change libcurl's default action which is to first try
-       "AUTH SSL" and then "AUTH TLS" in this order, and proceed when a OK
-       response has been received.
+    { When FTP over SSL/TLS is selected (with CURLOPT_USE_SSL), this option
+      can be used to change libcurl's default action which is to first try
+      "AUTH SSL" and then "AUTH TLS" in this order, and proceed when a OK
+      response has been received.
 
-       Available parameters are:
-       CURLFTPAUTH_DEFAULT - let libcurl decide
-       CURLFTPAUTH_SSL     - try "AUTH SSL" first, then TLS
-       CURLFTPAUTH_TLS     - try "AUTH TLS" first, then SSL *)
+      Available parameters are:
+      CURLFTPAUTH_DEFAULT - let libcurl decide
+      CURLFTPAUTH_SSL     - try "AUTH SSL" first, then TLS
+      CURLFTPAUTH_TLS     - try "AUTH TLS" first, then SSL }
     CURLOPT_FTPSSLAUTH                       = CURLOPTTYPE_LONG           + 129,
 
     CURLOPT_IOCTLFUNCTION                    = CURLOPTTYPE_FUNCTIONPOINT  + 130,
 
     CURLOPT_IOCTLDATA                        = CURLOPTTYPE_OBJECTPOINT    + 131,
 
-    (* 132 OBSOLETE. Gone in 7.16.0 *)
-    (* 133 OBSOLETE. Gone in 7.16.0 *)
+    { 132 OBSOLETE. Gone in 7.16.0 }
+    { 133 OBSOLETE. Gone in 7.16.0 }
 
-    (* zero terminated string for pass on to the FTP server when asked for
-       "account" info *)
+    { Zero terminated string for pass on to the FTP server when asked for
+      "account" info }
     CURLOPT_FTP_ACCOUNT                      = CURLOPTTYPE_STRINGPOINT    + 134,
 
-    (* feed cookie into cookie engine *)
+    { feed cookie into cookie engine }
     CURLOPT_COOKIELIST                       = CURLOPTTYPE_STRINGPOINT    + 135,
 
-    (* ignore Content-Length *)
+    { ignore Content-Length }
     CURLOPT_IGNORE_CONTENT_LENGTH            = CURLOPTTYPE_LONG           + 136,
 
-    (* Set to non-zero to skip the IP address received in a 227 PASV FTP server
-       response. Typically used for FTP-SSL purposes but is not restricted to
-       that. libcurl will then instead use the same IP address it used for the
-       control connection. *)
+    { Set to non-zero to skip the IP address received in a 227 PASV FTP server
+      response. Typically used for FTP-SSL purposes but is not restricted to
+      that. libcurl will then instead use the same IP address it used for the
+      control connection. }
     CURLOPT_FTP_SKIP_PASV_IP                 = CURLOPTTYPE_LONG           + 137,
 
-    (* Select "file method" to use when doing FTP, see the curl_ftpmethod
-       above. *)
+    { Select "file method" to use when doing FTP, see the curl_ftpmethod
+      above. }
     CURLOPT_FTP_FILEMETHOD                   = CURLOPTTYPE_LONG           + 138,
 
-    (* Local port number to bind the socket to *)
+    { Local port number to bind the socket to }
     CURLOPT_LOCALPORT                        = CURLOPTTYPE_LONG           + 139,
 
-    (* Number of ports to try, including the first one set with LOCALPORT.
-       Thus, setting it to 1 will make no additional attempts but the first. *)
+    { Number of ports to try, including the first one set with LOCALPORT.
+      Thus, setting it to 1 will make no additional attempts but the first. }
     CURLOPT_LOCALPORTRANGE                   = CURLOPTTYPE_LONG           + 140,
 
-    (* no transfer, set up connection and let application use the socket by
-       extracting it with CURLINFO_LASTSOCKET *)
+    { no transfer, set up connection and let application use the socket by
+      extracting it with CURLINFO_LASTSOCKET }
     CURLOPT_CONNECT_ONLY                     = CURLOPTTYPE_LONG           + 141,
 
-    (* Function that will be called to convert from the
-       network encoding (instead of using the iconv calls in libcurl) *)
+    { Function that will be called to convert from the
+      network encoding (instead of using the iconv calls in libcurl) }
     CURLOPT_CONV_FROM_NETWORK_FUNCTION       = CURLOPTTYPE_FUNCTIONPOINT  + 142,
 
-    (* Function that will be called to convert to the
-       network encoding (instead of using the iconv calls in libcurl) *)
+    { Function that will be called to convert to the
+      network encoding (instead of using the iconv calls in libcurl) }
     CURLOPT_CONV_TO_NETWORK_FUNCTION         = CURLOPTTYPE_FUNCTIONPOINT  + 143,
 
-    (* Function that will be called to convert from UTF8
-       (instead of using the iconv calls in libcurl)
-       Note that this is used only for SSL certificate processing *)
+    { Function that will be called to convert from UTF8
+      (instead of using the iconv calls in libcurl)
+      Note that this is used only for SSL certificate processing }
     CURLOPT_CONV_FROM_UTF8_FUNCTION          = CURLOPTTYPE_FUNCTIONPOINT  + 144,
 
-    (* if the connection proceeds too quickly then need to slow it down
-       limit-rate: maximum number of bytes per second to send or receive *)
+    { if the connection proceeds too quickly then need to slow it down
+      limit-rate: maximum number of bytes per second to send or receive }
     CURLOPT_MAX_SEND_SPEED_LARGE             = CURLOPTTYPE_OFF_T          + 145,
     CURLOPT_MAX_RECV_SPEED_LARGE             = CURLOPTTYPE_OFF_T          + 146,
 
-    (* Pointer to command string to send if USER/PASS fails. *)
+    { Pointer to command string to send if USER/PASS fails. }
     CURLOPT_FTP_ALTERNATIVE_TO_USER          = CURLOPTTYPE_STRINGPOINT    + 147,
 
-    (* callback function for setting socket options *)
+    { callback function for setting socket options }
     CURLOPT_SOCKOPTFUNCTION                  = CURLOPTTYPE_FUNCTIONPOINT  + 148,
     CURLOPT_SOCKOPTDATA                      = CURLOPTTYPE_OBJECTPOINT    + 149,
 
-    (* set to 0 to disable session ID re-use for this transfer, default is
-       enabled (== 1) *)
+    { set to 0 to disable session ID re-use for this transfer, default is
+      enabled (== 1) }
     CURLOPT_SSL_SESSIONID_CACHE              = CURLOPTTYPE_LONG           + 150,
 
-    (* allowed SSH authentication methods *)
+    { allowed SSH authentication methods }
     CURLOPT_SSH_AUTH_TYPES                   = CURLOPTTYPE_LONG           + 151,
 
-    (* Used by scp/sftp to do public/private key authentication *)
+    { Used by scp/sftp to do public/private key authentication }
     CURLOPT_SSH_PUBLIC_KEYFILE               = CURLOPTTYPE_STRINGPOINT    + 152,
     CURLOPT_SSH_PRIVATE_KEYFILE              = CURLOPTTYPE_STRINGPOINT    + 153,
 
-    (* Send CCC (Clear Command Channel) after authentication *)
+    { Send CCC (Clear Command Channel) after authentication }
     CURLOPT_FTP_SSL_CCC                      = CURLOPTTYPE_LONG           + 154,
 
-    (* Same as TIMEOUT and CONNECTTIMEOUT, but with ms resolution *)
+    { Same as TIMEOUT and CONNECTTIMEOUT, but with ms resolution }
     CURLOPT_TIMEOUT_MS                       = CURLOPTTYPE_LONG           + 155,
     CURLOPT_CONNECTTIMEOUT_MS                = CURLOPTTYPE_LONG           + 156,
 
-    (* set to zero to disable the libcurl's decoding and thus pass the raw body
-       data to the application even when it is encoded/compressed *)
+    { set to zero to disable the libcurl's decoding and thus pass the raw body
+      data to the application even when it is encoded/compressed }
     CURLOPT_HTTP_TRANSFER_DECODING           = CURLOPTTYPE_LONG           + 157,
     CURLOPT_HTTP_CONTENT_DECODING            = CURLOPTTYPE_LONG           + 158,
 
-    (* Permission used when creating new files and directories on the remote
-       server for protocols that support it, SFTP/SCP/FILE *)
+    { Permission used when creating new files and directories on the remote
+      server for protocols that support it, SFTP/SCP/FILE }
     CURLOPT_NEW_FILE_PERMS                   = CURLOPTTYPE_LONG           + 159,
     CURLOPT_NEW_DIRECTORY_PERMS              = CURLOPTTYPE_LONG           + 160,
 
-    (* Set the behaviour of POST when redirecting. Values must be set to one
-       of CURL_REDIR* defines below. This used to be called CURLOPT_POST301 *)
+    { Set the behaviour of POST when redirecting. Values must be set to one
+      of CURL_REDIR* defines below. This used to be called CURLOPT_POST301 }
     CURLOPT_POSTREDIR                        = CURLOPTTYPE_LONG           + 161,
 
-    (* used by scp/sftp to verify the host's public key *)
+    { used by scp/sftp to verify the host's public key }
     CURLOPT_SSH_HOST_PUBLIC_KEY_MD5          = CURLOPTTYPE_STRINGPOINT    + 162,
 
-    (* Callback function for opening socket (instead of socket(2)). Optionally,
-       callback is able change the address or refuse to connect returning
-       CURL_SOCKET_BAD.  The callback should have type
-       curl_opensocket_callback *)
+    { Callback function for opening socket (instead of socket(2)). Optionally,
+      callback is able change the address or refuse to connect returning
+      CURL_SOCKET_BAD.  The callback should have type
+      curl_opensocket_callback }
     CURLOPT_OPENSOCKETFUNCTION               = CURLOPTTYPE_FUNCTIONPOINT  + 163,
     CURLOPT_OPENSOCKETDATA                   = CURLOPTTYPE_OBJECTPOINT    + 164,
 
-    (* POST volatile input fields. *)
+    { POST volatile input fields. }
     CURLOPT_COPYPOSTFIELDS                   = CURLOPTTYPE_OBJECTPOINT    + 165,
 
-    (* set transfer mode (;type=<a|i>) when doing FTP via an HTTP proxy *)
+    { set transfer mode (;type=<a|i>) when doing FTP via an HTTP proxy }
     CURLOPT_PROXY_TRANSFER_MODE              = CURLOPTTYPE_LONG           + 166,
 
-    (* Callback function for seeking in the input stream *)
+    { Callback function for seeking in the input stream }
     CURLOPT_SEEKFUNCTION                     = CURLOPTTYPE_FUNCTIONPOINT  + 167,
     CURLOPT_SEEKDATA                         = CURLOPTTYPE_OBJECTPOINT    + 168,
 
-    (* CRL file *)
+    { CRL file }
     CURLOPT_CRLFILE                          = CURLOPTTYPE_STRINGPOINT    + 169,
 
-    (* Issuer certificate *)
+    { Issuer certificate }
     CURLOPT_ISSUERCERT                       = CURLOPTTYPE_STRINGPOINT    + 170,
 
-    (* (IPv6) Address scope *)
+    { (IPv6) Address scope }
     CURLOPT_ADDRESS_SCOPE                    = CURLOPTTYPE_LONG           + 171,
 
-    (* Collect certificate chain info and allow it to get retrievable with
-       CURLINFO_CERTINFO after the transfer is complete. *)
+    { Collect certificate chain info and allow it to get retrievable with
+      CURLINFO_CERTINFO after the transfer is complete. }
     CURLOPT_CERTINFO                         = CURLOPTTYPE_LONG           + 172,
 
-    (* "name" and "pwd" to use when fetching. *)
+    { "name" and "pwd" to use when fetching. }
     CURLOPT_USERNAME                         = CURLOPTTYPE_STRINGPOINT    + 173,
     CURLOPT_PASSWORD                         = CURLOPTTYPE_STRINGPOINT    + 174,
 
-    (* "name" and "pwd" to use with Proxy when fetching. *)
+    { "name" and "pwd" to use with Proxy when fetching. }
     CURLOPT_PROXYUSERNAME                    = CURLOPTTYPE_STRINGPOINT    + 175,
     CURLOPT_PROXYPASSWORD                    = CURLOPTTYPE_STRINGPOINT    + 176,
 
-    (* Comma separated list of hostnames defining no-proxy zones. These should
-       match both hostnames directly, and hostnames within a domain. For
-       example, local.com will match local.com and www.local.com, but NOT
-       notlocal.com or www.notlocal.com. For compatibility with other
-       implementations of this, .local.com will be considered to be the same as
-       local.com. A single * is the only valid wildcard, and effectively
-       disables the use of proxy. *)
+    { Comma separated list of hostnames defining no-proxy zones. These should
+      match both hostnames directly, and hostnames within a domain. For
+      example, local.com will match local.com and www.local.com, but NOT
+      notlocal.com or www.notlocal.com. For compatibility with other
+      implementations of this, .local.com will be considered to be the same as
+      local.com. A single * is the only valid wildcard, and effectively
+      disables the use of proxy. }
     CURLOPT_NOPROXY                          = CURLOPTTYPE_STRINGPOINT    + 177,
 
-    (* block size for TFTP transfers *)
+    { block size for TFTP transfers }
     CURLOPT_TFTP_BLKSIZE                     = CURLOPTTYPE_LONG           + 178,
 
-    (* Socks Service *)
+    { Socks Service }
     CURLOPT_SOCKS5_GSSAPI_SERVICE            = CURLOPTTYPE_STRINGPOINT    + 179,
 
-    (* Socks Service *)
+    { Socks Service }
     CURLOPT_SOCKS5_GSSAPI_NEC                = CURLOPTTYPE_LONG           + 180,
 
-    (* set the bitmask for the protocols that are allowed to be used for the
-       transfer, which thus helps the app which takes URLs from users or other
-       external inputs and want to restrict what protocol(s) to deal
-       with. Defaults to CURLPROTO_ALL. *)
+    { set the bitmask for the protocols that are allowed to be used for the
+      transfer, which thus helps the app which takes URLs from users or other
+      external inputs and want to restrict what protocol(s) to deal
+      with. Defaults to CURLPROTO_ALL. }
     CURLOPT_PROTOCOLS                        = CURLOPTTYPE_LONG           + 181,
 
-    (* set the bitmask for the protocols that libcurl is allowed to follow to,
-       as a subset of the CURLOPT_PROTOCOLS ones. That means the protocol needs
-       to be set in both bitmasks to be allowed to get redirected to. Defaults
-       to all protocols except FILE and SCP. *)
+    { set the bitmask for the protocols that libcurl is allowed to follow to,
+      as a subset of the CURLOPT_PROTOCOLS ones. That means the protocol needs
+      to be set in both bitmasks to be allowed to get redirected to. Defaults
+      to all protocols except FILE and SCP. }
     CURLOPT_REDIR_PROTOCOLS                  = CURLOPTTYPE_LONG           + 182,
 
-    (* set the SSH knownhost file name to use *)
+    { set the SSH knownhost file name to use }
     CURLOPT_SSH_KNOWNHOSTS                   = CURLOPTTYPE_STRINGPOINT    + 183,
 
-    (* set the SSH host key callback, must point to a curl_sshkeycallback
-       function *)
+    { set the SSH host key callback, must point to a curl_sshkeycallback
+      function }
     CURLOPT_SSH_KEYFUNCTION                  = CURLOPTTYPE_FUNCTIONPOINT  + 184,
 
-    (* set the SSH host key callback custom pointer *)
+    { set the SSH host key callback custom pointer }
     CURLOPT_SSH_KEYDATA                      = CURLOPTTYPE_OBJECTPOINT    + 185,
 
-    (* set the SMTP mail originator *)
+    { set the SMTP mail originator }
     CURLOPT_MAIL_FROM                        = CURLOPTTYPE_STRINGPOINT    + 186,
 
-    (* set the list of SMTP mail receiver(s) *)
+    { set the list of SMTP mail receiver(s) }
     CURLOPT_MAIL_RCPT                        = CURLOPTTYPE_OBJECTPOINT    + 187,
 
-    (* FTP: send PRET before PASV *)
+    { FTP: send PRET before PASV }
     CURLOPT_FTP_USE_PRET                     = CURLOPTTYPE_LONG           + 188,
 
-    (* RTSP request method (OPTIONS, SETUP, PLAY, etc...) *)
+    { RTSP request method (OPTIONS, SETUP, PLAY, etc...) }
     CURLOPT_RTSP_REQUEST                     = CURLOPTTYPE_LONG           + 189,
 
-    (* The RTSP session identifier *)
+    { The RTSP session identifier }
     CURLOPT_RTSP_SESSION_ID                  = CURLOPTTYPE_STRINGPOINT    + 190,
 
-    (* The RTSP stream URI *)
+    { The RTSP stream URI }
     CURLOPT_RTSP_STREAM_URI                  = CURLOPTTYPE_STRINGPOINT    + 191,
 
-    (* The Transport: header to use in RTSP requests *)
+    { The Transport: header to use in RTSP requests }
     CURLOPT_RTSP_TRANSPORT                   = CURLOPTTYPE_STRINGPOINT    + 192,
 
-    (* Manually initialize the client RTSP CSeq for this handle *)
+    { Manually initialize the client RTSP CSeq for this handle }
     CURLOPT_RTSP_CLIENT_CSEQ                 = CURLOPTTYPE_LONG           + 193,
 
-    (* Manually initialize the server RTSP CSeq for this handle *)
+    { Manually initialize the server RTSP CSeq for this handle }
     CURLOPT_RTSP_SERVER_CSEQ                 = CURLOPTTYPE_LONG           + 194,
 
-    (* The stream to pass to INTERLEAVEFUNCTION. *)
+    { The stream to pass to INTERLEAVEFUNCTION. }
     CURLOPT_INTERLEAVEDATA                   = CURLOPTTYPE_OBJECTPOINT    + 195,
 
-    (* Let the application define a custom write method for RTP data *)
+    { Let the application define a custom write method for RTP data }
     CURLOPT_INTERLEAVEFUNCTION               = CURLOPTTYPE_FUNCTIONPOINT  + 196,
 
-    (* Turn on wildcard matching *)
+    { Turn on wildcard matching }
     CURLOPT_WILDCARDMATCH                    = CURLOPTTYPE_LONG           + 197,
 
-    (* Directory matching callback called before downloading of an
-       individual file (chunk) started *)
+    { Directory matching callback called before downloading of an
+      individual file (chunk) started }
     CURLOPT_CHUNK_BGN_FUNCTION               = CURLOPTTYPE_FUNCTIONPOINT  + 198,
 
-    (* Directory matching callback called after the file (chunk)
-       was downloaded, or skipped *)
+    { Directory matching callback called after the file (chunk)
+      was downloaded, or skipped }
     CURLOPT_CHUNK_END_FUNCTION               = CURLOPTTYPE_FUNCTIONPOINT  + 199,
 
-    (* Change match (fnmatch-like) callback for wildcard matching *)
+    { Change match (fnmatch-like) callback for wildcard matching }
     CURLOPT_FNMATCH_FUNCTION                 = CURLOPTTYPE_FUNCTIONPOINT  + 200,
 
-    (* Let the application define custom chunk data pointer *)
+    { Let the application define custom chunk data pointer }
     CURLOPT_CHUNK_DATA                       = CURLOPTTYPE_OBJECTPOINT    + 201,
 
-    (* FNMATCH_FUNCTION user pointer *)
+    { FNMATCH_FUNCTION user pointer }
     CURLOPT_FNMATCH_DATA                     = CURLOPTTYPE_OBJECTPOINT    + 202,
 
-    (* send linked-list of name:port:address sets *)
+    { send linked-list of name:port:address sets }
     CURLOPT_RESOLVE                          = CURLOPTTYPE_OBJECTPOINT    + 203,
 
-    (* Set a username for authenticated TLS *)
+    { Set a username for authenticated TLS }
     CURLOPT_TLSAUTH_USERNAME                 = CURLOPTTYPE_STRINGPOINT    + 204,
 
-    (* Set a password for authenticated TLS *)
+    { Set a password for authenticated TLS }
     CURLOPT_TLSAUTH_PASSWORD                 = CURLOPTTYPE_STRINGPOINT    + 205,
 
-    (* Set authentication type for authenticated TLS *)
+    { Set authentication type for authenticated TLS }
     CURLOPT_TLSAUTH_TYPE                     = CURLOPTTYPE_STRINGPOINT    + 206,
 
-    (* Set to 1 to enable the "TE:" header in HTTP requests to ask for
-       compressed transfer-encoded responses. Set to 0 to disable the use of TE:
-       in outgoing requests. The current default is 0, but it might change in a
-       future libcurl release.
+    { Set to 1 to enable the "TE:" header in HTTP requests to ask for
+      compressed transfer-encoded responses. Set to 0 to disable the use of TE:
+      in outgoing requests. The current default is 0, but it might change in a
+      future libcurl release.
 
-       libcurl will ask for the compressed methods it knows of, and if that
-       isn't any, it will not ask for transfer-encoding at all even if this
-       option is set to 1. *)
+      libcurl will ask for the compressed methods it knows of, and if that
+      isn't any, it will not ask for transfer-encoding at all even if this
+      option is set to 1. }
     CURLOPT_TRANSFER_ENCODING                = CURLOPTTYPE_LONG           + 207,
 
-    (* Callback function for closing socket (instead of close(2)). The callback
-       should have type curl_closesocket_callback *)
+    { Callback function for closing socket (instead of close(2)). The callback
+      should have type curl_closesocket_callback }
     CURLOPT_CLOSESOCKETFUNCTION              = CURLOPTTYPE_FUNCTIONPOINT  + 208,
     CURLOPT_CLOSESOCKETDATA                  = CURLOPTTYPE_OBJECTPOINT    + 209,
 
-    (* allow GSSAPI credential delegation *)
+    { allow GSSAPI credential delegation }
     CURLOPT_GSSAPI_DELEGATION                = CURLOPTTYPE_LONG           + 210,
 
-    (* Set the name servers to use for DNS resolution *)
+    { Set the name servers to use for DNS resolution }
     CURLOPT_DNS_SERVERS                      = CURLOPTTYPE_STRINGPOINT    + 211,
 
-    (* Time-out accept operations (currently for FTP only) after this amount
-       of milliseconds. *)
+    { Time-out accept operations (currently for FTP only) after this amount
+      of milliseconds. }
     CURLOPT_ACCEPTTIMEOUT_MS                 = CURLOPTTYPE_LONG           + 212,
 
-    (* Set TCP keepalive *)
+    { Set TCP keepalive }
     CURLOPT_TCP_KEEPALIVE                    = CURLOPTTYPE_LONG           + 213,
 
-    (* non-universal keepalive knobs (Linux, AIX, HP-UX, more) *)
+    { non-universal keepalive knobs (Linux, AIX, HP-UX, more) }
     CURLOPT_TCP_KEEPIDLE                     = CURLOPTTYPE_LONG           + 214,
     CURLOPT_TCP_KEEPINTVL                    = CURLOPTTYPE_LONG           + 215,
 
-    (* Enable/disable specific SSL features with a bitmask, see CURLSSLOPT_* *)
+    { Enable/disable specific SSL features with a bitmask, see CURLSSLOPT_* }
     CURLOPT_SSL_OPTIONS                      = CURLOPTTYPE_LONG           + 216,
 
-    (* Set the SMTP auth originator *)
+    { Set the SMTP auth originator }
     CURLOPT_MAIL_AUTH                        = CURLOPTTYPE_STRINGPOINT    + 217,
 
-    (* Enable/disable SASL initial response *)
+    { Enable/disable SASL initial response }
     CURLOPT_SASL_IR                          = CURLOPTTYPE_LONG           + 218,
 
-    (* Function that will be called instead of the internal progress display
-       function. This function should be defined as the curl_xferinfo_callback
-       prototype defines. (Deprecates CURLOPT_PROGRESSFUNCTION) *)
+    { Function that will be called instead of the internal progress display
+      function. This function should be defined as the curl_xferinfo_callback
+      prototype defines. (Deprecates CURLOPT_PROGRESSFUNCTION) }
     CURLOPT_XFERINFOFUNCTION                 = CURLOPTTYPE_FUNCTIONPOINT  + 219,
 
-    (* The XOAUTH2 bearer token *)
+    { The XOAUTH2 bearer token }
     CURLOPT_XOAUTH2_BEARER                   = CURLOPTTYPE_STRINGPOINT    + 220,
 
-    (* Set the interface string to use as outgoing network
-       interface for DNS requests.
-       Only supported by the c-ares DNS backend *)
+    { Set the interface string to use as outgoing network
+      interface for DNS requests.
+      Only supported by the c-ares DNS backend }
     CURLOPT_DNS_INTERFACE                    = CURLOPTTYPE_STRINGPOINT    + 221,
 
-    (* Set the local IPv4 address to use for outgoing DNS requests.
-       Only supported by the c-ares DNS backend *)
+    { Set the local IPv4 address to use for outgoing DNS requests.
+      Only supported by the c-ares DNS backend }
     CURLOPT_DNS_LOCAL_IP4                    = CURLOPTTYPE_STRINGPOINT    + 222,
 
-    (* Set the local IPv4 address to use for outgoing DNS requests.
-       Only supported by the c-ares DNS backend *)
+    { Set the local IPv4 address to use for outgoing DNS requests.
+      Only supported by the c-ares DNS backend }
     CURLOPT_DNS_LOCAL_IP6                    = CURLOPTTYPE_STRINGPOINT    + 223,
 
-    (* Set authentication options directly *)
+    { Set authentication options directly }
     CURLOPT_LOGIN_OPTIONS                    = CURLOPTTYPE_STRINGPOINT    + 224,
 
-    (* Enable/disable TLS NPN extension (http2 over ssl might fail without) *)
+    { Enable/disable TLS NPN extension (http2 over ssl might fail without) }
     CURLOPT_SSL_ENABLE_NPN                   = CURLOPTTYPE_LONG           + 225,
 
-    (* Enable/disable TLS ALPN extension (http2 over ssl might fail without) *)
+    { Enable/disable TLS ALPN extension (http2 over ssl might fail without) }
     CURLOPT_SSL_ENABLE_ALPN                  = CURLOPTTYPE_LONG           + 226,
 
-    (* Time to wait for a response to a HTTP request containing an
-       Expect: 100-continue header before sending the data anyway. *)
+    { Time to wait for a response to a HTTP request containing an
+      Expect: 100-continue header before sending the data anyway. }
     CURLOPT_EXPECT_100_TIMEOUT_MS            = CURLOPTTYPE_LONG           + 227,
 
-    (* This points to a linked list of headers used for proxy requests only,
-       struct curl_slist kind *)
+    { This points to a linked list of headers used for proxy requests only,
+      struct curl_slist kind }
     CURLOPT_PROXYHEADER                      = CURLOPTTYPE_OBJECTPOINT    + 228,
 
-    (* Pass in a bitmask of "header options" *)
+    { Pass in a bitmask of "header options" }
     CURLOPT_HEADEROPT                        = CURLOPTTYPE_LONG           + 229,
 
-    (* The public key in DER form used to validate the peer public key
-       this option is used only if SSL_VERIFYPEER is true *)
+    { The public key in DER form used to validate the peer public key
+      this option is used only if SSL_VERIFYPEER is true }
     CURLOPT_PINNEDPUBLICKEY                  = CURLOPTTYPE_STRINGPOINT    + 230,
 
-    (* Path to Unix domain socket *)
+    { Path to Unix domain socket }
     CURLOPT_UNIX_SOCKET_PATH                 = CURLOPTTYPE_STRINGPOINT    + 231,
 
-    (* Set if we should verify the certificate status. *)
+    { Set if we should verify the certificate status. }
     CURLOPT_SSL_VERIFYSTATUS                 = CURLOPTTYPE_LONG           + 232,
 
-    (* Set if we should enable TLS false start. *)
+    { Set if we should enable TLS false start. }
     CURLOPT_SSL_FALSESTART                   = CURLOPTTYPE_LONG           + 233,
 
-    (* Do not squash dot-dot sequences *)
+    { Do not squash dot-dot sequences }
     CURLOPT_PATH_AS_IS                       = CURLOPTTYPE_LONG           + 234,
 
-    (* Proxy Service Name *)
+    { Proxy Service Name }
     CURLOPT_PROXY_SERVICE_NAME               = CURLOPTTYPE_STRINGPOINT    + 235,
 
-    (* Service Name *)
+    { Service Name }
     CURLOPT_SERVICE_NAME                     = CURLOPTTYPE_STRINGPOINT    + 236,
 
-    (* Wait/don't wait for pipe/mutex to clarify *)
+    { Wait/don't wait for pipe/mutex to clarify }
     CURLOPT_PIPEWAIT                         = CURLOPTTYPE_LONG           + 237,
 
-    (* Set the protocol used when curl is given a URL without a protocol *)
+    { Set the protocol used when curl is given a URL without a protocol }
     CURLOPT_DEFAULT_PROTOCOL                 = CURLOPTTYPE_STRINGPOINT    + 238,
 
-    (* Set stream weight, 1 - 256 (default is 16) *)
+    { Set stream weight, 1 - 256 (default is 16) }
     CURLOPT_STREAM_WEIGHT                    = CURLOPTTYPE_LONG           + 239,
 
-    (* Set stream dependency on another CURL handle *)
+    { Set stream dependency on another CURL handle }
     CURLOPT_STREAM_DEPENDS                   = CURLOPTTYPE_OBJECTPOINT    + 240,
 
-    (* Set E-xclusive stream dependency on another CURL handle *)
+    { Set E-xclusive stream dependency on another CURL handle }
     CURLOPT_STREAM_DEPENDS_E                 = CURLOPTTYPE_OBJECTPOINT    + 241,
 
-    (* Do not send any tftp option requests to the server *)
+    { Do not send any tftp option requests to the server }
     CURLOPT_TFTP_NO_OPTIONS                  = CURLOPTTYPE_LONG           + 242,
 
-    (* Linked-list of host:port:connect-to-host:connect-to-port,
-       overrides the URL's host:port (only for the network layer) *)
+    { Linked-list of host:port:connect-to-host:connect-to-port,
+      overrides the URL's host:port (only for the network layer) }
     CURLOPT_CONNECT_TO                       = CURLOPTTYPE_OBJECTPOINT    + 243,
 
-    (* Set TCP Fast Open *)
+    { Set TCP Fast Open }
     CURLOPT_TCP_FASTOPEN                     = CURLOPTTYPE_LONG           + 244,
 
-    (* Continue to send data if the server responds early with an
-       HTTP status code >= 300 *)
+    { Continue to send data if the server responds early with an
+      HTTP status code >= 300 }
     CURLOPT_KEEP_SENDING_ON_ERROR            = CURLOPTTYPE_LONG           + 245,
 
-    (* The CApath or CAfile used to validate the proxy certificate
-       this option is used only if PROXY_SSL_VERIFYPEER is true *)
+    { The CApath or CAfile used to validate the proxy certificate
+      this option is used only if PROXY_SSL_VERIFYPEER is true }
     CURLOPT_PROXY_CAINFO                     = CURLOPTTYPE_STRINGPOINT    + 246,
 
-    (* The CApath directory used to validate the proxy certificate
-       this option is used only if PROXY_SSL_VERIFYPEER is true *)
+    { The CApath directory used to validate the proxy certificate
+      this option is used only if PROXY_SSL_VERIFYPEER is true }
     CURLOPT_PROXY_CAPATH                     = CURLOPTTYPE_STRINGPOINT    + 247,
 
-    (* Set if we should verify the proxy in ssl handshake,
-       set 1 to verify. *)
+    { Set if we should verify the proxy in ssl handshake,
+      set 1 to verify. }
     CURLOPT_PROXY_SSL_VERIFYPEER             = CURLOPTTYPE_LONG           + 248,
 
-    (* Set if we should verify the Common name from the proxy certificate in ssl
-       handshake, set 1 to check existence, 2 to ensure that it matches
-       the provided hostname. *)
+    { Set if we should verify the Common name from the proxy certificate in ssl
+      handshake, set 1 to check existence, 2 to ensure that it matches
+      the provided hostname. }
     CURLOPT_PROXY_SSL_VERIFYHOST             = CURLOPTTYPE_LONG           + 249,
 
-    (* What version to specifically try to use for proxy.
-       See CURL_SSLVERSION defines below. *)
+    { What version to specifically try to use for proxy.
+      See CURL_SSLVERSION defines below. }
     CURLOPT_PROXY_SSLVERSION                 = CURLOPTTYPE_LONG           + 250,
 
-    (* Set a username for authenticated TLS for proxy *)
+    { Set a username for authenticated TLS for proxy }
     CURLOPT_PROXY_TLSAUTH_USERNAME           = CURLOPTTYPE_STRINGPOINT    + 251,
 
-    (* Set a password for authenticated TLS for proxy *)
+    { Set a password for authenticated TLS for proxy }
     CURLOPT_PROXY_TLSAUTH_PASSWORD           = CURLOPTTYPE_STRINGPOINT    + 252,
 
-    (* Set authentication type for authenticated TLS for proxy *)
+    { Set authentication type for authenticated TLS for proxy }
     CURLOPT_PROXY_TLSAUTH_TYPE               = CURLOPTTYPE_STRINGPOINT    + 253,
 
-    (* name of the file keeping your private SSL-certificate for proxy *)
+    { name of the file keeping your private SSL-certificate for proxy }
     CURLOPT_PROXY_SSLCERT                    = CURLOPTTYPE_STRINGPOINT    + 254,
 
-    (* type of the file keeping your SSL-certificate ("DER", "PEM", "ENG") for
-       proxy *)
+    { type of the file keeping your SSL-certificate ("DER", "PEM", "ENG") for
+      proxy }
     CURLOPT_PROXY_SSLCERTTYPE                = CURLOPTTYPE_STRINGPOINT    + 255,
 
-    (* name of the file keeping your private SSL-key for proxy *)
+    { name of the file keeping your private SSL-key for proxy }
     CURLOPT_PROXY_SSLKEY                     = CURLOPTTYPE_STRINGPOINT    + 256,
 
-    (* type of the file keeping your private SSL-key ("DER", "PEM", "ENG") for
-       proxy *)
+    { type of the file keeping your private SSL-key ("DER", "PEM", "ENG") for
+      proxy }
     CURLOPT_PROXY_SSLKEYTYPE                 = CURLOPTTYPE_STRINGPOINT    + 257,
 
-    (* password for the SSL private key for proxy *)
+    { password for the SSL private key for proxy }
     CURLOPT_PROXY_KEYPASSWD                  = CURLOPTTYPE_STRINGPOINT    + 258,
 
-    (* Specify which SSL ciphers to use for proxy *)
+    { Specify which SSL ciphers to use for proxy }
     CURLOPT_PROXY_SSL_CIPHER_LIST            = CURLOPTTYPE_STRINGPOINT    + 259,
 
-    (* CRL file for proxy *)
+    { CRL file for proxy }
     CURLOPT_PROXY_CRLFILE                    = CURLOPTTYPE_STRINGPOINT    + 260,
 
-    (* Enable/disable specific SSL features with a bitmask for proxy, see
-       CURLSSLOPT_* *)
+    { Enable/disable specific SSL features with a bitmask for proxy, see
+      CURLSSLOPT_* }
     CURLOPT_PROXY_SSL_OPTIONS                = CURLOPTTYPE_LONG           + 261,
 
-    (* Name of pre proxy to use. *)
+    { Name of pre proxy to use. }
     CURLOPT_PRE_PROXY                        = CURLOPTTYPE_STRINGPOINT    + 262,
 
-    (* The public key in DER form used to validate the proxy public key
-       this option is used only if PROXY_SSL_VERIFYPEER is true *)
+    { The public key in DER form used to validate the proxy public key
+      this option is used only if PROXY_SSL_VERIFYPEER is true }
     CURLOPT_PROXY_PINNEDPUBLICKEY            = CURLOPTTYPE_STRINGPOINT    + 263,
 
-    (* Path to an abstract Unix domain socket *)
+    { Path to an abstract Unix domain socket }
     CURLOPT_ABSTRACT_UNIX_SOCKET             = CURLOPTTYPE_STRINGPOINT    + 264,
 
-    (* Suppress proxy CONNECT response headers from user callbacks *)
+    { Suppress proxy CONNECT response headers from user callbacks }
     CURLOPT_SUPPRESS_CONNECT_HEADERS         = CURLOPTTYPE_LONG           + 265,
 
-    (* The request target, instead of extracted from the URL *)
+    { The request target, instead of extracted from the URL }
     CURLOPT_REQUEST_TARGET                   = CURLOPTTYPE_STRINGPOINT    + 266,
 
-    (* bitmask of allowed auth methods for connections to SOCKS5 proxies *)
+    { bitmask of allowed auth methods for connections to SOCKS5 proxies }
     CURLOPT_SOCKS5_AUTH                      = CURLOPTTYPE_LONG           + 267,
 
-    (* Enable/disable SSH compression *)
+    { Enable/disable SSH compression }
     CURLOPT_SSH_COMPRESSION                  = CURLOPTTYPE_LONG           + 268,
 
-    (* Post MIME data. *)
+    { Post MIME data. }
     CURLOPT_MIMEPOST                         = CURLOPTTYPE_OBJECTPOINT    + 269,
 
     (* Time to use with the CURLOPT_TIMECONDITION. Specified in number of
