@@ -38,6 +38,16 @@ uses
   {$PACKRECORDS C}
 {$ENDIF}
 
+{$IFDEF WIN32}
+  CurlLib = 'libcurl.dll';
+{$ENDIF}
+{$IFDEF WIN64}
+  CurlLib = 'libcurl-x64.dll';
+{$ENDIF}
+{$IFDEF LINUX}
+  CurlLib = 'libcurl.so';
+{$ENDIF}
+
 const
   CURL_SOCKET_BAD                                                   = -1;
 
@@ -348,6 +358,36 @@ const
 
   CURLPAUSE_ALL          = CURLPAUSE_RECV or CURLPAUSE_SEND;
   CURLPAUSE_CONT         = CURLPAUSE_RECV_CONT or CURLPAUSE_SEND_CONT;
+
+  { bitmask bits for CURLMOPT_PIPELINING }
+  CURLPIPE_NOTHING                                                 = Longint(0);
+  CURLPIPE_HTTP1                                                   = Longint(1);
+  CURLPIPE_MULTIPLEX                                               = Longint(2);
+
+  { Based on poll(2) structure and values.
+    We don't use pollfd and POLL* constants explicitly
+    to cover platforms without poll(). }
+  CURL_WAIT_POLLIN                                                  = $0001;
+  CURL_WAIT_POLLPRI                                                 = $0002;
+  CURL_WAIT_POLLOUT                                                 = $0004;
+
+  CURL_POLL_NONE                                                    = 0;
+  CURL_POLL_IN                                                      = 1;
+  CURL_POLL_OUT                                                     = 2;
+  CURL_POLL_INOUT                                                   = 3;
+  CURL_POLL_REMOVE                                                  = 4;
+
+  CURL_SOCKET_TIMEOUT                                         = CURL_SOCKET_BAD;
+
+  CURL_CSELECT_IN                                                   = $01;
+  CURL_CSELECT_OUT                                                  = $02;
+  CURL_CSELECT_ERR                                                  = $04;
+
+  CURL_PUSH_OK                                                      = 0;
+  CURL_PUSH_DENY                                                    = 1;
+
+  CURLU_DEFAULT_PORT      { return default port number }            = 1 shl 0;
+  CURLU_NO_DEFAULT_PORT   {
 
 type
   CURL = type Pointer;
@@ -2201,167 +2241,179 @@ type
                                  version or NULL }
   end;
 
-
-
-
-  CURLMoption = (
-    (* This is the socket callback function pointer *)
-    CURLMOPT_SOCKETFUNCTION                  = CURLOPTTYPE_FUNCTIONPOINT  + 1,
-
-    (* This is the argument passed to the socket callback *)
-    CURLMOPT_SOCKETDATA                      = CURLOPTTYPE_OBJECTPOINT    + 2{%H-},
-
-    (* set to 1 to enable pipelining for this multi handle *)
-    CURLMOPT_PIPELINING                      = CURLOPTTYPE_LONG           + 3,
-
-    (* This is the timer callback function pointer *)
-    CURLMOPT_TIMERFUNCTION                   = CURLOPTTYPE_FUNCTIONPOINT  + 4,
-
-    (* This is the argument passed to the timer callback *)
-    CURLMOPT_TIMERDATA                       = CURLOPTTYPE_OBJECTPOINT    + 5,
-
-    (* maximum number of entries in the connection cache *)
-    CURLMOPT_MAXCONNECTS                     = CURLOPTTYPE_LONG           + 6,
-
-    (* maximum number of (pipelining) connections to one host *)
-    CURLMOPT_MAX_HOST_CONNECTIONS            = CURLOPTTYPE_LONG           + 7,
-
-    (* maximum number of requests in a pipeline *)
-    CURLMOPT_MAX_PIPELINE_LENGTH             = CURLOPTTYPE_LONG           + 8,
-
-    (* a connection with a content-length longer than this
-       will not be considered for pipelining *)
-    CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE     = CURLOPTTYPE_OFF_T          + 9,
-
-    (* a connection with a chunk length longer than this
-       will not be considered for pipelining *)
-    CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE       = CURLOPTTYPE_OFF_T          + 10,
-
-    (* a list of site names(+port) that are blacklisted from
-       pipelining *)
-    CURLMOPT_PIPELINING_SITE_BL              = CURLOPTTYPE_OBJECTPOINT    + 11,
-
-    (* a list of server types that are blacklisted from
-       pipelining *)
-    CURLMOPT_PIPELINING_SERVER_BL            = CURLOPTTYPE_OBJECTPOINT    + 12,
-
-    (* maximum number of open connections in total *)
-    CURLMOPT_MAX_TOTAL_CONNECTIONS           = CURLOPTTYPE_LONG           + 13,
-
-    (* This is the server push callback function pointer *)
-    CURLMOPT_PUSHFUNCTION                    = CURLOPTTYPE_FUNCTIONPOINT  + 14,
-
-    (* This is the argument passed to the server push callback *)
-    CURLMOPT_PUSHDATA                        = CURLOPTTYPE_OBJECTPOINT    + 15,
-
-    (* the last unused *)
-    CURLMOPT_LASTENTRY
-  );
-
-type
   CURLMcode = (
-    CURLM_CALL_MULTI_PERFORM = -1, (* please call curl_multi_perform() or
-                                    curl_multi_socket*() soon *)
+    CURLM_CALL_MULTI_PERFORM = -1, { please call curl_multi_perform() or
+                                     curl_multi_socket*() soon }
+    { just to make code nicer when using curl_multi_socket() you can now check
+      for CURLM_CALL_MULTI_SOCKET too in the same style it works for
+      curl_multi_perform() and CURLM_CALL_MULTI_PERFORM }
     CURLM_CALL_MULTI_SOCKET = CURLM_CALL_MULTI_PERFORM{%H-},
 
     CURLM_OK,
-    CURLM_BAD_HANDLE,      (* the passed-in handle is not a valid CURLM handle*)
-    CURLM_BAD_EASY_HANDLE, (* an easy handle was not good/valid *)
-    CURLM_OUT_OF_MEMORY,   (* if you ever get this, you're in deep sh*t *)
-    CURLM_INTERNAL_ERROR,  (* this is a libcurl bug *)
-    CURLM_BAD_SOCKET,      (* the passed in socket argument did not match *)
-    CURLM_UNKNOWN_OPTION,  (* curl_multi_setopt() with unsupported option *)
-    CURLM_ADDED_ALREADY,   (* an easy handle already added to a multi handle was
-                              attempted to get added - again *)
+    CURLM_BAD_HANDLE,          { the passed-in handle is not a valid CURLM
+                                 handle }
+    CURLM_BAD_EASY_HANDLE,     { an easy handle was not good/valid }
+    CURLM_OUT_OF_MEMORY,       { if you ever get this, you're in deep sh*t }
+    CURLM_INTERNAL_ERROR,      { this is a libcurl bug }
+    CURLM_BAD_SOCKET,          { the passed in socket argument did not match }
+    CURLM_UNKNOWN_OPTION,      { curl_multi_setopt() with unsupported option }
+    CURLM_ADDED_ALREADY,       { an easy handle already added to a multi handle
+                                 was attempted to get added - again }
+    CURLM_RECURSIVE_API_CALL,  { an api function was called from inside a
+                                 callback }
+    CURLM_WAKEUP_FAILURE,      { wakeup is unavailable or failed }
+    CURLM_BAD_FUNCTION_ARGUMENT, { function called with a bad parameter }
     CURLM_LAST
   );
 
-const
-  (* bitmask bits for CURLMOPT_PIPELINING *)
-  CURLPIPE_NOTHING                                                 = Longint(0);
-  CURLPIPE_HTTP1                                                   = Longint(1);
-  CURLPIPE_MULTIPLEX                                               = Longint(2);
-
-type
   CURLMSG = (
-    CURLMSG_NONE, (* first, not used *)
-    CURLMSG_DONE, (* This easy handle has completed. 'result' contains
-                     the CURLcode of the transfer *)
-    CURLMSG_LAST  (* last, not used *)
+    CURLMSG_NONE,              { first, not used }
+    CURLMSG_DONE,              { This easy handle has completed. 'result'
+                                 contains the CURLcode of the transfer }
+    CURLMSG_LAST               { last, not used }
   );
 
   CURLMsg_rec = record
-    msg : CURLMSG;         (* what this message means *)
-    easy_handle : CURL;    (* the handle it concerns *)
+    msg : CURLMSG;             { what this message means }
+    easy_handle : CURL;        { the handle it concerns }
     case data : Integer of
       1 : (whatever : Pointer);
-      2 : (result : CURL);
+      2 : (result : CURLcode);
   end;
 
-const
-  (* Based on poll(2) structure and values.
-   * We don't use pollfd and POLL* constants explicitly
-   * to cover platforms without poll(). *)
-  CURL_WAIT_POLLIN                                                  = $0001;
-  CURL_WAIT_POLLPRI                                                 = $0002;
-  CURL_WAIT_POLLOUT                                                 = $0004;
-
-type
   curl_waitfd = record
     fd : curl_socket_t;
     events : ShortInt;
-    revents : ShortInt; (* not supported yet *)
+    revents : ShortInt;        { not supported yet }
   end;
 
-  curl_socket_callback = function (easy : CURL; s : curl_socket_t;
-    userp : Pointer; socketp : Pointer) : Integer of object;
+  curl_socket_callback = function (
+    easy : CURL;               { easy handle }
+    s : curl_socket_t;         { socket }
+    what : Integer;            { see above }
+    userp : Pointer;           { private callback pointer }
+    socketp : Pointer          { private socket pointer }
+  ) : Integer of object;
 
- (*
-  * Name:    curl_multi_timer_callback
-  *
-  * Desc:    Called by libcurl whenever the library detects a change in the
-  *          maximum number of milliseconds the app is allowed to wait before
-  *          curl_multi_socket() or curl_multi_perform() must be called
-  *          (to allow libcurl's timed events to take place).
-  *
-  * Returns: The callback should return zero.
-  *)
-  curl_multi_timer_callback = function (multi : CURLM; timeout_ms : Longint;
-    userp : Pointer) : Integer of object;
+  { Name:    curl_multi_timer_callback
 
+    Desc:    Called by libcurl whenever the library detects a change in the
+             maximum number of milliseconds the app is allowed to wait before
+             curl_multi_socket() or curl_multi_perform() must be called
+             (to allow libcurl's timed events to take place).
+
+    Returns: The callback should return zero. }
+  curl_multi_timer_callback = function (
+    multi : CURLM;             { multi handle }
+    timeout_ms : Longint;      { see above }
+    userp : Pointer            { private callback pointer }
+  ) : Integer of object;
+
+  CURLMoption = (
+    { This is the socket callback function pointer }
+    CURLMOPT_SOCKETFUNCTION                  = CURLOPTTYPE_FUNCTIONPOINT  + 1,
+
+    { This is the argument passed to the socket callback }
+    CURLMOPT_SOCKETDATA                      = CURLOPTTYPE_OBJECTPOINT    + 2{%H-},
+
+    { set to 1 to enable pipelining for this multi handle }
+    CURLMOPT_PIPELINING                      = CURLOPTTYPE_LONG           + 3,
+
+    { This is the timer callback function pointer }
+    CURLMOPT_TIMERFUNCTION                   = CURLOPTTYPE_FUNCTIONPOINT  + 4,
+
+    { This is the argument passed to the timer callback }
+    CURLMOPT_TIMERDATA                       = CURLOPTTYPE_OBJECTPOINT    + 5,
+
+    { maximum number of entries in the connection cache }
+    CURLMOPT_MAXCONNECTS                     = CURLOPTTYPE_LONG           + 6,
+
+    { maximum number of (pipelining) connections to one host }
+    CURLMOPT_MAX_HOST_CONNECTIONS            = CURLOPTTYPE_LONG           + 7,
+
+    { maximum number of requests in a pipeline }
+    CURLMOPT_MAX_PIPELINE_LENGTH             = CURLOPTTYPE_LONG           + 8,
+
+    { a connection with a content-length longer than this
+      will not be considered for pipelining }
+    CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE     = CURLOPTTYPE_OFF_T          + 9,
+
+    { a connection with a chunk length longer than this
+      will not be considered for pipelining }
+    CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE       = CURLOPTTYPE_OFF_T          + 10,
+
+    { a list of site names(+port) that are blacklisted from
+      pipelining }
+    CURLMOPT_PIPELINING_SITE_BL              = CURLOPTTYPE_OBJECTPOINT    + 11,
+
+    { a list of server types that are blacklisted from
+      pipelining }
+    CURLMOPT_PIPELINING_SERVER_BL            = CURLOPTTYPE_OBJECTPOINT    + 12,
+
+    { maximum number of open connections in total }
+    CURLMOPT_MAX_TOTAL_CONNECTIONS           = CURLOPTTYPE_LONG           + 13,
+
+    { This is the server push callback function pointer }
+    CURLMOPT_PUSHFUNCTION                    = CURLOPTTYPE_FUNCTIONPOINT  + 14,
+
+    { This is the argument passed to the server push callback }
+    CURLMOPT_PUSHDATA                        = CURLOPTTYPE_OBJECTPOINT    + 15,
+
+    { maximum number of concurrent streams to support on a connection }
+    CURLMOPT_MAX_CONCURRENT_STREAMS          = CURLOPTTYPE_LONG           + 16,
+
+    { the last unused }
+    CURLMOPT_LASTENTRY
+  );
+
+  { Name: curl_push_callback
+
+    Desc: This callback gets called when a new stream is being pushed by the
+          server. It approves or denies the new stream.
+
+    Returns: CURL_PUSH_OK or CURL_PUSH_DENY. }
   pcurl_pushheaders = ^curl_pushheaders;
-  curl_pushheaders = record
-
-  end;
+  curl_pushheaders = Pointer;
 
   curl_push_callback = function (parent : CURL; easy : CURL; num_header : QWord;
     headers : pcurl_pushheaders; userp : Pointer) : Integer of object;
 
-const
-  CURL_SOCKET_TIMEOUT                                         = CURL_SOCKET_BAD;
+  { the error codes for the URL API }
+  CURLUcode = (
+    CURLUE_OK,
+    CURLUE_BAD_HANDLE,         { 1 }
+    CURLUE_BAD_PARTPOINTER,    { 2 }
+    CURLUE_MALFORMED_INPUT,    { 3 }
+    CURLUE_BAD_PORT_NUMBER,    { 4 }
+    CURLUE_UNSUPPORTED_SCHEME, { 5 }
+    CURLUE_URLDECODE,          { 6 }
+    CURLUE_OUT_OF_MEMORY,      { 7 }
+    CURLUE_USER_NOT_ALLOWED,   { 8 }
+    CURLUE_UNKNOWN_PART,       { 9 }
+    CURLUE_NO_SCHEME,          { 10 }
+    CURLUE_NO_USER,            { 11 }
+    CURLUE_NO_PASSWORD,        { 12 }
+    CURLUE_NO_OPTIONS,         { 13 }
+    CURLUE_NO_HOST,            { 14 }
+    CURLUE_NO_PORT,            { 15 }
+    CURLUE_NO_QUERY,           { 16 }
+    CURLUE_NO_FRAGMENT         { 17 }
+  );
 
-  CURL_POLL_NONE                                                    = 0;
-  CURL_POLL_IN                                                      = 1;
-  CURL_POLL_OUT                                                     = 2;
-  CURL_POLL_INOUT                                                   = 3;
-  CURL_POLL_REMOVE                                                  = 4;
+  CURLUPart = (
+    CURLUPART_URL,
+    CURLUPART_SCHEME,
+    CURLUPART_USER,
+    CURLUPART_PASSWORD,
+    CURLUPART_OPTIONS,
+    CURLUPART_HOST,
+    CURLUPART_PORT,
+    CURLUPART_PATH,
+    CURLUPART_QUERY,
+    CURLUPART_FRAGMENT,
+    CURLUPART_ZONEID           { added in 7.65.0 }
+  );
 
-  CURL_CSELECT_IN                                                   = $01;
-  CURL_CSELECT_OUT                                                  = $02;
-  CURL_CSELECT_ERR                                                  = $04;
-
-  CURL_PUSH_OK                                                      = 0;
-  CURL_PUSH_DENY                                                    = 1;
-
-{$IFDEF WIN32}
-  CurlLib = 'libcurl.dll';
-{$ENDIF}
-{$IFDEF WIN64}
-  CurlLib = 'libcurl-x64.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  CurlLib = 'libcurl.so';
-{$ENDIF}
 
   (* curl_strequal() and curl_strnequal() are subject for removal in a future
      release *)
