@@ -38,17 +38,17 @@ uses
   {$PACKRECORDS C}
 {$ENDIF}
 
-{$IFDEF WIN32}
-  CurlLib = 'libcurl.dll';
-{$ENDIF}
-{$IFDEF WIN64}
-  CurlLib = 'libcurl-x64.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  CurlLib = 'libcurl.so';
-{$ENDIF}
-
 const
+  {$IFDEF WIN32}
+    CurlLib = 'libcurl.dll';
+  {$ENDIF}
+  {$IFDEF WIN64}
+    CurlLib = 'libcurl-x64.dll';
+  {$ENDIF}
+  {$IFDEF LINUX}
+    CurlLib = 'libcurl.so';
+  {$ENDIF}
+
   CURL_SOCKET_BAD                                                   = -1;
 
   { specified content is a file name }
@@ -277,16 +277,6 @@ const
   CURL_IPRESOLVE_V4       { resolve to IPv4 addresses }             = 1;
   CURL_IPRESOLVE_V6       { resolve to IPv6 addresses }             = 2;
 
-  CURL_SSLVERSION_MAX_NONE    = 0;
-  CURL_SSLVERSION_MAX_DEFAULT = Longint(CURL_SSLVERSION_TLSv1) shl 16;
-  CURL_SSLVERSION_MAX_TLSv1_0 = Longint(CURL_SSLVERSION_TLSv1_0) shl 16;
-  CURL_SSLVERSION_MAX_TLSv1_1 = Longint(CURL_SSLVERSION_TLSv1_1) shl 16;
-  CURL_SSLVERSION_MAX_TLSv1_2 = Longint(CURL_SSLVERSION_TLSv1_2) shl 16;
-  CURL_SSLVERSION_MAX_TLSv1_3 = Longint(CURL_SSLVERSION_TLSv1_3) shl 16;
-
-  { never use, keep last }
-  CURL_SSLVERSION_MAX_LAST = Longint(CURL_SSLVERSION_LAST) shl 16;
-
   { symbols to use with CURLOPT_POSTREDIR.
     CURL_REDIR_POST_301, CURL_REDIR_POST_302 and CURL_REDIR_POST_303
     can be bitwise ORed so that CURL_REDIR_POST_301 or CURL_REDIR_POST_302
@@ -387,7 +377,19 @@ const
   CURL_PUSH_DENY                                                    = 1;
 
   CURLU_DEFAULT_PORT      { return default port number }            = 1 shl 0;
-  CURLU_NO_DEFAULT_PORT   {
+  CURLU_NO_DEFAULT_PORT   { act as if no port number was set, }     = 1 shl 1;
+                          { if the port number matches the default }
+                          { for the scheme }
+  CURLU_DEFAULT_SCHEME    { return default scheme if missing }      = 1 shl 2;
+  CURLU_NON_SUPPORT_SCHEME{ allow non-supported scheme }            = 1 shl 3;
+  CURLU_PATH_AS_IS        { leave dot sequences }                   = 1 shl 4;
+  CURLU_DISALLOW_USER     { no user+password allowed }              = 1 shl 5;
+  CURLU_URLDECODE         { URL decode on get }                     = 1 shl 6;
+  CURLU_URLENCODE         { URL encode on set }                     = 1 shl 7;
+  CURLU_APPENDQUERY       { append a form style part }              = 1 shl 8;
+  CURLU_GUESS_SCHEME      { legacy curl-style guessing }            = 1 shl 9;
+  CURLU_NO_AUTHORITY      { Allow empty authority when the scheme } = 1 shl 10;
+                          { is unknown. }
 
 type
   CURL = type Pointer;
@@ -2414,386 +2416,307 @@ type
     CURLUPART_ZONEID           { added in 7.65.0 }
   );
 
+  PCURLU = ^CURLU;
+  CURLU = Pointer;
 
-  (* curl_strequal() and curl_strnequal() are subject for removal in a future
-     release *)
+  PPChar = ^PChar;
+
+const
+  CURL_SSLVERSION_MAX_NONE    = 0;
+  CURL_SSLVERSION_MAX_DEFAULT = Longint(CURL_SSLVERSION_TLSv1)   shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_0 = Longint(CURL_SSLVERSION_TLSv1_0) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_1 = Longint(CURL_SSLVERSION_TLSv1_1) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_2 = Longint(CURL_SSLVERSION_TLSv1_2) shl 16;
+  CURL_SSLVERSION_MAX_TLSv1_3 = Longint(CURL_SSLVERSION_TLSv1_3) shl 16;
+
+  { never use, keep last }
+  CURL_SSLVERSION_MAX_LAST = Longint(CURL_SSLVERSION_LAST) shl 16;
+
+  { curl_strequal() and curl_strnequal() are subject for removal in a future
+    release }
   function curl_strequal (const s1 : PChar; const s2 : PChar) : Integer; cdecl;
     external CurlLib;
   function curl_strnequal (const s1 : PChar; const s2 : PChar; n : QWord) :
     Integer; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_mime_init()
-   *
-   * DESCRIPTION
-   *
-   * Create a mime context and return its handle. The easy parameter is the
-   * target handle.
-   *)
+  { NAME curl_mime_init()
+
+   DESCRIPTION
+   Create a mime context and return its handle. The easy parameter is the
+   target handle. }
   function curl_mime_init (easy : CURL) : pcurl_mime; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_mime_free()
-   *
-   * DESCRIPTION
-   *
-   * release a mime handle and its substructures.
-   *)
-   procedure curl_mime_free (mime : pcurl_mime); cdecl; external CurlLib;
+  { NAME curl_mime_free()
 
-  (*
-   * NAME curl_mime_addpart()
-   *
-   * DESCRIPTION
-   *
-   * Append a new empty part to the given mime context and return a handle to
-   * the created part.
-   *)
-   function curl_mime_addpart (mime : pcurl_mime) : pcurl_mimepart; cdecl;
-     external CurlLib;
+    DESCRIPTION
+    release a mime handle and its substructures. }
+  procedure curl_mime_free (mime : pcurl_mime); cdecl; external CurlLib;
 
-   (*
-   * NAME curl_mime_name()
-   *
-   * DESCRIPTION
-   *
-   * Set mime/form part name.
-   *)
-   function curl_mime_name (part : pcurl_mimepart; const name : PChar) :
-     CURLcode; cdecl; external CurlLib;
+  { NAME curl_mime_addpart()
 
-  (*
-   * NAME curl_mime_filename()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part remote file name.
-   *)
-   function curl_mime_filename (part : pcurl_mimepart; const filename : PChar) :
-     CURLcode; cdecl; external CurlLib;
+    DESCRIPTION
+    Append a new empty part to the given mime context and return a handle to
+    the created part. }
+  function curl_mime_addpart (mime : pcurl_mime) : pcurl_mimepart; cdecl;
+    external CurlLib;
 
-  (*
-   * NAME curl_mime_type()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part type.
-   *)
-   function curl_mime_type (part : pcurl_mimepart; const mimetype : PChar) :
-     CURLcode; cdecl; external CurlLib;
+  { NAME curl_mime_name()
 
-  (*
-   * NAME curl_mime_encoder()
-   *
-   * DESCRIPTION
-   *
-   * Set mime data transfer encoder.
-   *)
-   function curl_mime_encoder (part : pcurl_mimepart; const encoding : PChar) :
-     CURLcode; cdecl; external CurlLib;
+    DESCRIPTION
+    Set mime/form part name. }
+  function curl_mime_name (part : pcurl_mimepart; const name : PChar) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_mime_data()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part data source from memory data,
-   *)
-   function curl_mime_data (part : pcurl_mimepart; const data : PChar;
-     datasize : QWord) : CURLcode; cdecl; external CurlLib;
+  { NAME curl_mime_filename()
 
-  (*
-   * NAME curl_mime_filedata()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part data source from named file.
-   *)
-   function curl_mime_filedata (part : pcurl_mimepart; const filename : PChar) :
-     CURLcode; cdecl; external CurlLib;
+    DESCRIPTION
+    Set mime part remote file name. }
+  function curl_mime_filename (part : pcurl_mimepart; const filename : PChar) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_mime_data_cb()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part data source from callback function.
-   *)
-   function curl_mime_data_cb (part : pcurl_mimepart; datasize : curl_off_t;
-     readfunc : curl_read_callback; seekfunc : curl_seek_callback;
-     freefunc : curl_free_callback; arg : Pointer) : CURLcode; cdecl;
-     external CurlLib;
+  { NAME curl_mime_type()
 
-  (*
-   * NAME curl_mime_subparts()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part data source from subparts.
-   *)
-   function curl_mime_subparts (part : pcurl_mimepart; subparts : pcurl_mime) :
-     CURLcode; cdecl; external CurlLib;
+    DESCRIPTION
+    Set mime part type. }
+  function curl_mime_type (part : pcurl_mimepart; const mimetype : PChar) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_mime_headers()
-   *
-   * DESCRIPTION
-   *
-   * Set mime part headers.
-   *)
-   function curl_mime_headers (part : pcurl_mimepart; headers : pcurl_slist;
-     take_ownership : Integer) : CURLcode; cdecl; external CurlLib;
+  { NAME curl_mime_encoder()
 
-  (*
-   * NAME curl_formadd()
-   *
-   * DESCRIPTION
-   *
-   * Pretty advanced function for building multi-part formposts. Each invoke
-   * adds one part that together construct a full post. Then use
-   * CURLOPT_HTTPPOST to send it off to libcurl.
-   *)
-   function curl_formadd (httppost : ppcurl_httppost;
-     lastpost : ppcurl_httppost) : CURLFORMcode; cdecl; varargs;
-     external CurlLib;
+    DESCRIPTION
+    Set mime data transfer encoder. }
+  function curl_mime_encoder (part : pcurl_mimepart; const encoding : PChar) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_formget()
-   *
-   * DESCRIPTION
-   *
-   * Serialize a curl_httppost struct built with curl_formadd().
-   * Accepts a void pointer as second argument which will be passed to
-   * the curl_formget_callback function.
-   * Returns 0 on success.
-   *)
-   function curl_formget (form : pcurl_httppost; arg : Pointer;
-     append : curl_formget_callback) : Integer; cdecl; external CurlLib;
+  { NAME curl_mime_data()
 
-  (*
-   * NAME curl_formfree()
-   *
-   * DESCRIPTION
-   *
-   * Free a multipart formpost previously built with curl_formadd().
-   *)
-   procedure curl_formfree (form : pcurl_httppost); cdecl; external CurlLib;
+    DESCRIPTION
+    Set mime part data source from memory data, }
+  function curl_mime_data (part : pcurl_mimepart; const data : PChar;
+    datasize : QWord) : CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_getenv()
-   *
-   * DESCRIPTION
-   *
-   * Returns a malloc()'ed string that MUST be curl_free()ed after usage is
-   * complete. DEPRECATED - see lib/README.curlx
-   *)
-   function curl_getenv (const variable : PChar) : PChar; cdecl;
-     external CurlLib;
+  { NAME curl_mime_filedata()
 
-  (*
-   * NAME curl_version()
-   *
-   * DESCRIPTION
-   *
-   * Returns a static ascii string of the libcurl version.
-   *)
-   function curl_version : PChar; cdecl; external CurlLib;
+   DESCRIPTION
+   Set mime part data source from named file. }
+  function curl_mime_filedata (part : pcurl_mimepart; const filename : PChar) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_easy_escape()
-   *
-   * DESCRIPTION
-   *
-   * Escapes URL strings (converts all letters consider illegal in URLs to their
-   * %XX versions). This function returns a new allocated string or NULL if an
-   * error occurred.
-   *)
-   function curl_easy_escape (handle : CURL; const str : PChar;
-     length : Integer) : PChar; cdecl; external CurlLib;
+  { NAME curl_mime_data_cb()
 
-   (* the previous version: *)
-   function curl_escape (const std : PChar; length : Integer) : PChar; cdecl;
-     external CurlLib;
+    DESCRIPTION
+    Set mime part data source from callback function. }
+  function curl_mime_data_cb (part : pcurl_mimepart; datasize : curl_off_t;
+    readfunc : curl_read_callback; seekfunc : curl_seek_callback;
+    freefunc : curl_free_callback; arg : Pointer) : CURLcode; cdecl;
+    external CurlLib;
 
-  (*
-   * NAME curl_easy_unescape()
-   *
-   * DESCRIPTION
-   *
-   * Unescapes URL encoding in strings (converts all %XX codes to their 8bit
-   * versions). This function returns a new allocated string or NULL if an error
-   * occurred.
-   * Conversion Note: On non-ASCII platforms the ASCII %XX codes are
-   * converted into the host encoding.
-   *)
-   function curl_easy_unescape (handle : CURL; const str : PChar;
-     length : Integer; outlength : PInteger) : PChar; cdecl; external CurlLib;
+  { NAME curl_mime_subparts()
 
-   (* the previous version  *)
-   function curl_unescape (const str : PChar; length : Integer) : PChar; cdecl;
-     external CurlLib;
+    DESCRIPTION
+    Set mime part data source from subparts. }
+  function curl_mime_subparts (part : pcurl_mimepart; subparts : pcurl_mime) :
+    CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_free()
-   *
-   * DESCRIPTION
-   *
-   * Provided for de-allocation in the same translation unit that did the
-   * allocation. Added in libcurl 7.10
-   *)
-   procedure curl_free (p : Pointer); cdecl; external CurlLib;
+  { NAME curl_mime_headers()
 
-  (*
-   * NAME curl_global_init()
-   *
-   * DESCRIPTION
-   *
-   * curl_global_init() should be invoked exactly once for each application that
-   * uses libcurl and before any call of other libcurl functions.
-   *
-   * This function is not thread-safe!
-   *)
-   function curl_global_init (flags : Longint) : CURLcode; cdecl;
-     external CurlLib;
+    DESCRIPTION
+    Set mime part headers. }
+  function curl_mime_headers (part : pcurl_mimepart; headers : pcurl_slist;
+    take_ownership : Integer) : CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_global_init_mem()
-   *
-   * DESCRIPTION
-   *
-   * curl_global_init() or curl_global_init_mem() should be invoked exactly once
-   * for each application that uses libcurl.  This function can be used to
-   * initialize libcurl and set user defined memory management callback
-   * functions.  Users can implement memory management routines to check for
-   * memory leaks, check for mis-use of the curl library etc.  User registered
-   * callback routines with be invoked by this library instead of the system
-   * memory management routines like malloc, free etc.
-   *)
-   function curl_global_init_mem (flags : Longint; m : curl_malloc_callback;
-     f : curl_free_callback; r : curl_realloc_callback;
-     s : curl_strdup_callback; c : curl_calloc_callback) : CURLcode; cdecl;
-     external CurlLib;
+  { NAME curl_formadd()
 
-  (*
-   * NAME curl_global_cleanup()
-   *
-   * DESCRIPTION
-   *
-   * curl_global_cleanup() should be invoked exactly once for each application
-   * that uses libcurl
-   *)
-   procedure curl_global_cleanup; cdecl; external CurlLib;
+    DESCRIPTION
+    Pretty advanced function for building multi-part formposts. Each invoke
+    adds one part that together construct a full post. Then use
+    CURLOPT_HTTPPOST to send it off to libcurl. }
+  function curl_formadd (httppost : ppcurl_httppost;
+    lastpost : ppcurl_httppost) : CURLFORMcode; cdecl; varargs;
+    external CurlLib;
 
-  (*
-   * NAME curl_global_sslset()
-   *
-   * DESCRIPTION
-   *
-   * When built with multiple SSL backends, curl_global_sslset() allows to
-   * choose one. This function can only be called once, and it must be called
-   * *before* curl_global_init().
-   *
-   * The backend can be identified by the id (e.g. CURLSSLBACKEND_OPENSSL). The
-   * backend can also be specified via the name parameter (passing -1 as id).
-   * If both id and name are specified, the name will be ignored. If neither id
-   * nor name are specified, the function will fail with
-   * CURLSSLSET_UNKNOWN_BACKEND and set the "avail" pointer to the
-   * NULL-terminated list of available backends.
-   *
-   * Upon success, the function returns CURLSSLSET_OK.
-   *
-   * If the specified SSL backend is not available, the function returns
-   * CURLSSLSET_UNKNOWN_BACKEND and sets the "avail" pointer to a NULL-
-   * terminated list of available SSL backends.
-   *
-   * The SSL backend can be set only once. If it has already been set, a
-   * subsequent attempt to change it will result in a CURLSSLSET_TOO_LATE.
-   *)
-   function curl_global_sslset (id : curl_sslbackend; const name : PChar;
-     const avail : pppcurl_ssl_backend) : CURLsslset; cdecl; external CurlLib;
+  { NAME curl_formget()
 
-  (*
-   * NAME curl_slist_append()
-   *
-   * DESCRIPTION
-   *
-   * Appends a string to a linked list. If no list exists, it will be created
-   * first. Returns the new list, after appending.
-   *)
-   function curl_slist_append (list : pcurl_slist; const str : PChar) :
-     pcurl_slist; cdecl; external CurlLib;
+    DESCRIPTION
+    Serialize a curl_httppost struct built with curl_formadd().
+    Accepts a void pointer as second argument which will be passed to
+    the curl_formget_callback function.
+    Returns 0 on success. }
+  function curl_formget (form : pcurl_httppost; arg : Pointer;
+    append : curl_formget_callback) : Integer; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_slist_free_all()
-   *
-   * DESCRIPTION
-   *
-   * free a previously built curl_slist.
-   *)
-   procedure curl_slist_free_all (list : pcurl_slist); cdecl; external CurlLib;
+  { NAME curl_formfree()
 
-  (*
-   * NAME curl_getdate()
-   *
-   * DESCRIPTION
-   *
-   * Returns the time, in seconds since 1 Jan 1970 of the time string given in
-   * the first argument. The time argument in the second parameter is unused
-   * and should be set to NULL.
-   *)
-   function curl_getdate (const p : PChar; const unused : PInt64) : Int64;
-     cdecl; external CurlLib;
+    DESCRIPTION
+    Free a multipart formpost previously built with curl_formadd(). }
+  procedure curl_formfree (form : pcurl_httppost); cdecl; external CurlLib;
 
-   function curl_share_init : CURLSH; cdecl; external CurlLib;
-   function curl_share_setopt (handle : CURLSH; option : CURLSHoption) :
-     CURLSHcode; cdecl; varargs; external CurlLib;
-   function curl_share_cleanup (handle : CURLSH) : CURLSHcode; cdecl;
-     external CurlLib;
+  { NAME curl_getenv()
 
-  (*
-   * NAME curl_version_info()
-   *
-   * DESCRIPTION
-   *
-   * This function returns a pointer to a static copy of the version info
-   * struct. See above.
-   *)
+    DESCRIPTION
+    Returns a malloc()'ed string that MUST be curl_free()ed after usage is
+    complete. DEPRECATED - see lib/README.curlx }
+  function curl_getenv (const variable : PChar) : PChar; cdecl;
+    external CurlLib;
+
+  { NAME curl_version()
+
+    DESCRIPTION
+    Returns a static ascii string of the libcurl version. }
+  function curl_version : PChar; cdecl; external CurlLib;
+
+  { NAME curl_easy_escape()
+
+    DESCRIPTION
+    Escapes URL strings (converts all letters consider illegal in URLs to their
+    %XX versions). This function returns a new allocated string or NULL if an
+    error occurred. }
+  function curl_easy_escape (handle : CURL; const str : PChar;
+    length : Integer) : PChar; cdecl; external CurlLib;
+
+  { the previous version: }
+  function curl_escape (const std : PChar; length : Integer) : PChar; cdecl;
+    external CurlLib;
+
+  { NAME curl_easy_unescape()
+
+    DESCRIPTION
+    Unescapes URL encoding in strings (converts all %XX codes to their 8bit
+    versions). This function returns a new allocated string or NULL if an error
+    occurred.
+    Conversion Note: On non-ASCII platforms the ASCII %XX codes are
+    converted into the host encoding. }
+  function curl_easy_unescape (handle : CURL; const str : PChar;
+    length : Integer; outlength : PInteger) : PChar; cdecl; external CurlLib;
+
+  { the previous version  }
+  function curl_unescape (const str : PChar; length : Integer) : PChar; cdecl;
+    external CurlLib;
+
+  { NAME curl_free()
+
+    DESCRIPTION
+    Provided for de-allocation in the same translation unit that did the
+    allocation. Added in libcurl 7.10 }
+  procedure curl_free (p : Pointer); cdecl; external CurlLib;
+
+  { NAME curl_global_init()
+
+    DESCRIPTION
+    curl_global_init() should be invoked exactly once for each application that
+    uses libcurl and before any call of other libcurl functions.
+
+    This function is not thread-safe! }
+  function curl_global_init (flags : Longint) : CURLcode; cdecl;
+    external CurlLib;
+
+  { NAME curl_global_init_mem()
+
+    DESCRIPTION
+    curl_global_init() or curl_global_init_mem() should be invoked exactly once
+    for each application that uses libcurl.  This function can be used to
+    initialize libcurl and set user defined memory management callback
+    functions.  Users can implement memory management routines to check for
+    memory leaks, check for mis-use of the curl library etc.  User registered
+    callback routines with be invoked by this library instead of the system
+    memory management routines like malloc, free etc. }
+  function curl_global_init_mem (flags : Longint; m : curl_malloc_callback;
+    f : curl_free_callback; r : curl_realloc_callback;
+    s : curl_strdup_callback; c : curl_calloc_callback) : CURLcode; cdecl;
+    external CurlLib;
+
+  { NAME curl_global_cleanup()
+
+    DESCRIPTION
+    curl_global_cleanup() should be invoked exactly once for each application
+    that uses libcurl }
+  procedure curl_global_cleanup; cdecl; external CurlLib;
+
+  { NAME curl_global_sslset()
+
+    DESCRIPTION
+    When built with multiple SSL backends, curl_global_sslset() allows to
+    choose one. This function can only be called once, and it must be called
+    *before* curl_global_init().
+
+    The backend can be identified by the id (e.g. CURLSSLBACKEND_OPENSSL). The
+    backend can also be specified via the name parameter (passing -1 as id).
+    If both id and name are specified, the name will be ignored. If neither id
+    nor name are specified, the function will fail with
+    CURLSSLSET_UNKNOWN_BACKEND and set the "avail" pointer to the
+    NULL-terminated list of available backends.
+
+    Upon success, the function returns CURLSSLSET_OK.
+
+    If the specified SSL backend is not available, the function returns
+    CURLSSLSET_UNKNOWN_BACKEND and sets the "avail" pointer to a NULL-
+    terminated list of available SSL backends.
+
+    The SSL backend can be set only once. If it has already been set, a
+    subsequent attempt to change it will result in a CURLSSLSET_TOO_LATE. }
+  function curl_global_sslset (id : curl_sslbackend; const name : PChar;
+    const avail : pppcurl_ssl_backend) : CURLsslset; cdecl; external CurlLib;
+
+  { NAME curl_slist_append()
+
+    DESCRIPTION
+    Appends a string to a linked list. If no list exists, it will be created
+    first. Returns the new list, after appending. }
+  function curl_slist_append (list : pcurl_slist; const str : PChar) :
+    pcurl_slist; cdecl; external CurlLib;
+
+  { NAME curl_slist_free_all()
+
+    DESCRIPTION
+    free a previously built curl_slist. }
+  procedure curl_slist_free_all (list : pcurl_slist); cdecl; external CurlLib;
+
+  { NAME curl_getdate()
+
+    DESCRIPTION
+    Returns the time, in seconds since 1 Jan 1970 of the time string given in
+    the first argument. The time argument in the second parameter is unused
+    and should be set to NULL. }
+  function curl_getdate (const p : PChar; const unused : PInt64) : Int64;
+    cdecl; external CurlLib;
+
+  function curl_share_init : CURLSH; cdecl; external CurlLib;
+  function curl_share_setopt (handle : CURLSH; option : CURLSHoption) :
+    CURLSHcode; cdecl; varargs; external CurlLib;
+  function curl_share_cleanup (handle : CURLSH) : CURLSHcode; cdecl;
+    external CurlLib;
+
+  { NAME curl_version_info()
+
+    DESCRIPTION
+    This function returns a pointer to a static copy of the version info
+    struct. See above. }
   function curl_version_info (ver : CURLversion) : pcurl_version_info_data;
     cdecl; external CurlLib;
 
-   (*
-   * NAME curl_easy_strerror()
-   *
-   * DESCRIPTION
-   *
-   * The curl_easy_strerror function may be used to turn a CURLcode value
-   * into the equivalent human readable error string.  This is useful
-   * for printing meaningful error messages.
-   *)
+  { NAME curl_easy_strerror()
+
+    DESCRIPTION
+    The curl_easy_strerror function may be used to turn a CURLcode value
+    into the equivalent human readable error string.  This is useful
+    for printing meaningful error messages. }
   function curl_easy_strerror (code : CURLcode) : PChar; cdecl;
     external CurlLib;
 
-  (*
-   * NAME curl_share_strerror()
-   *
-   * DESCRIPTION
-   *
-   * The curl_share_strerror function may be used to turn a CURLSHcode value
-   * into the equivalent human readable error string.  This is useful
-   * for printing meaningful error messages.
-   *)
+  { NAME curl_share_strerror()
+
+    DESCRIPTION
+    The curl_share_strerror function may be used to turn a CURLSHcode value
+    into the equivalent human readable error string.  This is useful
+    for printing meaningful error messages. }
   function curl_share_strerror (code : CURLSHcode) : PChar; cdecl;
     external CurlLib;
 
-  (*
-   * NAME curl_easy_pause()
-   *
-   * DESCRIPTION
-   *
-   * The curl_easy_pause function pauses or unpauses transfers. Select the new
-   * state by setting the bitmask, use the convenience defines below.
-   *
-   *)
+  { NAME curl_easy_pause()
+
+    DESCRIPTION
+    The curl_easy_pause function pauses or unpauses transfers. Select the new
+    state by setting the bitmask, use the convenience defines below. }
   function curl_easy_pause (handle : CURL; bitmask : Integer) : CURLcode;
     cdecl; external CurlLib;
 
@@ -2804,212 +2727,172 @@ type
     external CurlLib;
   procedure curl_easy_cleanup (handle : CURL); cdecl; external CurlLib;
 
-  (*
-   * NAME curl_easy_getinfo()
-   *
-   * DESCRIPTION
-   *
-   * Request internal information from the curl session with this function.  The
-   * third argument MUST be a pointer to a long, a pointer to a char * or a
-   * pointer to a double (as the documentation describes elsewhere).  The data
-   * pointed to will be filled in accordingly and can be relied upon only if the
-   * function returns CURLE_OK.  This function is intended to get used *AFTER* a
-   * performed transfer, all results from this function are undefined until the
-   * transfer is completed.
-   *)
+  { NAME curl_easy_getinfo()
+
+    DESCRIPTION
+    Request internal information from the curl session with this function.  The
+    third argument MUST be a pointer to a long, a pointer to a char * or a
+    pointer to a double (as the documentation describes elsewhere).  The data
+    pointed to will be filled in accordingly and can be relied upon only if the
+    function returns CURLE_OK.  This function is intended to get used *AFTER* a
+    performed transfer, all results from this function are undefined until the
+    transfer is completed. }
   function curl_easy_getinfo (handle : CURL; info : CURLINFO) : CURLcode;
     cdecl; varargs; external CurlLib;
 
-  (*
-   * NAME curl_easy_duphandle()
-   *
-   * DESCRIPTION
-   *
-   * Creates a new curl session handle with the same options set for the handle
-   * passed in. Duplicating a handle could only be a matter of cloning data and
-   * options, internal state info and things like persistent connections cannot
-   * be transferred. It is useful in multithreaded applications when you can run
-   * curl_easy_duphandle() for each new thread to avoid a series of identical
-   * curl_easy_setopt() invokes in every thread.
-   *)
+  { NAME curl_easy_duphandle()
+
+    DESCRIPTION
+    Creates a new curl session handle with the same options set for the handle
+    passed in. Duplicating a handle could only be a matter of cloning data and
+    options, internal state info and things like persistent connections cannot
+    be transferred. It is useful in multithreaded applications when you can run
+    curl_easy_duphandle() for each new thread to avoid a series of identical
+    curl_easy_setopt() invokes in every thread. }
   function curl_easy_duphandle (handle : CURL) : CURL; cdecl;
     external CurlLib;
 
-  (*
-   * NAME curl_easy_reset()
-   *
-   * DESCRIPTION
-   *
-   * Re-initializes a CURL handle to the default values. This puts back the
-   * handle to the same state as it was in when it was just created.
-   *
-   * It does keep: live connections, the Session ID cache, the DNS cache and the
-   * cookies.
-   *)
+  { NAME curl_easy_reset()
+
+    DESCRIPTION
+    Re-initializes a CURL handle to the default values. This puts back the
+    handle to the same state as it was in when it was just created.
+
+    It does keep: live connections, the Session ID cache, the DNS cache and the
+    cookies. }
   procedure curl_easy_reset (handle : CURL); cdecl; external CurlLib;
 
-  (*
-   * NAME curl_easy_recv()
-   *
-   * DESCRIPTION
-   *
-   * Receives data from the connected socket. Use after successful
-   * curl_easy_perform() with CURLOPT_CONNECT_ONLY option.
-   *)
+  { NAME curl_easy_recv()
+
+    DESCRIPTION
+    Receives data from the connected socket. Use after successful
+    curl_easy_perform() with CURLOPT_CONNECT_ONLY option. }
   function curl_easy_recv (handle : CURL; buffer : Pointer; buflen : QWord;
     n : PQWord) : CURLcode; cdecl; external CurlLib;
 
-  (*
-   * NAME curl_easy_send()
-   *
-   * DESCRIPTION
-   *
-   * Sends data over the connected socket. Use after successful
-   * curl_easy_perform() with CURLOPT_CONNECT_ONLY option.
-   *)
+  { NAME curl_easy_send()
+
+    DESCRIPTION
+    Sends data over the connected socket. Use after successful
+    curl_easy_perform() with CURLOPT_CONNECT_ONLY option. }
   function curl_easy_send (handle : CURL; const buffer : Pointer;
     buflen : QWord; n : PQWord) : CURLcode; cdecl; external CurlLib;
 
-  (*
-   * Name:    curl_multi_init()
-   *
-   * Desc:    inititalize multi-style curl usage
-   *
-   * Returns: a new CURLM handle to use in all 'curl_multi' functions.
-   *)
+  { Name:    curl_multi_init()
+
+    Desc:    inititalize multi-style curl usage
+    Returns: a new CURLM handle to use in all 'curl_multi' functions. }
   function curl_multi_init : CURLM; cdecl; external CurlLib;
 
-  (*
-   * Name:    curl_multi_add_handle()
-   *
-   * Desc:    add a standard curl handle to the multi stack
-   *
-   * Returns: CURLMcode type, general multi error code.
-   *)
+  { Name:    curl_multi_add_handle()
+
+    Desc:    add a standard curl handle to the multi stack
+    Returns: CURLMcode type, general multi error code. }
   function curl_multi_add_handle (multi_handle : CURLM; curl_handle : CURL) :
     CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:    curl_multi_remove_handle()
-  *
-  * Desc:    removes a curl handle from the multi stack again
-  *
-  * Returns: CURLMcode type, general multi error code.
-  *)
+  { Name:    curl_multi_remove_handle()
+
+    Desc:    removes a curl handle from the multi stack again
+    Returns: CURLMcode type, general multi error code. }
   function curl_multi_remove_handle (multi_handle : CURLM; curl_handle : CURL) :
     CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:    curl_multi_fdset()
-  *
-  * Desc:    Ask curl for its fd_set sets. The app can use these to select() or
-  *          poll() on. We want curl_multi_perform() called as soon as one of
-  *          them are ready.
-  *
-  * Returns: CURLMcode type, general multi error code.
-  *)
+  { Name:    curl_multi_fdset()
+
+    Desc:    Ask curl for its fd_set sets. The app can use these to select() or
+             poll() on. We want curl_multi_perform() called as soon as one of
+             them are ready.
+    Returns: CURLMcode type, general multi error code. }
   function curl_multi_fdset (multi_handle : CURLM; read_fd_set : pFDSet;
     write_fd_set : pFDSet; exc_fd_set : pFDSet; max_fd : PInteger) :
     CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:     curl_multi_wait()
-  *
-  * Desc:     Poll on all fds within a CURLM set as well as any
-  *           additional fds passed to the function.
-  *
-  * Returns:  CURLMcode type, general multi error code.
-  *)
+  { Name:     curl_multi_wait()
+
+    Desc:     Poll on all fds within a CURLM set as well as any
+              additional fds passed to the function.
+    Returns:  CURLMcode type, general multi error code. }
   function curl_multi_wait (multi_handle : CURLM;
     extra_fds : array of curl_waitfd; extra_nfds : Cardinal;
     timeout_ms : Integer; ret : PInteger) : CURLMcode; cdecl;
     external CurlLib;
 
- (*
-  * Name:    curl_multi_perform()
-  *
-  * Desc:    When the app thinks there's data available for curl it calls this
-  *          function to read/write whatever there is right now. This returns
-  *          as soon as the reads and writes are done. This function does not
-  *          require that there actually is data available for reading or that
-  *          data can be written, it can be called just in case. It returns
-  *          the number of handles that still transfer data in the second
-  *          argument's integer-pointer.
-  *
-  * Returns: CURLMcode type, general multi error code. *NOTE* that this only
-  *          returns errors etc regarding the whole multi stack. There might
-  *          still have occurred problems on invidual transfers even when this
-  *          returns OK.
-  *)
+  { Name:    curl_multi_perform()
+
+    Desc:    When the app thinks there's data available for curl it calls this
+             function to read/write whatever there is right now. This returns
+             as soon as the reads and writes are done. This function does not
+             require that there actually is data available for reading or that
+             data can be written, it can be called just in case. It returns
+             the number of handles that still transfer data in the second
+             argument's integer-pointer.
+
+    Returns: CURLMcode type, general multi error code. *NOTE* that this only
+             returns errors etc regarding the whole multi stack. There might
+             still have occurred problems on invidual transfers even when this
+             returns OK. }
   function curl_multi_perform (multi_handle : CURLM; running_handles :
     PInteger) : CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:    curl_multi_cleanup()
-  *
-  * Desc:    Cleans up and removes a whole multi stack. It does not free or
-  *          touch any individual easy handles in any way. We need to define
-  *          in what state those handles will be if this function is called
-  *          in the middle of a transfer.
-  *
-  * Returns: CURLMcode type, general multi error code.
-  *)
+  { Name:    curl_multi_cleanup()
+
+    Desc:    Cleans up and removes a whole multi stack. It does not free or
+             touch any individual easy handles in any way. We need to define
+             in what state those handles will be if this function is called
+             in the middle of a transfer.
+
+    Returns: CURLMcode type, general multi error code. }
   function curl_multi_cleanup (multi_handle : CURLM) : CURLMcode; cdecl;
     external CurlLib;
 
- (*
-  * Name:    curl_multi_info_read()
-  *
-  * Desc:    Ask the multi handle if there's any messages/informationals from
-  *          the individual transfers. Messages include informationals such as
-  *          error code from the transfer or just the fact that a transfer is
-  *          completed. More details on these should be written down as well.
-  *
-  *          Repeated calls to this function will return a new struct each
-  *          time, until a special "end of msgs" struct is returned as a signal
-  *          that there is no more to get at this point.
-  *
-  *          The data the returned pointer points to will not survive calling
-  *          curl_multi_cleanup().
-  *
-  *          The 'CURLMsg' struct is meant to be very simple and only contain
-  *          very basic information. If more involved information is wanted,
-  *          we will provide the particular "transfer handle" in that struct
-  *          and that should/could/would be used in subsequent
-  *          curl_easy_getinfo() calls (or similar). The point being that we
-  *          must never expose complex structs to applications, as then we'll
-  *          undoubtably get backwards compatibility problems in the future.
-  *
-  * Returns: A pointer to a filled-in struct, or NULL if it failed or ran out
-  *          of structs. It also writes the number of messages left in the
-  *          queue (after this read) in the integer the second argument points
-  *          to.
-  *)
+  { Name:    curl_multi_info_read()
+
+    Desc:    Ask the multi handle if there's any messages/informationals from
+             the individual transfers. Messages include informationals such as
+             error code from the transfer or just the fact that a transfer is
+             completed. More details on these should be written down as well.
+
+             Repeated calls to this function will return a new struct each
+             time, until a special "end of msgs" struct is returned as a signal
+             that there is no more to get at this point.
+
+             The data the returned pointer points to will not survive calling
+             curl_multi_cleanup().
+
+             The 'CURLMsg' struct is meant to be very simple and only contain
+             very basic information. If more involved information is wanted,
+             we will provide the particular "transfer handle" in that struct
+             and that should/could/would be used in subsequent
+             curl_easy_getinfo() calls (or similar). The point being that we
+             must never expose complex structs to applications, as then we'll
+             undoubtably get backwards compatibility problems in the future.
+
+    Returns: A pointer to a filled-in struct, or NULL if it failed or ran out
+             of structs. It also writes the number of messages left in the
+             queue (after this read) in the integer the second argument points
+             to. }
   function curl_multi_info_read (multi_handle : CURLM;
     mdgs_in_queue : PInteger) : CURLMsg_rec; cdecl; external CurlLib;
 
 
- (*
-  * Name:    curl_multi_strerror()
-  *
-  * Desc:    The curl_multi_strerror function may be used to turn a CURLMcode
-  *          value into the equivalent human readable error string.  This is
-  *          useful for printing meaningful error messages.
-  *
-  * Returns: A pointer to a zero-terminated error message.
-  *)
+  { Name:    curl_multi_strerror()
+
+    Desc:    The curl_multi_strerror function may be used to turn a CURLMcode
+             value into the equivalent human readable error string.  This is
+             useful for printing meaningful error messages.
+
+    Returns: A pointer to a zero-terminated error message. }
   function curl_multi_strerror (code : CURLMcode) : PChar; cdecl;
     external CurlLib;
 
- (*
-  * Name:    curl_multi_socket() and
-  *          curl_multi_socket_all()
-  *
-  * Desc:    An alternative version of curl_multi_perform() that allows the
-  *          application to pass in one of the file descriptors that have been
-  *          detected to have "action" on them and let libcurl perform.
-  *          See man page for details.
-  *)
+  { Name:    curl_multi_socket() and
+             curl_multi_socket_all()
+
+    Desc:    An alternative version of curl_multi_perform() that allows the
+             application to pass in one of the file descriptors that have been
+             detected to have "action" on them and let libcurl perform.
+             See man page for details. }
   function curl_multi_socket (multi_handle : CURLM; s : curl_socket_t;
     running_handles : PInteger) : CURLMcode; cdecl; external CurlLib;
 
@@ -3020,54 +2903,70 @@ type
   function curl_multi_socket_all (multi_handle : CURLM;
     running_handles : PInteger) : CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:    curl_multi_timeout()
-  *
-  * Desc:    Returns the maximum number of milliseconds the app is allowed to
-  *          wait before curl_multi_socket() or curl_multi_perform() must be
-  *          called (to allow libcurl's timed events to take place).
-  *
-  * Returns: CURLM error code.
-  *)
+  { Name:    curl_multi_timeout()
+
+    Desc:    Returns the maximum number of milliseconds the app is allowed to
+             wait before curl_multi_socket() or curl_multi_perform() must be
+             called (to allow libcurl's timed events to take place).
+
+    Returns: CURLM error code. }
   function curl_multi_timeout (multi_handle : CURLM; miliseconds : PLongint) :
     CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name:    curl_multi_setopt()
-  *
-  * Desc:    Sets options for the multi handle.
-  *
-  * Returns: CURLM error code.
-  *)
+  { Name:    curl_multi_setopt()
+
+    Desc:    Sets options for the multi handle.
+
+    Returns: CURLM error code. }
   function curl_multi_setopt (multi_handle : CURLM; option : CURLMoption) :
     CURLMcode; cdecl; varargs; external CurlLib;
 
- (*
-  * Name:    curl_multi_assign()
-  *
-  * Desc:    This function sets an association in the multi handle between the
-  *          given socket and a private pointer of the application. This is
-  *          (only) useful for curl_multi_socket uses.
-  *
-  * Returns: CURLM error code.
-  *)
+  { Name:    curl_multi_assign()
+
+    Desc:    This function sets an association in the multi handle between the
+             given socket and a private pointer of the application. This is
+             (only) useful for curl_multi_socket uses.
+
+    Returns: CURLM error code. }
   function curl_multi_assign (multi_handle : CURLM; sockfd : curl_socket_t;
     sockp : Pointer) : CURLMcode; cdecl; external CurlLib;
 
- (*
-  * Name: curl_push_callback
-  *
-  * Desc: This callback gets called when a new stream is being pushed by the
-  *       server. It approves or denies the new stream.
-  *
-  * Returns: CURL_PUSH_OK or CURL_PUSH_DENY.
-  *)
+  { Name: curl_push_callback
+
+    Desc: This callback gets called when a new stream is being pushed by the
+          server. It approves or denies the new stream.
+
+    Returns: CURL_PUSH_OK or CURL_PUSH_DENY. }
   function curl_pushheader_bynum (h : pcurl_pushheaders; num : QWord) : PChar;
     cdecl; external CurlLib;
 
   function curl_pushheader_byname (h : pcurl_pushheaders; const name : PChar) :
     PChar; cdecl; external CurlLib;
 
+  { curl_url() creates a new CURLU handle and returns a pointer to it.
+    Must be freed with curl_url_cleanup(). }
+  function curl_url : PCURLU; cdecl; external CurlLib;
+
+  { curl_url_cleanup() frees the CURLU handle and related resources used for
+    the URL parsing. It will not free strings previously returned with the URL
+    API. }
+  procedure curl_url_cleanup (handle : PCURLU); cdecl; external CurlLib;
+
+  { curl_url_dup() duplicates a CURLU handle and returns a new copy. The new
+    handle must also be freed with curl_url_cleanup(). }
+  function curl_url_dup (in_handle : PCURLU) : PCURLU; cdecl; external CurlLib;
+
+  { curl_url_get() extracts a specific part of the URL from a CURLU
+    handle. Returns error code. The returned pointer MUST be freed with
+    curl_free() afterwards. }
+  function curl_url_get (handle : PCURLU; what : CURLUPart; part : PPChar;
+    flags : Cardinal) : CURLUcode; cdecl; external CurlLib;
+
+  { curl_url_set() sets a specific part of the URL in a CURLU handle. Returns
+    error code. The passed in string will be copied. Passing a NULL instead of
+    a part string, clears that part. }
+  function curl_url_set (handle : PCURLU; what : CURLUPart; const part : PChar;
+    flags : Cardinal) : CURLUcode; cdecl; external CurlLib;
 
 implementation
 
