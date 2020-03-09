@@ -1,6 +1,9 @@
 libPasCURL
 ==========
-It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/).
+It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/). 
+libcurl is the library is using for transferring data specified with URL syntax,
+supporting HTTP, HTTPS, FTP, FTPS, GOPHER, TFTP, SCP, SFTP, SMB, TELNET, DICT, LDAP, LDAPS, FILE, IMAP, SMTP, POP3, RTSP and RTMP.
+
 
 Documentation you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
 
