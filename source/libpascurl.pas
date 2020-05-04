@@ -210,6 +210,11 @@ const
     if possible. The OpenSSL backend has this ability. }
   CURLSSLOPT_NO_PARTIALCHAIN                                        = 1 shl 2;
 
+  { - REVOKE_BEST_EFFORT tells libcurl to ignore certificate revocation offline
+   checks and ignore missing revocation list for those SSL backends where such
+   behavior is present. }
+   CURLSSLOPT_REVOKE_BEST_EFFORT                                    = 1 shl 3;
+
   { The default connection attempt delay in milliseconds for happy eyeballs.
     CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS.3 and happy-eyeballs-timeout-ms.d document
     this value, keep them in sync. }
@@ -258,6 +263,7 @@ const
   CURLPROTO_GOPHER                                                  = 1 shl 25;
   CURLPROTO_SMB                                                     = 1 shl 26;
   CURLPROTO_SMBS                                                    = 1 shl 27;
+  CURLPROTO_MQTT                                                    = 1 shl 28;
   CURLPROTO_ALL                 { enable everything }               = (Not 0);
 
   { long may be 32 or 64 bits, but we should never depend on anything else
@@ -753,6 +759,8 @@ type
                                      inside a callback }
     CURLE_AUTH_ERROR,           { 94 - an authentication function returned an
                                      error }
+    CURLE_HTTP3,                { 95 - An HTTP/3 layer problem }
+    CURLE_QUIC_CONNECT_ERROR,   { 96 - QUIC connection error }
     CURL_LAST                   { never use! }
   );
 
@@ -1062,7 +1070,7 @@ type
     { Function that will be called instead of the internal progress display
       function. This function should be defined as the curl_progress_callback
       prototype defines. }
-    { CURLOPT_PROGRESSFUNCTION              = CURLOPTTYPE_FUNCTIONPOINT + 56 }
+    CURLOPT_PROGRESSFUNCTION                  = CURLOPTTYPE_FUNCTIONPOINT + 56 ,
 
     { Data passed to the CURLOPT_PROGRESSFUNCTION and CURLOPT_XFERINFOFUNCTION
       callbacks }
