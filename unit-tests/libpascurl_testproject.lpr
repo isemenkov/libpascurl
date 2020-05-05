@@ -4,7 +4,7 @@ program libpascurl_testproject;
 
 uses
   Interfaces, Forms, GuiTestRunner, timeintervaltestcase, datasizetestcase,
-  pascurl;
+  pascurl, http, result, timeinterval, datasize;
 
 {$R *.res}
 
