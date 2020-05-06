@@ -41,28 +41,9 @@ unit http;
 interface
 
 uses
-  Classes, SysUtils, fgl, libpascurl, result, timeinterval, datasize;
+  Classes, SysUtils, libpascurl, result, timeinterval, datasize, errorstack;
 
 type
-  { TErrorStack }
-  { Store curl_easy_setopt function errors }
-
-  PErrorStack = ^TErrorStack;
-  TErrorStack = class
-  private
-    type
-      TCURLCodeList = specialize TFPGList<CURLcode>;
-  private
-    FList : TCURLCodeList;
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    procedure Push (ACode : CURLcode);
-    function Pop : CURLcode;
-    function Count : Cardinal;
-  end;
-
   { Simple request to get data by http(s) protocol }
   THTTPPlainRequest = class
   public
@@ -87,55 +68,25 @@ type
     function Port (APort : Word) : THTTPPlainRequest;
     function UserAgent (AAgent : String) : THTTPPlainRequest;
     function FollowRedirect (AFollow : Boolean = True) : THTTPPlainRequest;
+
     function Content : THTTPPlainResult;
+    function ErrorMessage : THTTPPlainResult;
   private
     class function WriteFunctionCallback (ptr : PChar; size : LongWord; nmemb :
       LongWord; data : Pointer) : LongWord; {$IFNDEF DEBUG}inline;{$ENDIF}
     function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
       {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    function HasInfo : Boolean; {$IFNDEF DEBUG}inline;{$ENDIF}
   private
     FHandle : CURL;
     FErrorStack : TErrorStack;
     FBuffer : TMemoryStream;
     FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
+    FHasInfo : Boolean;
   end;
 
 implementation
-
-{ TErrorStack }
-
-constructor TErrorStack.Create;
-begin
-  FList := TCURLCodeList.Create;
-end;
-
-destructor TErrorStack.Destroy;
-begin
-  FreeAndNil(FList);
-  inherited Destroy;
-end;
-
-procedure TErrorStack.Push(ACode: CURLcode);
-begin
-  if ACode <> CURLE_OK then
-  begin
-    FList.Add(ACode);
-  end;
-end;
-
-function TErrorStack.Pop: CURLcode;
-begin
-  if FList.Count > 0 then
-  begin
-    Result := FList.First;
-    FList.Delete(1);
-  end;
-end;
-
-function TErrorStack.Count: Cardinal;
-begin
-  Result := FList.Count;
-end;
 
 { THHTPPlainRequest }
 
@@ -156,6 +107,7 @@ begin
   FHandle := curl_easy_init;
   FErrorStack := TErrorStack.Create;
   FBuffer := TMemoryStream.Create;
+  FHasInfo := False;
 
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
@@ -164,6 +116,8 @@ begin
     Longint(True)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT,
     PChar(DEFAULT_USER_AGENT)));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
+    PChar(FErrorBuffer)));
 end;
 
 constructor THTTPPlainRequest.Create (AURL : String);
@@ -171,6 +125,7 @@ begin
   FHandle := curl_easy_init;
   FErrorStack := TErrorStack.Create;
   FBuffer := TMemoryStream.Create;
+  FHasInfo := False;
 
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
@@ -180,6 +135,8 @@ begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_URL, PChar(AURL)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT,
     PChar(DEFAULT_USER_AGENT)));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
+    PChar(FErrorBuffer)));
 end;
 
 destructor THTTPPlainRequest.Destroy;
@@ -230,6 +187,30 @@ begin
   begin
     Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
   end;
+end;
+
+function THTTPPlainRequest.HasInfo : Boolean;
+begin
+  if (FHandle <> nil) and (not FHasInfo) then
+  begin
+    FHasInfo := (curl_easy_perform(FHandle) = CURLE_OK);
+    Result := FHasInfo;
+    Exit;
+  end;
+
+  Result := FHasInfo;
+end;
+
+function THTTPPlainRequest.ErrorMessage : THTTPPlainResult;
+begin
+  if not FHasInfo then
+  begin
+    Result := THTTPPlainResult.Create(String(FErrorBuffer),
+      ERROR_SOMETHING_WRONG, True);
+    Exit;
+  end;
+
+  Result := THTTPPlainResult.Create('', ERROR_NONE, False);
 end;
 
 end.
