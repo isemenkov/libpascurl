@@ -71,6 +71,9 @@ type
 
     function Content : THTTPPlainResult;
     function ErrorMessage : THTTPPlainResult;
+
+    function EffectiveUrl : THTTPPlainResult;
+    function ContentType : THTTPPlainResult;
   private
     class function WriteFunctionCallback (ptr : PChar; size : LongWord; nmemb :
       LongWord; data : Pointer) : LongWord; {$IFNDEF DEBUG}inline;{$ENDIF}
@@ -211,6 +214,38 @@ begin
   end;
 
   Result := THTTPPlainResult.Create('', ERROR_NONE, False);
+end;
+
+function THTTPPlainRequest.EffectiveUrl : THTTPPlainResult;
+var
+  url : PChar;
+begin
+  if not FHasInfo then
+  begin
+    Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
+    Exit;
+  end;
+
+  New(url);
+  url := '';
+  curl_easy_getinfo(FHandle, CURLINFO_EFFECTIVE_URL, @url);
+  Result := THTTPPlainResult.Create(String(url), ERROR_NONE, True);
+end;
+
+function THTTPPlainRequest.ContentType : THTTPPlainResult;
+var
+  content_type : PChar;
+begin
+  if not FHasInfo then
+  begin
+    Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
+    Exit;
+  end;
+
+  New(content_type);
+  content_type := '';
+  curl_easy_getinfo(FHandle, CURLINFO_CONTENT_TYPE, @content_type);
+  Result := THTTPPlainResult.Create(String(content_type), ERROR_NONE, True);
 end;
 
 end.
