@@ -45,7 +45,8 @@ uses
 
 type
   { Simple request to get data by http(s) protocol }
-  THTTPPlainRequest = class
+  THTTPRequestPlain = class;
+  THTTPSessionPlain = class
   public
     const
       DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
@@ -53,199 +54,194 @@ type
                            'Chrome/71.0.3578.98 Safari/537.36';
 
     type
-      THTTPPlainErrors = (
+      THTTPErrors = (
         ERROR_NONE,
         ERROR_SOMETHING_WRONG
       );
 
-      THTTPPlainResult = specialize TResult<String, THTTPPlainErrors>;
+      THTTPRequestResult = specialize TResult<THTTPRequestPlain, THTTPErrors>;
   public
     constructor Create;
     constructor Create (AURL : String);
     destructor Destroy; override;
 
-    function URL (AURL : String) : THTTPPlainRequest;
-    function Port (APort : Word) : THTTPPlainRequest;
-    function UserAgent (AAgent : String) : THTTPPlainRequest;
-    function FollowRedirect (AFollow : Boolean = True) : THTTPPlainRequest;
+    function URL (AURL : String) : THTTPSessionPlain;
+    function Port (APort : Word) : THTTPSessionPlain;
+    function UserAgent (AAgent : String = DEFAULT_USER_AGENT) :
+      THTTPSessionPlain;
+    function FollowRedirect (AFollow : Boolean = True) : THTTPSessionPlain;
+    function Get : THTTPRequestResult;
+  private
+    FHandle : CURL;
+    FErrorStack : TErrorStack;
+  end;
 
-    function Content : THTTPPlainResult;
-    function ErrorMessage : THTTPPlainResult;
+  THTTPRequestPlain = class
+  public
+    constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
+    destructor Destroy; override;
 
-    function EffectiveUrl : THTTPPlainResult;
-    function ContentType : THTTPPlainResult;
+    function Content : String;
+    function ErrorMessage : String;
+    function EffectiveUrl : String;
+    function ContentType : String;
   private
     class function WriteFunctionCallback (ptr : PChar; size : LongWord; nmemb :
       LongWord; data : Pointer) : LongWord; {$IFNDEF DEBUG}inline;{$ENDIF}
     function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
       {$IFNDEF DEBUG}inline;{$ENDIF}
-
-    function HasInfo : Boolean; {$IFNDEF DEBUG}inline;{$ENDIF}
   private
-    FHandle : CURL;
     FErrorStack : TErrorStack;
+    FHandle : CURL;
     FBuffer : TMemoryStream;
     FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
-    FHasInfo : Boolean;
   end;
 
 implementation
 
-{ THHTPPlainRequest }
+{ THHTPSessionPlain }
 
-class function THTTPPlainRequest.WriteFunctionCallback (ptr : PChar; size :
-  LongWord; nmemb : LongWord; data : Pointer) : LongWord;
-begin
-  Result := THTTPPlainRequest(data).Write(ptr, size, nmemb);
-end;
-
-function THTTPPlainRequest.Write (ptr : PChar; size : LongWord; nmemb :
-  LongWord) : LongWord;
-begin
-  Result := FBuffer.Write(ptr^, size * nmemb);
-end;
-
-constructor THTTPPlainRequest.Create;
+constructor THTTPSessionPlain.Create;
 begin
   FHandle := curl_easy_init;
   FErrorStack := TErrorStack.Create;
-  FBuffer := TMemoryStream.Create;
-  FHasInfo := False;
 
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
-    @THTTPPlainRequest.WriteFunctionCallback));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
     Longint(True)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT,
     PChar(DEFAULT_USER_AGENT)));
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
-    PChar(FErrorBuffer)));
 end;
 
-constructor THTTPPlainRequest.Create (AURL : String);
+constructor THTTPSessionPlain.Create (AURL : String);
 begin
   FHandle := curl_easy_init;
   FErrorStack := TErrorStack.Create;
-  FBuffer := TMemoryStream.Create;
-  FHasInfo := False;
 
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
-    @THTTPPlainRequest.WriteFunctionCallback));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
     Longint(True)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_URL, PChar(AURL)));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT,
     PChar(DEFAULT_USER_AGENT)));
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
-    PChar(FErrorBuffer)));
 end;
 
-destructor THTTPPlainRequest.Destroy;
+destructor THTTPSessionPlain.Destroy;
 begin
   curl_easy_cleanup(FHandle);
-  FreeAndNil(FBuffer);
   FreeAndNil(FErrorStack);
+
+  inherited Destroy;
 end;
 
-function THTTPPlainRequest.URL (AURL : String) : THTTPPlainRequest;
+function THTTPSessionPlain.URL (AURL : String) : THTTPSessionPlain;
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_URL, PChar(AURL)));
   Result := Self;
 end;
 
-function THTTPPlainRequest.Port (APort : Word) : THTTPPlainRequest;
+function THTTPSessionPlain.Port (APort : Word) : THTTPSessionPlain;
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_LOCALPORT,
     Longint(APort)));
   Result := Self;
 end;
 
-function THTTPPlainRequest.UserAgent (AAgent : String) : THTTPPlainRequest;
+function THTTPSessionPlain.UserAgent (AAgent : String) : THTTPSessionPlain;
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_USERAGENT, PChar(AAgent)));
   Result := Self;
 end;
 
-function THTTPPlainRequest.FollowRedirect (AFollow : Boolean) :
-  THTTPPlainRequest;
+function THTTPSessionPlain.FollowRedirect (AFollow : Boolean) :
+  THTTPSessionPlain;
 begin
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_FOLLOWLOCATION,
     Longint(AFollow)));
   Result := Self;
 end;
 
-function THTTPPlainRequest.Content : THTTPPlainResult;
+function THTTPSessionPlain.Get : THTTPRequestResult;
+var
+  Handle : CURL;
+  Request : THTTPRequestPlain;
+  Curl_Ok : Boolean;
+begin
+  Handle := curl_easy_duphandle(FHandle);
+  Request := THTTPRequestPlain.Create(Handle, @FErrorStack);
+  Curl_Ok := curl_easy_perform(Handle) = CURLE_OK;
+  Result := THTTPRequestResult.Create(Request, ERROR_SOMETHING_WRONG, Curl_Ok);
+end;
+
+{ THTTPRequestPlain }
+
+class function THTTPRequestPlain.WriteFunctionCallback (ptr : PChar; size :
+  LongWord; nmemb : LongWord; data : Pointer) : LongWord;
+begin
+  Result := THTTPRequestPlain(data).Write(ptr, size, nmemb);
+end;
+
+function THTTPRequestPlain.Write (ptr : PChar; size : LongWord; nmemb :
+  LongWord) : LongWord;
+begin
+  Result := FBuffer.Write(ptr^, size * nmemb);
+end;
+
+constructor THTTPRequestPlain.Create (AHandle : CURL; AErrorStack :
+  PErrorStack);
+begin
+  FHandle := AHandle;
+  FErrorStack := TErrorStack.Create;
+  FErrorStack := AErrorStack^;
+
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
+    @THTTPRequestPlain.WriteFunctionCallback));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
+    PChar(FErrorBuffer)));
+end;
+
+destructor THTTPRequestPlain.Destroy;
+begin
+  curl_easy_cleanup(FHandle);
+  FreeAndNil(FErrorStack);
+  FreeAndNil(FBuffer);
+
+  inherited Destroy;
+end;
+
+function THTTPRequestPlain.Content : String;
 var
   Stream : TStringStream;
 begin
-  if FHandle <> nil then
-  begin
-    Stream := TStringStream.Create('');
-    Stream.Write(FBuffer.Memory^, FBuffer.Size);
-    Result := THTTPPlainResult.Create(Stream.DataString, ERROR_NONE, True);
-    FreeAndNil(Stream);
-  end else
-  begin
-    Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
-  end;
+  Stream := TStringStream.Create('');
+  Stream.Write(FBuffer.Memory^, FBuffer.Size);
+  Result := Stream.DataString;
+  FreeAndNil(Stream);
 end;
 
-function THTTPPlainRequest.HasInfo : Boolean;
+function THTTPRequestPlain.ErrorMessage : String;
 begin
-  if (FHandle <> nil) and (not FHasInfo) then
-  begin
-    FHasInfo := (curl_easy_perform(FHandle) = CURLE_OK);
-    Result := FHasInfo;
-    Exit;
-  end;
-
-  Result := FHasInfo;
+  Result := String(FErrorBuffer);
 end;
 
-function THTTPPlainRequest.ErrorMessage : THTTPPlainResult;
-begin
-  if not FHasInfo then
-  begin
-    Result := THTTPPlainResult.Create(String(FErrorBuffer),
-      ERROR_SOMETHING_WRONG, True);
-    Exit;
-  end;
-
-  Result := THTTPPlainResult.Create('', ERROR_NONE, False);
-end;
-
-function THTTPPlainRequest.EffectiveUrl : THTTPPlainResult;
+function THTTPRequestPlain.EffectiveUrl : String;
 var
   url : PChar;
 begin
-  if not FHasInfo then
-  begin
-    Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
-    Exit;
-  end;
-
   New(url);
   url := '';
-  curl_easy_getinfo(FHandle, CURLINFO_EFFECTIVE_URL, @url);
-  Result := THTTPPlainResult.Create(String(url), ERROR_NONE, True);
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_EFFECTIVE_URL, @url));
+  Result := String(url);
 end;
 
-function THTTPPlainRequest.ContentType : THTTPPlainResult;
+function THTTPRequestPlain.ContentType : String;
 var
   content_type : PChar;
 begin
-  if not FHasInfo then
-  begin
-    Result := THTTPPlainResult.Create('', ERROR_SOMETHING_WRONG, False);
-    Exit;
-  end;
-
   New(content_type);
   content_type := '';
-  curl_easy_getinfo(FHandle, CURLINFO_CONTENT_TYPE, @content_type);
-  Result := THTTPPlainResult.Create(String(content_type), ERROR_NONE, True);
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_CONTENT_TYPE,
+    @content_type));
+  Result := String(content_type);
 end;
 
 end.
