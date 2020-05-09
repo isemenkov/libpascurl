@@ -43,8 +43,8 @@ uses
   Classes, SysUtils, libpascurl, result, timeinterval, datasize, errorstack;
 
 type
-  { HTTP(S) session result request data }
-  THTTPRequest = class
+  { HTTP(S) session result response data }
+  THTTPResponse = class
   public
     type
       { Result errors code }
@@ -737,6 +737,9 @@ type
     { Return last error message or empty string if none }
     function ErrorMessage : String;
 
+    { Get errno number from last connect failure }
+    function OsErrno : Longint;
+
     { Return all errors }
     function Errors : TErrorStack;
 
@@ -818,7 +821,60 @@ type
     { Get the latest local port number }
     function LocalPort : Longint;
 
+    { Get total time of previous transfer }
+    function TotalTime : TTimeInterval;
 
+    { Get the name lookup time }
+    function NameLookup : TTimeInterval;
+
+    { Get the time until connect }
+    function ConnectTime : TTimeInterval;
+
+    { Get the time until the SSL/SSH handshake is completed
+      When a redirect is followed, the time from each request is added
+      together. }
+    function AppConnectTime : TTimeInterval;
+
+    { Get the time until the file transfer start
+      When a redirect is followed, the time from each request is added
+      together. }
+    function PretransferTime : TTimeInterval;
+
+    { Get time until the first byte is received
+      When a redirect is followed, the time from each request is added
+      together. }
+    function StartTransferTime : TTimeInterval;
+
+    { Get the time for all redirection steps
+      When a redirect is followed, the time from each request is added
+      together. }
+    function RedirectTime : TTimeInterval;
+
+    { Returns the Retry-After retry delay
+      The information from the "Retry-After:" header. Returns zero delay if
+      there was no header. }
+    function RetryAfterDelay : TTimeInterval;
+
+    { Get the last socket used
+
+      If the socket is no longer valid, -1 is returned. When you finish working
+      with the socket, you must call curl_easy_cleanup() as usual and let
+      libcurl close the socket and cleanup other resources associated with the
+      handle. }
+    function LastSocket : Longint;
+
+    { Get the active socket }
+    function ActiveSocket : curl_socket_t;
+
+    { Get info on unmet time conditional
+
+      Receive the TRUE if the condition provided in the previous request didn't
+      match. Alas, if this returns a TRUE you know that the reason you didn't
+      get data in return is because it didn't fulfill the condition. }
+    function ConditionUnmet : Boolean;
+
+    { Get the URL scheme (sometimes called protocol) used in the connection }
+    function Scheme : String;
   private
     {%H-}constructor Create (AHandle : CURL; AErrorStack : PErrorStack);
 
@@ -830,9 +886,9 @@ type
       points to the delivered data, and the size of that data is nmemb; size is
       always 1. }
     class function WriteFunctionCallback (ptr : PChar; size : LongWord; nmemb :
-      LongWord; data : Pointer) : LongWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function Write (ptr : PChar; size : LongWord; nmemb : LongWord) : LongWord;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+      LongWord; data : Pointer) : LongWord; static; cdecl;
+    function Write (ptr : PChar; size : LongWord; nmemb : LongWord) :
+      LongWord;
 
     { Convert cURL lib error codes to THTTPErrors }
     class function CurlErrorToRequestError (ACode : CURLcode) : THTTPErrors;
@@ -855,8 +911,8 @@ type
 
     type
       { Request result type }
-      THTTPRequestResult = specialize TResult<THTTPRequest,
-        THTTPRequest.THTTPErrors>;
+      THTTPResponseResult = specialize TResult<THTTPResponse,
+        THTTPResponse.THTTPErrors>;
   public
     { Create new plain http session }
     constructor Create;
@@ -917,7 +973,7 @@ type
       This forces the HTTP request to get back to using GET.
       When setting Get, it will automatically set NoBody to False and Upload to
       False. }
-    function Get : THTTPRequestResult;
+    function Get : THTTPResponseResult;
   private
     FHandle : CURL;
     FErrorStack : TErrorStack;
@@ -925,9 +981,9 @@ type
 
 implementation
 
-{ THTTPRequest }
+{ THTTPResponse }
 
-class function THTTPRequest.CurlErrorToRequestError (ACode : CURLcode) :
+class function THTTPResponse.CurlErrorToRequestError (ACode : CURLcode) :
   THTTPErrors;
 begin
   case ACode of
@@ -960,33 +1016,34 @@ begin
   end;
 end;
 
-class function THTTPRequest.WriteFunctionCallback (ptr : PChar; size :
-  LongWord; nmemb : LongWord; data : Pointer) : LongWord;
+class function THTTPResponse.WriteFunctionCallback (ptr : PChar; size :
+  LongWord; nmemb : LongWord; data : Pointer) : LongWord; static; cdecl;
 begin
-  Result := THTTPRequest(data).Write(ptr, size, nmemb);
+  Result := THTTPResponse(data).Write(ptr, size, nmemb);
 end;
 
-function THTTPRequest.Write (ptr : PChar; size : LongWord; nmemb :
+function THTTPResponse.Write (ptr : PChar; size : LongWord; nmemb :
   LongWord) : LongWord;
 begin
   Result := FBuffer.Write(ptr^, size * nmemb);
 end;
 
-constructor THTTPRequest.Create (AHandle : CURL; AErrorStack :
+constructor THTTPResponse.Create (AHandle : CURL; AErrorStack :
   PErrorStack);
 begin
   FHandle := AHandle;
   FErrorStack := TErrorStack.Create;
   FErrorStack := AErrorStack^;
+  FBuffer := TMemoryStream.Create;
 
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READDATA, Pointer(Self)));
-  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_READFUNCTION,
-    @THTTPRequest.WriteFunctionCallback));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_WRITEDATA, Pointer(Self)));
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_WRITEFUNCTION,
+    @THTTPResponse.WriteFunctionCallback));
   FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ERRORBUFFER,
     PChar(FErrorBuffer)));
 end;
 
-destructor THTTPRequest.Destroy;
+destructor THTTPResponse.Destroy;
 begin
   curl_easy_cleanup(FHandle);
   FreeAndNil(FErrorStack);
@@ -995,22 +1052,22 @@ begin
   inherited Destroy;
 end;
 
-function THTTPRequest.HasErrors : Boolean;
+function THTTPResponse.HasErrors : Boolean;
 begin
   Result := FErrorStack.Count > 0;
 end;
 
-function THTTPRequest.ErrorMessage : String;
+function THTTPResponse.ErrorMessage : String;
 begin
   Result := String(FErrorBuffer);
 end;
 
-function THTTPRequest.Errors : TErrorStack;
+function THTTPResponse.Errors : TErrorStack;
 begin
   Result := FErrorStack;
 end;
 
-function THTTPRequest.Content : String;
+function THTTPResponse.Content : String;
 var
   Stream : TStringStream;
 begin
@@ -1020,7 +1077,7 @@ begin
   FreeAndNil(Stream);
 end;
 
-function THTTPRequest.EffectiveUrl : String;
+function THTTPResponse.EffectiveUrl : String;
 var
   url : PChar;
 begin
@@ -1030,7 +1087,7 @@ begin
   Result := String(url);
 end;
 
-function THTTPRequest.ContentType : String;
+function THTTPResponse.ContentType : String;
 var
   content_type : PChar;
 begin
@@ -1041,7 +1098,7 @@ begin
   Result := String(content_type);
 end;
 
-function THTTPRequest.RedirectUrl : String;
+function THTTPResponse.RedirectUrl : String;
 var
   url : PChar;
 begin
@@ -1051,7 +1108,7 @@ begin
   Result := url;
 end;
 
-function THTTPRequest.PrimaryIP : String;
+function THTTPResponse.PrimaryIP : String;
 var
   ip : PChar;
 begin
@@ -1061,7 +1118,7 @@ begin
   Result := ip;
 end;
 
-function THTTPRequest.LocalIP : String;
+function THTTPResponse.LocalIP : String;
 var
   ip : PChar;
 begin
@@ -1071,7 +1128,7 @@ begin
   Result := ip;
 end;
 
-function THTTPRequest.ResponseCode : THTTPStatusCode;
+function THTTPResponse.ResponseCode : THTTPStatusCode;
 var
   Code : Longint;
 begin
@@ -1079,7 +1136,7 @@ begin
   Result := THTTPStatusCode(Code);
 end;
 
-function THTTPRequest.VerifySSLResult : Boolean;
+function THTTPResponse.VerifySSLResult : Boolean;
 var
   verify : Longint = 1;
 begin
@@ -1088,7 +1145,7 @@ begin
   Result := (verify = 0);
 end;
 
-function THTTPRequest.VerifySSLProxyResult : Boolean;
+function THTTPResponse.VerifySSLProxyResult : Boolean;
 var
   verify : Longint = 0;
 begin
@@ -1097,7 +1154,7 @@ begin
   Result := Boolean(verify);
 end;
 
-function THTTPRequest.ConnectResponseCode : THTTPStatusCode;
+function THTTPResponse.ConnectResponseCode : THTTPStatusCode;
 var
   code : Longint;
 begin
@@ -1106,7 +1163,7 @@ begin
   Result := THTTPStatusCode(code);
 end;
 
-function THTTPRequest.HTTPVersion : THTTPVersion;
+function THTTPResponse.HTTPVersion : THTTPVersion;
 var
   version : Longint = 0;
 begin
@@ -1114,33 +1171,56 @@ begin
   Result := THTTPVersion(version);
 end;
 
-function THTTPRequest.RedirectCount : Longint;
+function THTTPResponse.RedirectCount : Longint;
+var
+  count : Longint;
 begin
   FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_REDIRECT_COUNT,
-    @Result));
+    @count));
+  Result := count;
 end;
 
-function THTTPRequest.Downloaded : TDataSize;
+function THTTPResponse.Downloaded : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SIZE_DOWNLOAD_T,
-    @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_SIZE_DOWNLOAD_T,
+    @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SIZE_DOWNLOAD,
+      @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.DownloadSpeed : TDataSize;
+function THTTPResponse.DownloadSpeed : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SPEED_DOWNLOAD_T,
-    @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_SPEED_DOWNLOAD_T,
+    @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SPEED_DOWNLOAD,
+      @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.HeaderSize : TDataSize;
+function THTTPResponse.HeaderSize : TDataSize;
 var
   bytes : LongWord = 0;
 begin
@@ -1149,7 +1229,7 @@ begin
   Result.Bytes := bytes;
 end;
 
-function THTTPRequest.RequestSize : TDataSize;
+function THTTPResponse.RequestSize : TDataSize;
 var
   bytes : LongWord = 0;
 begin
@@ -1158,57 +1238,298 @@ begin
   Result.Bytes := bytes;
 end;
 
-function THTTPRequest.Uploaded : TDataSize;
+function THTTPResponse.Uploaded : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SIZE_UPLOAD_T, @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_SIZE_UPLOAD_T, @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SIZE_UPLOAD,
+      @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.UploadSpeed : TDataSize;
+function THTTPResponse.UploadSpeed : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SPEED_UPLOAD_T, @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_SPEED_UPLOAD_T, @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SPEED_UPLOAD,
+      @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.ContentLengthDownload : TDataSize;
+function THTTPResponse.ContentLengthDownload : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle,
-    CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
+    @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle,
+      CURLINFO_CONTENT_LENGTH_DOWNLOAD, @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.ContentLengthUpload : TDataSize;
+function THTTPResponse.ContentLengthUpload : TDataSize;
 var
   bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD_T,
-    @bytes));
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD_T,
+    @bytes);
+  FErrorStack.Push(CurlResult);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_CONTENT_LENGTH_UPLOAD,
+      @dbytes));
+    Result.Bytes := trunc(dbytes);
+  end;
 end;
 
-function THTTPRequest.NumConnects : Longint;
+function THTTPResponse.NumConnects : Longint;
+var
+  connects : Longint = 0;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_NUM_CONNECTS, @Result));
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_NUM_CONNECTS,
+    @connects));
+  Result := connects;
 end;
 
-function THTTPRequest.PrimaryPort : Longint;
+function THTTPResponse.PrimaryPort : Longint;
+var
+  port : Longint = 0;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_PRIMARY_PORT, @Result));
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_PRIMARY_PORT, @port));
+  Result := port;
 end;
 
-function THTTPRequest.LocalPort : Longint;
+function THTTPResponse.LocalPort : Longint;
+var
+  port : Longint = 0;
 begin
-  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_LOCAL_PORT, @Result));
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_LOCAL_PORT, @port));
+  Result := port;
+end;
+
+function THTTPResponse.TotalTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_TOTAL_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_TOTAL_TIME, @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.NameLookup : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_NAMELOOKUP_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_NAMELOOKUP_TIME,
+      @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.ConnectTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_CONNECT_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_CONNECT_TIME, @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.AppConnectTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_APPCONNECT_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_APPCONNECT_TIME,
+      @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.PreTransferTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_PRETRANSFER_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_PRETRANSFER_TIME,
+      @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.StartTransferTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_STARTTRANSFER_TIME_T,
+    @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_STARTTRANSFER_TIME,
+      @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.RedirectTime : TTimeInterval;
+var
+  time : LongWord = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FHandle, CURLINFO_REDIRECT_TIME_T, @time);
+  FErrorStack.Push(CurlResult);
+  Result := TTimeInterval.Create;
+  Result.Microseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_REDIRECT_TIME,
+      @dtime));
+    Result.Seconds := trunc(dtime);
+    Result.Milliseconds := trunc(frac(dtime) * 1000);
+  end;
+end;
+
+function THTTPResponse.RetryAfterDelay : TTimeInterval;
+var
+  delay : LongWord = 0;
+begin
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_RETRY_AFTER, @delay));
+  Result := TTimeInterval.Create;
+  Result.Seconds := delay;
+end;
+
+function THTTPResponse.OsErrno : Longint;
+var
+  errno : Longint = 0;
+begin
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_OS_ERRNO, @errno));
+  Result := errno;
+end;
+
+function THTTPResponse.LastSocket : Longint;
+var
+  socket : Longint;
+begin
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_LASTSOCKET, @socket));
+  Result := socket;
+end;
+
+function THTTPResponse.ActiveSocket : curl_socket_t;
+var
+  socket : curl_socket_t;
+begin
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_ACTIVESOCKET, @socket));
+  Result := socket;
+end;
+
+function THTTPResponse.ConditionUnmet : Boolean;
+var
+  unmet : Longint = 0;
+begin
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_CONDITION_UNMET,
+    @unmet));
+  Result := Boolean(unmet);
+end;
+
+function THTTPResponse.Scheme : String;
+var
+  sc : PChar;
+begin
+  New(sc);
+  scheme := '';
+  FErrorStack.Push(curl_easy_getinfo(FHandle, CURLINFO_SCHEME, @sc));
+  Result := sc;
 end;
 
 { THHTPSessionPlain }
@@ -1270,18 +1591,18 @@ begin
   Result := Self;
 end;
 
-function THTTPSessionPlain.Get : THTTPRequestResult;
+function THTTPSessionPlain.Get : THTTPResponseResult;
 var
   Handle : CURL;
-  Request : THTTPRequest;
+  Request : THTTPResponse;
   ErrorCode : CURLcode;
 begin
   Handle := curl_easy_duphandle(FHandle);
-  Request := THTTPRequest.Create(Handle, @FErrorStack);
+  Request := THTTPResponse.Create(Handle, @FErrorStack);
   ErrorCode := curl_easy_perform(Handle);
   FErrorStack.Push(ErrorCode);
-  Result := THTTPRequestResult.Create(Request,
-    THTTPRequest.CurlErrorToRequestError(ErrorCode), ErrorCode = CURLE_OK);
+  Result := THTTPResponseResult.Create(Request,
+    THTTPResponse.CurlErrorToRequestError(ErrorCode), ErrorCode = CURLE_OK);
 end;
 
 end.

@@ -3,14 +3,14 @@
 (*                 object pascal wrapper around cURL library                  *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
-(* Copyright (c) 2019                                       Ivan Semenkov     *)
+(* Copyright (c) 2019 - 2020                                Ivan Semenkov     *)
 (* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
 (* Project:         'RemoteConnect'                                           *)
-(* Functionality:   Simple example for use TSession and TResponse classes for *)
-(*                  connect to remote host                                    *)
+(* Functionality:   Simple  example for  use THTTPSessionPlain  and TResponse *)
+(*                  classes for connect to remote host                        *)
 (*                                                                            *)
 (******************************************************************************)
 (*                                                                            *)
@@ -38,7 +38,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, pascurl;
+  Classes, SysUtils, CustApp, http;
 
 type
 
@@ -46,8 +46,8 @@ type
 
   TApplication = class(TCustomApplication)
   protected
-    FSession : TSession;
-    FResponse : TResponse;
+    FSession : THTTPSessionPlain;
+    FResponse : THTTPSessionPlain.THTTPResponseResult;
 
     procedure DoRun; override;
     procedure PrintHeader;
@@ -63,13 +63,12 @@ procedure TApplication.DoRun;
 var
   ErrorMsg: String;
   NonOptions : TStringList;
-  ShortOptions : string = 'su:p:ah';
-  LongOptions : array [1..20] of string = ('help', 'show-content', 'username:',
-    'password:', 'all', 'effective-url', 'redirect-url', 'response-code',
-    'content-type', 'primary-ip', 'local-ip', 'http-version', 'redirect-count',
-    'content-size', 'header-size', 'request-size', 'download-speed',
-    'total-time', 'name-lookup-time', 'connect-time');
-  Protocol : TSession.TProtocolProperty.TProtocol;
+  ShortOptions : string = 'sah';
+  LongOptions : array [1..18] of string = ('help', 'show-content', 'all',
+    'effective-url', 'redirect-url', 'response-code', 'content-type',
+    'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
+    'header-size', 'request-size', 'download-speed', 'total-time',
+    'name-lookup-time', 'connect-time');
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -84,11 +83,6 @@ begin
   if HasOption('h', 'help') then
     PrintHelp;
 
-  if HasOption('u', 'username') then
-    FSession.Security.Username := GetOptionValue('u', 'username');
-  if HasOption('p', 'password') then
-    FSession.Security.Password := GetOptionValue('p', 'password');
-
   NonOptions := TStringList.Create;
   GetNonOptions(ShortOptions, LongOptions, NonOptions);
   if NonOptions.Count = 0 then
@@ -97,75 +91,65 @@ begin
     Exit;
   end;
 
-  FSession.Url := NonOptions[0];
-  FResponse := TResponse.Create(FSession);
-  if FResponse.Opened and not FResponse.HasErrors then
-  begin
-    Protocol := FSession.ExtractProtocol(FResponse.EffectiveUrl);
+  FSession.Url(NonOptions[0]);
+  FResponse := FSession.Get;
 
+  if FResponse.Ok and not FResponse.Value.HasErrors then
+  begin
     if HasOption('a', 'all') or HasOption('effective-url') then
-      writeln('Url: ':25, FResponse.EffectiveUrl);
+      writeln('Url: ':25, FResponse.Value.EffectiveUrl);
 
     if HasOption('a', 'all') or HasOption('redirect-url') then
-      writeln('Redirect url: ':25, FResponse.RedirectUrl);
+      writeln('Redirect url: ':25, FResponse.Value.RedirectUrl);
 
     if HasOption('a', 'all') or HasOption('redirect-count') then
-      writeln('Redirect count: ':25, FResponse.RedirectCount);
+      writeln('Redirect count: ':25, FResponse.Value.RedirectCount);
 
     if HasOption('a', 'all') or HasOption('content-type') then
-      writeln('Content type: ':25, FResponse.ContentType);
+      writeln('Content type: ':25, FResponse.Value.ContentType);
 
     if HasOption('a', 'all') or HasOption('request-size') then
-      writeln('Request size: ':25, FResponse.RequestSize.ToString);
+      writeln('Request size: ':25, FResponse.Value.RequestSize.ToString);
 
     if HasOption('a', 'all') or HasOption('header-size') then
-      writeln('Header size: ':25, FResponse.HeaderSize.ToString);
+      writeln('Header size: ':25, FResponse.Value.HeaderSize.ToString);
 
     if HasOption('a', 'all') or HasOption('content-size') then
-      writeln('Content size: ':25, FResponse.Downloaded.ToString);
+      writeln('Content size: ':25, FResponse.Value.Downloaded.ToString);
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
-      writeln('Primary IP: ':25, FResponse.PrimaryIP);
+      writeln('Primary IP: ':25, FResponse.Value.PrimaryIP);
 
     if HasOption('a', 'all') or HasOption('local-ip') then
-      writeln('Local IP: ':25, FResponse.LocalIP);
+      writeln('Local IP: ':25, FResponse.Value.LocalIP);
 
     if HasOption('a', 'all') or HasOption('response-code') then
-    begin
-      if Protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-        writeln('Response code: ':25,
-        TSession.THTTPProperty.THTTPStatusCode(FResponse.ResponseCode))
-      else if Protocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
-        writeln('Response code: ':25,
-        TSession.TFTPProperty.TFTPStatusCode(FResponse.ResponseCode));
-    end;
+      writeln('Response code: ':25, FResponse.Value.ResponseCode);
 
     if HasOption('a', 'all') or HasOption('http-version') then
-    begin
-      if Protocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-        writeln('HTTP version: ':25, FResponse.HttpVersion);
-    end;
+      writeln('HTTP version: ':25, FResponse.Value.HttpVersion);
 
     if HasOption('a', 'all') or HasOption('download-speed') then
-      writeln('Download speed: ':25, FResponse.DownloadSpeed.ToString('/s'));
+      writeln('Download speed: ':25,
+        FResponse.Value.DownloadSpeed.ToString('/s'));
 
     if HasOption('a', 'all') or HasOption('total-time') then
-      writeln('Total time: ':25, FResponse.TotalTime.ToString);
+      writeln('Total time: ':25, FResponse.Value.TotalTime.ToString);
 
     if HasOption('a', 'all') or HasOption('name-lookup-time') then
-      writeln('Name lookup time: ':25, FResponse.NameLookup.ToString);
+      writeln('Name lookup time: ':25, FResponse.Value.NameLookup.ToString);
 
     if HasOption('a', 'all') or HasOption('connect-time') then
-      writeln('Connect time: ':25, FResponse.ConnectTime.ToString);
+      writeln('Connect time: ':25, FResponse.Value.ConnectTime.ToString);
 
     if HasOption('s', 'show-content') then
     begin
       writeln();
       writeln('-=== Content ===-');
-      writeln(FResponse.Content);
+      writeln(FResponse.Value.Content);
     end;
   end else
-    writeln(FResponse.ErrorMessage);
+    writeln(FResponse.Value.ErrorMessage);
 
   FreeAndNil(NonOptions);
   Terminate;
@@ -175,7 +159,7 @@ constructor TApplication.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   StopOnException := True;
-  FSession := TSession.Create;
+  FSession := THTTPSessionPlain.Create;
 end;
 
 destructor TApplication.Destroy;
@@ -192,7 +176,7 @@ begin
 '(*                 object pascal wrapper around cURL library                  *)'+ sLineBreak +
 '(*                        https://github.com/curl/curl                        *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
-'(* Copyright (c) 2019                                       Ivan Semenkov     *)'+ sLineBreak +
+'(* Copyright (c) 2019 - 2020                                Ivan Semenkov     *)'+ sLineBreak +
 '(* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)'+ sLineBreak +
 '(*                                                          Ukraine           *)'+ sLineBreak +
 '(******************************************************************************)'
@@ -204,10 +188,11 @@ begin
   writeln(
 '(******************************************************************************)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
-'(* Example how  to use TSession  and TResponse  classes to connect to  remote *)'+ sLineBreak +
-'(* host.                                                                      *)'+ sLineBreak +
+'(* Example how to use THTTPSessionPlain and THTTPResponse  classes to connect *)'+ sLineBreak +
+'(* to remote host.                                                            *)'+ sLineBreak +
+'(*                                                                            *)'+ sLineBreak +
 '(* Usage: RemoteConnect http://example.com/ --show-content                    *)'+ sLineBreak +
-'(*    Or: RemoteConnect  ftp://ftp.example.com/ -u Root -p Password -s        *)'+ sLineBreak +
+'(*    Or: RemoteConnect https://example.com/ -a                               *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
 '(* -s            or --show-content        write download content to termainal *)'+ sLineBreak +
