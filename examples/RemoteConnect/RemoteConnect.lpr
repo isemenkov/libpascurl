@@ -60,15 +60,19 @@ type
 { TApplication }
 
 procedure TApplication.DoRun;
+const
+  COLUMN_SIZE = 31;
 var
   ErrorMsg: String;
   NonOptions : TStringList;
-  ShortOptions : string = 'sah';
-  LongOptions : array [1..18] of string = ('help', 'show-content', 'all',
+  ShortOptions : string = 'eah';
+  LongOptions : array [1..25] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
-    'name-lookup-time', 'connect-time');
+    'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
+    'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
+    'redirect-time');
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -97,52 +101,84 @@ begin
   if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
     if HasOption('a', 'all') or HasOption('effective-url') then
-      writeln('Url: ':25, FResponse.Value.EffectiveUrl);
+      writeln('Url: ':COLUMN_SIZE, FResponse.Value.EffectiveUrl);
 
     if HasOption('a', 'all') or HasOption('redirect-url') then
-      writeln('Redirect url: ':25, FResponse.Value.RedirectUrl);
+      writeln('Redirect url: ':COLUMN_SIZE, FResponse.Value.RedirectUrl);
 
     if HasOption('a', 'all') or HasOption('redirect-count') then
-      writeln('Redirect count: ':25, FResponse.Value.RedirectCount);
+      writeln('Redirect count: ':COLUMN_SIZE, FResponse.Value.RedirectCount);
 
     if HasOption('a', 'all') or HasOption('content-type') then
-      writeln('Content type: ':25, FResponse.Value.ContentType);
-
-    if HasOption('a', 'all') or HasOption('request-size') then
-      writeln('Request size: ':25, FResponse.Value.RequestSize.ToString);
-
-    if HasOption('a', 'all') or HasOption('header-size') then
-      writeln('Header size: ':25, FResponse.Value.HeaderSize.ToString);
-
-    if HasOption('a', 'all') or HasOption('content-size') then
-      writeln('Content size: ':25, FResponse.Value.Downloaded.ToString);
+      writeln('Content type: ':COLUMN_SIZE, FResponse.Value.ContentType);
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
-      writeln('Primary IP: ':25, FResponse.Value.PrimaryIP);
+      writeln('Primary IP: ':COLUMN_SIZE, FResponse.Value.PrimaryIP);
+
+    if HasOption('a', 'all') or HasOption('destination-port') then
+      writeln('Destination port: ':COLUMN_SIZE, FResponse.Value.PrimaryPort);
+
+    if HasOption('a', 'all') or HasOption('local-port') then
+      writeln('Local port: ':COLUMN_SIZE, FResponse.Value.LocalPort);
 
     if HasOption('a', 'all') or HasOption('local-ip') then
-      writeln('Local IP: ':25, FResponse.Value.LocalIP);
-
-    if HasOption('a', 'all') or HasOption('response-code') then
-      writeln('Response code: ':25, FResponse.Value.ResponseCode);
+      writeln('Local IP: ':COLUMN_SIZE, FResponse.Value.LocalIP);
 
     if HasOption('a', 'all') or HasOption('http-version') then
-      writeln('HTTP version: ':25, FResponse.Value.HttpVersion);
+      writeln('HTTP version: ':COLUMN_SIZE, FResponse.Value.HttpVersion);
 
-    if HasOption('a', 'all') or HasOption('download-speed') then
-      writeln('Download speed: ':25,
-        FResponse.Value.DownloadSpeed.ToString('/s'));
+    if HasOption('a', 'all') or HasOption('response-code') then
+      writeln('Response code: ':COLUMN_SIZE, FResponse.Value.ResponseCode);
+
+    if HasOption('a', 'all') or HasOption('num-connects') then
+      writeln('Number of created connections: ':COLUMN_SIZE,
+        FResponse.Value.NumConnects);
+
+    if HasOption('a', 'all') or HasOption('verify-ssl') then
+      if FResponse.Value.VerifySSLResult then
+        writeln('Verify SSL: ':COLUMN_SIZE, 'Good! All Ok.')
+      else
+        writeln('Verify SSL: ', COLUMN_SIZE, 'Something wrong :(');
+
+    if HasOption('a', 'all') or HasOption('request-size') then
+      writeln('Request size: ':COLUMN_SIZE,
+        FResponse.Value.RequestSize.ToString);
+
+    if HasOption('a', 'all') or HasOption('header-size') then
+      writeln('Header size: ':COLUMN_SIZE, FResponse.Value.HeaderSize.ToString);
+
+    if HasOption('a', 'all') or HasOption('content-size') then
+      writeln('Content size: ':COLUMN_SIZE,
+        FResponse.Value.Downloaded.ToString);
 
     if HasOption('a', 'all') or HasOption('total-time') then
-      writeln('Total time: ':25, FResponse.Value.TotalTime.ToString);
+      writeln('Total time: ':COLUMN_SIZE, FResponse.Value.TotalTime.ToString);
 
     if HasOption('a', 'all') or HasOption('name-lookup-time') then
-      writeln('Name lookup time: ':25, FResponse.Value.NameLookup.ToString);
+      writeln('Name lookup time: ':COLUMN_SIZE,
+        FResponse.Value.NameLookup.ToString);
 
     if HasOption('a', 'all') or HasOption('connect-time') then
-      writeln('Connect time: ':25, FResponse.Value.ConnectTime.ToString);
+      writeln('Connect time: ':COLUMN_SIZE,
+        FResponse.Value.ConnectTime.ToString);
 
-    if HasOption('s', 'show-content') then
+    if HasOption('a', 'all') or HasOption('pretransfer-time') then
+      writeln('Time until the transfer start: ':COLUMN_SIZE,
+        FResponse.Value.PretransferTime.ToString);
+
+    if HasOption('a', 'all') or HasOption('start-transfer-time') then
+      writeln('Start transfer time: ':COLUMN_SIZE,
+        FResponse.Value.StartTransferTime.ToString);
+
+    if HasOption('a', 'all') or HasOption('redirect-time') then
+      writeln('Redirect time: ':COLUMN_SIZE,
+        FResponse.Value.RedirectTime.ToString);
+
+    if HasOption('a', 'all') or HasOption('download-speed') then
+      writeln('Download speed: ':COLUMN_SIZE,
+        FResponse.Value.DownloadSpeed.ToString('/s'));
+
+    if HasOption('e', 'echo') then
     begin
       writeln();
       writeln('-=== Content ===-');
@@ -191,31 +227,36 @@ begin
 '(* Example how to use THTTPSessionPlain and THTTPResponse  classes to connect *)'+ sLineBreak +
 '(* to remote host.                                                            *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
-'(* Usage: RemoteConnect http://example.com/ --show-content                    *)'+ sLineBreak +
+'(* Usage: RemoteConnect  http://example.com/ --echo                           *)'+ sLineBreak +
 '(*    Or: RemoteConnect https://example.com/ -a                               *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
-'(* -s            or --show-content        write download content to termainal *)'+ sLineBreak +
-'(* -u <username> or --username=<username> set user name to remote host        *)'+ sLineBreak +
-'(* -p <password> or --password=<password> set password to remote host         *)'+ sLineBreak +
-'(* -a            or --all                 write all response information      *)'+ sLineBreak +
-'(*                  --effective-url       write effective url                 *)'+ sLineBreak +
-'(*                  --redirect-url        write redirect url if is it         *)'+ sLineBreak +
-'(*                  --redirect-count      write redirect counts if is it      *)'+ sLineBreak +
-'(*                  --response-code       write response code for HTTP, HTTPS,*)'+ sLineBreak +
-'(*                                        FTP, FTPS only                      *)'+ sLineBreak +
-'(*                  --content-type        write content type                  *)'+ sLineBreak +
-'(*                  --primary-ip          write primary IP address            *)'+ sLineBreak +
-'(*                  --local-ip            write local IP address              *)'+ sLineBreak +
-'(*                  --http-version        write HTTP version for HTTP, HTTPS  *)'+ sLineBreak +
-'(*                                        protocols only                      *)'+ sLineBreak +
-'(*                  --request-size        write send request size             *)'+ sLineBreak +
-'(*                  --header-size         write response header size          *)'+ sLineBreak +
-'(*                  --content-size        write response content size         *)'+ sLineBreak +
-'(*                  --download-speed      write download speed                *)'+ sLineBreak +
-'(*                  --total-time          write total request time            *)'+ sLineBreak +
-'(*                  --name-lookup-time    write name lookup time              *)'+ sLineBreak +
-'(*                  --connect-time        write connect time                  *)'+ sLineBreak +
+'(* -e      or --echo                   write download content to terminal     *)'+ sLineBreak +
+'(* -a      or --all                    write all response information         *)'+ sLineBreak +
+'(*            --effective-url          write effective url                    *)'+ sLineBreak +
+'(*            --redirect-url           write redirect url if is it            *)'+ sLineBreak +
+'(*            --redirect-count         write redirect counts if is it         *)'+ sLineBreak +
+'(*            --content-type           write return Content-Type header value *)'+ sLineBreak +
+'(*            --primary-ip             write primary IP address               *)'+ sLineBreak +
+'(*            --destination-port       write destination port number          *)'+ sLineBreak +
+'(*            --local-port             write local port number                *)'+ sLineBreak +
+'(*            --local-ip               write local IP address                 *)'+ sLineBreak +
+'(*            --http-version           write HTTP version                     *)'+ sLineBreak +
+'(*            --response-code          write response code                    *)'+ sLineBreak +
+'(*            --num-connects           write number of created connections    *)'+ sLineBreak +
+'(*            --verify-ssl             verify of the certificate verification *)'+ sLineBreak +
+'(*            --request-size           write send request size                *)'+ sLineBreak +
+'(*            --header-size            write response header size             *)'+ sLineBreak +
+'(*            --content-size           write response content size            *)'+ sLineBreak +
+'(*            --total-time             write total request time               *)'+ sLineBreak +
+'(*            --name-lookup-time       write name lookup time                 *)'+ sLineBreak +
+'(*            --connect-time           write connect time                     *)'+ sLineBreak +
+'(*            --pretransfer-time       write time until the tfansfer start    *)'+ sLineBreak +
+'(*            --start-transfer-time    write time until the first byte is     *)'+ sLineBreak +
+'(*                                     received                               *)'+ sLineBreak +
+'(*            --redirect-time          write time for all redirection steps   *)'+ sLineBreak +
+'(*            --download-speed         write download speed                   *)'+ sLineBreak +
+'(*                                                                            *)'+ sLineBreak +
 '(******************************************************************************)'
   );
 end;
