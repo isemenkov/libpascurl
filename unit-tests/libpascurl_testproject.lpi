@@ -53,7 +53,7 @@
         <IsPartOfProject Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="../source/result.pas"/>
+        <Filename Value="../source/curlresult.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>

@@ -40,7 +40,7 @@ unit http;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, result, timeinterval, datasize, errorstack;
+  Classes, SysUtils, libpascurl, curlresult, timeinterval, datasize, errorstack;
 
 type
   { HTTP(S) session result response data }
@@ -911,7 +911,7 @@ type
 
     type
       { Request result type }
-      THTTPResponseResult = specialize TResult<THTTPResponse,
+      THTTPResponseResult = specialize TCurlResult<THTTPResponse,
         THTTPResponse.THTTPErrors>;
   public
     { Create new plain http session }

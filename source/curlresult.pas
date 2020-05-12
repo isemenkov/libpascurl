@@ -9,7 +9,8 @@
 (******************************************************************************)
 (*                                                                            *)
 (* Module:          Unit 'pascurl'                                            *)
-(* Functionality:   Contains result value or error type like in GO lang       *)
+(* Functionality:   Provide TCurlResult  class which contains result value or *)
+(*                  error type like in GO lang                                *)
 (*                                                                            *)
 (******************************************************************************)
 (*                                                                            *)
@@ -29,7 +30,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit result;
+unit curlresult;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -43,12 +44,20 @@ uses
 
 type
   { Result error exception }
-  EResultException = class (Exception);
+  ECurlResultException = class (Exception);
 
   { Contains result value or error type like in GO lang }
-  generic TResult<VALUE_TYPE, ERROR_TYPE> = class
+  generic TCurlResult<VALUE_TYPE, ERROR_TYPE> = class
   protected
     type
+      TErrorType = (
+        IMPOSSIBLE_VALUE,
+        IMPOSSIBLE_ERROR
+      );
+
+      { OnError event callback }
+      TOnErrorEvent = procedure (AErrorType : TErrorType) of object;
+
       PVALUE_TYPE = ^VALUE_TYPE;
       PERROR_TYPE = ^ERROR_TYPE;
 
@@ -60,20 +69,37 @@ type
       end;
   protected
     FValue : TValue;
+    FOnError : TOnErrorEvent;
+
+    function _Ok : Boolean;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function _Value : VALUE_TYPE;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function _Error : ERROR_TYPE;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
   public
     constructor Create (AValue : VALUE_TYPE; AError : ERROR_TYPE; AOk :
       Boolean);
     destructor Destroy; override;
-    function Ok : Boolean; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function Value : VALUE_TYPE; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function Error : ERROR_TYPE; {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    { Check if result is Ok }
+    property Ok : Boolean read _Ok;
+
+    { Get value if exists or EYamlResultException }
+    property Value : VALUE_TYPE read _Value;
+
+    { Get error if exists or EYamlResultException }
+    property Error : ERROR_TYPE read _Error;
+
+    { OnError event callback }
+    property OnError : TOnErrorEvent read FOnError write FOnError;
   end;
 
 implementation
 
-{ TResult generic }
+{ TCurlResult generic }
 
-constructor TResult.Create (AValue : VALUE_TYPE; AError : ERROR_TYPE;
+constructor TCurlResult.Create (AValue : VALUE_TYPE; AError : ERROR_TYPE;
   AOk : Boolean);
 begin
   FValue.Ok := AOk;
@@ -88,7 +114,7 @@ begin
   end;
 end;
 
-destructor TResult.Destroy;
+destructor TCurlResult.Destroy;
 begin
   if FValue.Ok then
   begin
@@ -99,30 +125,36 @@ begin
   end;
 end;
 
-function TResult.Ok : Boolean;
+function TCurlResult._Ok : Boolean;
 begin
   Result := FValue.Ok;
 end;
 
-function TResult.Value : VALUE_TYPE;
+function TCurlResult._Value : VALUE_TYPE;
 begin
   if FValue.Ok then
   begin
     Result := FValue.Value^;
   end else
   begin
-    raise EResultException.Create('Impossible value');
+    if Assigned(FOnError) then
+      FOnError(IMPOSSIBLE_VALUE)
+    else
+      raise ECurlResultException.Create('Impossible value');
   end;
 end;
 
-function TResult.Error : ERROR_TYPE;
+function TCurlResult._Error : ERROR_TYPE;
 begin
   if not FValue.Ok then
   begin
     Result := FValue.Error^;
   end else
   begin
-    raise EResultException.Create('Impossible error');
+    if Assigned(FOnError) then
+      FOnError(IMPOSSIBLE_ERROR)
+    else
+      raise ECurlResultException.Create('Impossible error');
   end;
 end;
 
