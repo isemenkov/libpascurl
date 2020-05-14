@@ -31,7 +31,7 @@
         <PackageName Value="FCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="9">
+    <Units Count="10">
       <Unit0>
         <Filename Value="libpascurl_testproject.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -68,6 +68,11 @@
         <Filename Value="../source/errorstack.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit8>
+      <Unit9>
+        <Filename Value="../source/dnsproperty.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DNSProperty"/>
+      </Unit9>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
