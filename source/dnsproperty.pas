@@ -55,9 +55,80 @@ type
     procedure SetDNSLocalIP6 (AAddress : string);
     procedure SetDNSServers (AServers : string);
     procedure SetDNSShuffleAddresses (AEnable : Boolean);
+  private
+    FHandle : CURL;
+    FErrorStack : PErrorStack;
   end;
 
 implementation
+
+constructor TDNSProperty.Create (AHandle : CURL; AErrorStack : PErrorStack);
+begin
+  FHandle := AHandle;
+  FErrorStack := AErrorStack;
+end;
+
+procedure TDNSProperty.SetDNSCacheTimeout (ATimeout : TTimeInterval);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_CACHE_TIMEOUT,
+    Longint(ATimeout.Seconds)));
+end;
+
+procedure TDNSProperty.SetDNSGlobalCache(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_USE_GLOBAL_CACHE,
+    Longint(AEnable)));
+end;
+
+procedure TDNSProperty.SetDNSoverHTTPS(AUrl: string);
+begin
+  if AUrl <> '' then
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DOH_URL, PChar(AUrl)));
+  end else
+  begin
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DOH_URL, 0));
+  end;
+end;
+
+procedure TDNSProperty.SetDNSInterface(AInterface: string);
+begin
+  if AInterface <> '' then
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE,
+      PChar(AInterface)))
+  else
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_INTERFACE, 0));
+end;
+
+procedure TDNSProperty.SetDNSLocalIP4(AAddress: string);
+begin
+  if AAddress <> '' then
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4,
+      PChar(AAddress)))
+  else
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP4, 0));
+end;
+
+procedure TDNSProperty.SetDNSLocalIP6(AAddress: string);
+begin
+  if AAddress <> '' then
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6,
+      PChar(AAddress)))
+  else
+    FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_LOCAL_IP6, 0));
+end;
+
+procedure TDNSProperty.SetDNSServers(AServers: string);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_SERVERS,
+    PChar(AServers)));
+end;
+
+procedure TDNSProperty.SetDNSShuffleAddresses(AEnable: Boolean);
+begin
+  FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_DNS_SHUFFLE_ADDRESSES,
+    Longint(AEnable)));
+end;
 
 end.
 
