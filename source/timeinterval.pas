@@ -124,7 +124,7 @@ type
         constructor Create (AInterval : THour);
         destructor Destroy; override;
 
-        property Value : QWord read FHours write FHours;
+        property Value : THourRange read FHours write FHours;
       end;
   private
     FMicroseconds : TMicrosecond;

@@ -728,6 +728,15 @@ type
           HTTP/3. }
         HTTP_VERSION_3_0                         = Longint(CURL_HTTP_VERSION_3)
       );
+
+      TError = class
+      public
+        constructor Create;
+        function HasErrors : Boolean;
+        function ErrorMessage : String;
+        function OsErrno : Longint;
+        function Errors : TErrorStack;
+      end;
   public
     destructor Destroy; override;
 
