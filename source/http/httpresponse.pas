@@ -47,7 +47,30 @@ type
   { HTTP(S) session result response data }
   THTTPResponse = class
   public
+    type
+      { HTTP(S) session errors }
+      TError = class
+      public
+        { Return TRUE if has errors }
+        function HasErrors : Boolean;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        function ErrorMessage : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        function OsErrno : Longint;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        function Errors : TErrorStack;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create;
+        destructor Destroy;
+      private
+        FErrorStack : TErrorStack;
+        FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
+      end;
 
+
+  private
+    FError : TError;
   end;
 
 implementation
