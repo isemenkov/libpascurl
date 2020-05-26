@@ -54,10 +54,10 @@ type
         { Return TRUE if has errors }
         function HasErrors : Boolean;
           {$IFNDEF DEBUG}inline;{$ENDIF}
-        function ErrorMessage : String;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        function OsErrno : Longint;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
+        //function ErrorMessage : String;
+        //  {$IFNDEF DEBUG}inline;{$ENDIF}
+        //function OsErrno : Longint;
+        //  {$IFNDEF DEBUG}inline;{$ENDIF}
         function Errors : TErrorStack;
           {$IFNDEF DEBUG}inline;{$ENDIF}
       private
@@ -74,6 +74,28 @@ type
   end;
 
 implementation
+
+{ THTTPResponse.TError }
+
+constructor THTTPResponse.TError.Create;
+begin
+  FErrorStack := TErrorStack.Create;
+end;
+
+destructor THTTPResponse.TError.Destroy;
+begin
+  FreeAndNil(FErrorStack);
+end;
+
+function THTTPResponse.TError.HasErrors : Boolean;
+begin
+  Result := FErrorStack.Count > 0;
+end;
+
+function THTTPResponse.TError.Errors : TErrorStack;
+begin
+  Result := FErrorStack;
+end;
 
 end.
 
