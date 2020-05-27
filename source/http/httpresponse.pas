@@ -68,7 +68,16 @@ type
         FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
       end;
 
-
+      TRedirect = class
+      public
+        function IsRedirected : Boolean;
+        function Count : Longint;
+        function Url : String;
+      private
+        constructor Create;
+      private
+        FCurl : CURL;
+      end;
   private
     FError : TError;
   end;
@@ -95,6 +104,28 @@ end;
 function THTTPResponse.TError.Errors : TErrorStack;
 begin
   Result := FErrorStack;
+end;
+
+{ THTTPResponse.TRedirect }
+
+constructor THTTPResponse.TRedirect.Create;
+begin
+
+end;
+
+function THTTPResponse.TRedirect.IsRedirected : Boolean;
+begin
+
+end;
+
+function THTTPResponse.TRedirect.Count : Longint;
+begin
+
+end;
+
+function THTTPResponse.TRedirect.Url : String;
+begin
+
 end;
 
 end.
