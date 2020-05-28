@@ -42,23 +42,67 @@ uses
 
 type
   { TErrorStack }
-  { Store curl_easy_setopt function errors }
-
+  { Store CURL functions errors }
   PErrorStack = ^TErrorStack;
   TErrorStack = class
-  private
-    type
-      TCURLCodeList = specialize TFPGList<CURLcode>;
-  private
-    FList : TCURLCodeList;
   public
+    type
+      { Errors enumerator }
+      TErrorsEnumerator = class
+      protected
+        FErrors : TStringList;
+        FPosition : Cardinal;
+        function GetCurrent : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      public
+        constructor Create (AErrors : TStringList);
+        function MoveNext : Boolean;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        function GetEnumerator : TErrorsEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        property Current : String read GetCurrent;
+      end;
+  public
+    { Create new error stack }
     constructor Create;
     destructor Destroy; override;
 
-    procedure Push (ACode : CURLcode);
-    function Pop : CURLcode;
+    { Add error to stack }
+    procedure Push (AError : CURLcode);
+    { Return top error and remove it from stack }
+    function Pop : String;
+    { Stack count elements }
     function Count : Cardinal;
+
+    { Get errors enumerator }
+    function GetEnumerator : TErrorsEnumerator;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+  private
+    FErrors : TStringList;
   end;
+
+const
+  ErrorsMessages [0 .. CURLcode.CURL_LAST] of String = (
+    { CURLE_OK }
+    '',
+
+    { CURLE_UNSUPPORTED_PROTOCOL }
+    'The URL you passed to libcurl used a protocol that this libcurl does not '+
+    'support.',
+
+    { CURLE_FAILED_INIT }
+    'Very early initialization code failed.',
+
+    { CURLE_URL_MALFORMAT }
+    'The URL was not properly formatted.',
+
+    { CURLE_NOT_BUILT_IN }
+    'A requested feature, protocol or option was not found built-in in this '  +
+    'libcurl due to a build-time decision.',
+
+    { CURLE_COULDNT_RESOLVE_PROXY }
+    'Couldn''t resolve proxy. The given proxy host could not be resolved.'
+  );
 
 implementation
 
@@ -66,12 +110,12 @@ implementation
 
 constructor TErrorStack.Create;
 begin
-  FList := TCURLCodeList.Create;
+  FErrors := TStringList.Create;
 end;
 
 destructor TErrorStack.Destroy;
 begin
-  FreeAndNil(FList);
+  FreeAndNil(FErrors);
   inherited Destroy;
 end;
 
@@ -79,22 +123,51 @@ procedure TErrorStack.Push(ACode: CURLcode);
 begin
   if ACode <> CURLE_OK then
   begin
-    FList.Add(ACode);
+    // TODO
   end;
 end;
 
-function TErrorStack.Pop: CURLcode;
+function TErrorStack.Pop: String;
 begin
-  if FList.Count > 0 then
+  if FErrors.Count > 0 then
   begin
-    Result := FList.First;
-    FList.Delete(1);
+    Result := FErrors.Strings[0];
+    FList.Delete(0);
   end;
 end;
 
 function TErrorStack.Count: Cardinal;
 begin
-  Result := FList.Count;
+  Result := FErrors.Count;
+end;
+
+function TErrorStack.GetEnumerator : TErrorsEnumerator;
+begin
+  Result := TErrorsEnumerator.Create(FErrors);
+end;
+
+{ TErrorStack.TErrorsEnumerator }
+
+constructor TErrorStack.TErrorsEnumerator.Create (AErrors : TStringList);
+begin
+  FErrors := AErrors;
+  FPosition := 0;
+end;
+
+function TErrorStack.TErrorsEnumerator.MoveNext : Boolean;
+begin
+  Result := FPosition < FErrors.Count;
+end;
+
+function TErrorStack.TErrorsEnumerator.GetEnumerator : TErrorsEnumerator;
+begin
+  Result := Self;
+end;
+
+function TErrorStack.TErrorsEnumerator.GetCurrent : String;
+begin
+  Result := FErrors[FPosition];
+  Inc(FPosition);
 end;
 
 end.
