@@ -82,7 +82,7 @@ type
   end;
 
 const
-  ErrorsMessages [0 .. CURLcode.CURL_LAST] of String = (
+  ErrorsMessages [CURLE_OK .. CURL_LAST] of String = (
     { CURLE_OK }
     '',
 
@@ -101,7 +101,71 @@ const
     'libcurl due to a build-time decision.',
 
     { CURLE_COULDNT_RESOLVE_PROXY }
-    'Couldn''t resolve proxy. The given proxy host could not be resolved.'
+    'Couldn''t resolve proxy. The given proxy host could not be resolved.',
+
+    { CURLE_COULDNT_RESOLVE_HOST }
+    'Couldn''t resolve host. The given remote host was not resolved.',
+
+    { CURLE_COULDNT_CONNECT }
+    'Failed to connect to host or proxy.',
+
+    { CURLE_WEIRD_SERVER_REPLY }
+    'The server sent data libcurl couldn''t parse.',
+
+    { CURLE_REMOTE_ACCESS_DENIED }
+    'We were denied access to the resource given in the URL.',
+
+    { CURLE_FTP_ACCEPT_FAILED }
+    'While waiting for the server to connect back when an active FTP session ' +
+    'is used, an error code was sent over the control connection or similar. ',
+
+    { CURLE_FTP_WEIRD_PASS_REPLY }
+    'After having sent the FTP password to the server, libcurl expects a '     +
+    'proper reply.',
+
+    { CURLE_FTP_ACCEPT_TIMEOUT }
+    'During an active FTP session while waiting for the server to connect, '   +
+    'the timeout expired.',
+
+    { CURLE_FTP_WEIRD_PASV_REPLY }
+    'libcurl failed to get a sensible result back from the server as a '       +
+    'response to either a PASV or a EPSV command. The server is flawed.',
+
+    { CURLE_FTP_WEIRD_227_FORMAT }
+    'FTP servers return a 227-line as a response to a PASV command.',
+
+    { CURLE_FTP_CANT_GET_HOST }
+    'An internal failure to lookup the host used for the new connection.',
+
+    { CURLE_HTTP2 }
+    'A problem was detected in the HTTP2 framing layer.',
+
+    { CURLE_FTP_COULDNT_SET_TYPE }
+    'Received an error when trying to set the transfer mode to binary or ASCII.',
+
+    { CURLE_PARTIAL_FILE }
+    'A file transfer was shorter or larger than expected.',
+
+    { CURLE_FTP_COULDNT_RETR_FILE }
+    'This was either a weird reply to a ''RETR'' command or a zero byte '      +
+    'transfer complete.',
+
+    { CURLE_QUOTE_ERROR }
+    'When sending custom "QUOTE" commands to the remote server, one of the '   +
+    'commands returned an error code that was 400 or higher (for FTP) or '     +
+    'otherwise indicated unsuccessful completion of the command.',
+
+    { CURLE_HTTP_RETURNED_ERROR }
+    'This is returned if the HTTP server returns an error code that is >= 400.',
+
+    { CURLE_WRITE_ERROR }
+    'An error occurred when writing received data error.',
+
+    { CURLE_UPLOAD_FAILED }
+    'Failed starting the upload.',
+
+    { CURLE_READ_ERROR }
+    'There was a problem reading.'
   );
 
 implementation
