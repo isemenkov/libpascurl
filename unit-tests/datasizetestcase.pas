@@ -5,7 +5,7 @@ unit datasizetestcase;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, pascurl;
+  Classes, SysUtils, fpcunit, testregistry, datasize;
 
 type
 
