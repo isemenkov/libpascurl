@@ -93,10 +93,28 @@ type
 
       { HTTP(S) session headers }
       THeader = class
+      public
+        { Get the CONNECT response code
+          Received HTTP proxy response code to a CONNECT request. }
+        function ConnectResponseCode : THTTPStatusCode;
+          {$IFNDEF DEBUG}inline;{$EDNIF}
+
+        { Get the response code }
+        function ResponseCode : THTTPStatusCode;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
       private
-        constructor Create (AHeaders : TStringList; AErrors : PErrorStack);
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
         destructor Destroy; override;
+
+        { This function gets called by libcurl as soon as it has received header
+          data. The header callback will be called once for each header and only
+          complete header lines are passed on to the callback. }
+        class function HeaderFunctionCallback(buffer : PChar; size : LongWord;
+          nitems : LongWord; userdata : Pointer) : LongWord;
+        function HeaderCallback (buffer : PChar; size : LongWord; nitems :
+          LongWord) : LongWord;
       private
+        FCurl : CURL;
         FHeaders : TStringList;
         FErrors : PErrorStack;
       end;
@@ -216,19 +234,46 @@ end;
 
 { THTTPResponse.THeader }
 
-constructor THTTPResponse.THeader.Create(AHeaders : TStringList;
-  AErrors : PErrorStack);
+constructor THTTPResponse.THeader.Create(ACurl : CURL; AErrors : PErrorStack);
 begin
-  FHeaders := AHeaders;
+  FCurl := ACurl;
+  FHeaders := TStringList.Create;
   FErrors := AErrors;
-
-
 end;
 
 destructor THTTPResponse.THeader.Destroy;
 begin
   FreeAndNil(AHeader);
   inherited Destroy;
+end;
+
+class function THTTPResponse.THeader.HeaderFunctionCallback(buffer : PChar;
+  size : LongWord; nitems : LongWord; userdata : Pointer) : LongWord;
+begin
+  Result := THeader(userdata).HeaderCallback(buffer, size, nitems);
+end;
+
+function THTTPResponse.THeader.HeaderCallback(buffer : PChar; size : LongWord;
+  nitems : LongWord) : LongWord;
+begin
+  FHeaders.Add(buffer);
+  Result := size * nitems;
+end;
+
+function THTTPResponse.THeader.ConnectResponseCode : THTTPStatusCode;
+var
+  Code : Longint = 0;
+begin
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_CONNECTCODE, @Code);
+  Result := THTTPStatusCode(Code);
+end;
+
+function THTTPResponse.THeader.ResponseCode : THTTPStatusCode;
+var
+  Code : Longint = 0;
+begin
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_RESPONSE_CODE, @Code);
+  Result := THTTPStatusCode(Code);
 end;
 
 { THTTPResponse.TTimeout }
