@@ -58,6 +58,10 @@ type
         { Return error stack }
         function Errors : TErrorStack;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Return errors enumerator }
+        function GetEnumerator : TErrorsEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
       private
         constructor Create;
         destructor Destroy;
@@ -94,13 +98,50 @@ type
       { HTTP(S) session headers }
       THeader = class
       public
+        type
+          { HTTP protocol version }
+          THTTPVersion = (
+            HTTP_UKNOWN                   = CURL_HTTP_VERSION_NONE,
+            { Enforce HTTP 1.0 requests. }
+            HTTP_1_0                      = CURL_HTTP_VERSION_1_0,
+            { Enforce HTTP 1.1 requests. }
+            HTTP_1_1                      = CURL_HTTP_VERSION_1_1,
+            { Attempt HTTP 2 requests. Will fall back to HTTP 1.1 if
+              HTTP 2 can't be negotiated with the server. }
+            HTTP_2_0                      = CURL_HTTP_VERSION_2_0,
+            { Attempt HTTP 2 over TLS (HTTPS) only. Will fall back to
+              HTTP 1.1 if HTTP 2 can't be negotiated with the HTTPS server. For
+              clear text HTTP servers, libcurl will use 1.1. }
+            HTTP_2_0_TLS                  = CURL_HTTP_VERSION_2TLS,
+            { Issue non-TLS HTTP requests using HTTP/2 without HTTP/1.1 Upgrade.
+              It requires prior knowledge that the server supports HTTP/2
+              straight away. HTTPS requests will still do HTTP/2 the standard
+              way with negotiated protocol version in the TLS handshake. }
+            HTTP_2_PRIOR_KNOWEDGE         = CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE,
+            { Setting this value will make libcurl attempt to use HTTP/3
+              directly to server given in the URL. Note that this cannot
+              gracefully downgrade to earlier HTTP version if the server doesn't
+              support HTTP/3. For more reliably upgrading to HTTP/3, set the
+              preferred version to something lower and let the server announce
+              its HTTP/3 support via Alt-Svc:. }
+            HTTP_3_0                      = CURL_HTTP_VERSION_3
+          );
+      public
         { Get the CONNECT response code
           Received HTTP proxy response code to a CONNECT request. }
-        function ConnectResponseCode : THTTPStatusCode;
+        function ConnectStatusCode : THTTPStatusCode;
           {$IFNDEF DEBUG}inline;{$EDNIF}
 
         { Get the response code }
-        function ResponseCode : THTTPStatusCode;
+        function StatusCode : THTTPStatusCode;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get the HTTP version used in the connection }
+        function Version : THTTPVersion;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get size of retrieved headers }
+        function Length : TDataSize;
           {$IFNDEF DEBUG}inline;{$ENDIF}
       private
         constructor Create (ACurl : CURL; AErrors : PErrorStack);
@@ -179,6 +220,11 @@ end;
 function THTTPResponse.TError.Errors : TErrorStack;
 begin
   Result := FErrorStack;
+end;
+
+function THTTPResponse.TError.GetEnumerator : TErrorsEnumerator;
+begin
+  Result := FErrorStack.GetEnumerator;
 end;
 
 { THTTPResponse.TRedirect }
@@ -260,7 +306,7 @@ begin
   Result := size * nitems;
 end;
 
-function THTTPResponse.THeader.ConnectResponseCode : THTTPStatusCode;
+function THTTPResponse.THeader.ConnectStatusCode : THTTPStatusCode;
 var
   Code : Longint = 0;
 begin
@@ -268,12 +314,29 @@ begin
   Result := THTTPStatusCode(Code);
 end;
 
-function THTTPResponse.THeader.ResponseCode : THTTPStatusCode;
+function THTTPResponse.THeader.StatusCode : THTTPStatusCode;
 var
   Code : Longint = 0;
 begin
   FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_RESPONSE_CODE, @Code);
   Result := THTTPStatusCode(Code);
+end;
+
+function THTTPResponse.THeader.Version : THTTPVersion;
+var
+  version : Longint = 0;
+begin
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_VERSION, @version);
+  Result := THTTPVersion(version);
+end;
+
+function THTTPResponse.THeader.Length : TDataSize;
+var
+  bytes : LongWord = 0;
+begin
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HEADER_SIZE, @bytes);
+  Result := TDataSize.Create;
+  Result.Bytes := bytes;
 end;
 
 { THTTPResponse.TTimeout }

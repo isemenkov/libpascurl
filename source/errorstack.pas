@@ -69,6 +69,8 @@ type
 
     { Add error to stack }
     procedure Push (AError : CURLcode);
+    { Add error message to stack }
+    procedure Push (AMessage : String);
     { Return top error and remove it from stack }
     function Pop : String;
     { Stack count elements }
@@ -414,6 +416,14 @@ begin
   if AError <> CURLE_OK then
   begin
     FErrors.Add(ErrorsMessages[AError]);
+  end;
+end;
+
+procedure TErrorStack.Push(AMessage : String);
+begin
+  if AMessage <> '' then
+  begin
+    FErrors.Add(AMessage);
   end;
 end;
 
