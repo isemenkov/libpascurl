@@ -70,24 +70,11 @@ type
         FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
       end;
 
-      { HTTP(S) session redirected options }
-      TRedirect = class
+      { HTTP(S) session request }
+      TRequest = class
       public
-        { Return TRUE if request is redirected }
-        function IsRedirected : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-
-        { Return redirect count times }
-        function Count : Longint;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-
-        { Return redirected URL }
-        function Url : String;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-
-        { Return the time for all redirection steps }
-        function TotalTime : TTimeInterval;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
+        { Get size of sent request }
+        function Length : TDataSize;
       private
         constructor Create(ACurl : CURL; AErrors : PErrorStack);
       private
@@ -160,6 +147,31 @@ type
         FErrors : PErrorStack;
       end;
 
+      { HTTP(S) session redirected options }
+      TRedirect = class
+      public
+        { Return TRUE if request is redirected }
+        function IsRedirected : Boolean;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Return redirect count times }
+        function Count : Longint;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Return redirected URL }
+        function Url : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Return the time for all redirection steps }
+        function TotalTime : TTimeInterval;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create(ACurl : CURL; AErrors : PErrorStack);
+      private
+        FCurl : CURL;
+        FErrors : PErrorStack;
+      end;
+
       { HTTP(S) session timeouts }
       TTimeout = class
       public
@@ -227,55 +239,21 @@ begin
   Result := FErrorStack.GetEnumerator;
 end;
 
-{ THTTPResponse.TRedirect }
+{ THTTPResponse.TRequest }
 
-constructor THTTPResponse.TRedirect.Create (ACurl : CURL;
-  AErrors : PErrorStack);
+constructor THTTPResponse.TRequest.Create(ACurl : CURL; AErrors : PErrorStack);
 begin
   FCurl := ACurl;
-  FErrors := AErorrs;
-
-  FollowRedirect := True;
+  FErrors := AErrors;
 end;
 
-function THTTPResponse.TRedirect.IsRedirected : Boolean;
-begin
-  Result := Count > 0;
-end;
-
-function THTTPResponse.TRedirect.Count : Longint;
-begin
-  Result := 0;
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_COUNT, @Result));
-end;
-
-function THTTPResponse.TRedirect.Url : String;
+function THTTPResponse.TRequest.Length : TDataSize;
 var
-  url : PChar;
+  bytes : Longint = 0;
 begin
-  New(url);
-  url := '';
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_URL, @url));
-  Result := url;
-end;
-
-function THTTPResponse.TRedirect.TotalTime : TTimeInterval;
-var
-  time : Longword = 0;
-  dtime : Double = 0;
-  CurlResult : CURLcode;
-begin
-  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME_T, @time);
-  Result := TTimeInterval.Create;
-  Result.Milliseconds := time;
-
-  if CurlResult <> CURLE_OK then
-  begin
-    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME, @dtime);
-    Result.Milliseconds := ceil(dtime);
-  end;
-
-  FErrors^.Push(CurlResult);
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REQUEST_SIZE, @bytes);
+  Result := TDataSize.Create;
+  Result.Bytes := bytes;
 end;
 
 { THTTPResponse.THeader }
@@ -337,6 +315,57 @@ begin
   FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HEADER_SIZE, @bytes);
   Result := TDataSize.Create;
   Result.Bytes := bytes;
+end;
+
+{ THTTPResponse.TRedirect }
+
+constructor THTTPResponse.TRedirect.Create (ACurl : CURL;
+  AErrors : PErrorStack);
+begin
+  FCurl := ACurl;
+  FErrors := AErorrs;
+
+  FollowRedirect := True;
+end;
+
+function THTTPResponse.TRedirect.IsRedirected : Boolean;
+begin
+  Result := Count > 0;
+end;
+
+function THTTPResponse.TRedirect.Count : Longint;
+begin
+  Result := 0;
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_COUNT, @Result));
+end;
+
+function THTTPResponse.TRedirect.Url : String;
+var
+  url : PChar;
+begin
+  New(url);
+  url := '';
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_URL, @url));
+  Result := url;
+end;
+
+function THTTPResponse.TRedirect.TotalTime : TTimeInterval;
+var
+  time : Longword = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME_T, @time);
+  Result := TTimeInterval.Create;
+  Result.Milliseconds := time;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME, @dtime);
+    Result.Milliseconds := ceil(dtime);
+  end;
+
+  FErrors^.Push(CurlResult);
 end;
 
 { THTTPResponse.TTimeout }
