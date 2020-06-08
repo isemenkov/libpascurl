@@ -204,6 +204,23 @@ type
         FCurl : CURL;
         FErrors : PErrorStack;
       end;
+
+      { HTTP(S) session speed data }
+      TSpeed = class
+      public
+        { Get download speed per second }
+        function Download : TDataSize;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get upload speed per second }
+        function Upload : TDataSize;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
+      private
+        FCurl : CURL;
+        FErrors : PErrorStack;
+      end;
   private
     FError : TError;
     FRedirect : TRedirect;
@@ -485,6 +502,52 @@ begin
   begin
     CurlResult := curl_easy_getinfo(FCurl, CURLINFO_STARTTRANSFER_TIME, @dtime);
     Result.Milliseconds := ceil(dtime);
+  end;
+
+  FErrors^.Push(CurlResult);
+end;
+
+{ THTTPResponse.TSpeed }
+
+constructor THTTPResponse.TSpeed.Create (ACurl : CURL; AErrors : PErrorStack);
+begin
+  FCurl := ACurl;
+  FErrors := AErrors;
+end;
+
+function THTTPResponse.TSpeed.Download : TDataSize;
+var
+  bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
+  Result := TDataSize.Create;
+  Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_DOWNLOAD, @dbytes);
+    Result.Bytes := ceil(dbytes);
+  end;
+
+  FErrors^.Push(CurlResult);
+end;
+
+function THTTPResponse.TSpeed.Upload : TDataSize;
+var
+  bytes : LongWord = 0;
+  dbytes : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_UPLOAD_T, @bytes);
+  Result := TDataSize.Create;
+  Result.Bytes := bytes;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_UPLOAD, @dbytes);
+    Result.Bytes := ceil(dbytes);
   end;
 
   FErrors^.Push(CurlResult);
