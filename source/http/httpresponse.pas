@@ -221,6 +221,48 @@ type
         FCurl : CURL;
         FErrors : PErrorStack;
       end;
+
+      { Additional response information }
+      TInfo = class
+      public
+        { Get number of created connections }
+        function ConnectionsCount : Cardinal;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get IP address of last connection }
+        function ConnectedIP : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get the latest destination port number }
+        function ConnectedPort : Word;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get local IP address of last connection }
+        function LocalIP : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get the latest local port number }
+        function LocalPort : Word;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get the last socket used
+          If the socket is no longer valid, -1 is returned. }
+        function LastSocket : curl_socket_t;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get the active socket }
+        function ActiveSocket : curl_socket_t;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get private pointer }
+        function UserData : Pointer;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
+      private
+        FCurl : CURL;
+        FErrors : PErrorStack;
+      end;
   private
     FError : TError;
     FRedirect : TRedirect;
@@ -551,6 +593,79 @@ begin
   end;
 
   FErrors^.Push(CurlResult);
+end;
+
+{ THTTPResponse.TInfo }
+
+constructor THTTPResponse.TInfo.Create (ACurl : CURL; AErrors : PErrorStack);
+begin
+  FCurl := ACurl;
+  FErrors := AErrors;
+end;
+
+function THTTPResponse.TInfo.ConnectionsCount : Cardinal;
+var
+  count : Longint;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_NUM_CONNECTS, @count);
+  Result := count;
+end;
+
+function THTTPResponse.TInfo.ConnectedIP : String;
+var
+  ip : PChar;
+begin
+  New(ip);
+  ip := '';
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIMARY_IP, @ip));
+  Result := ip;
+end;
+
+function THTTPResponse.TInfo.ConnectedPort : Word;
+var
+  port : Longint;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIMARY_PORT, @port));
+  Result := port;
+end;
+
+function THTTPResponse.TInfo.LocalIP : String;
+var
+  ip : PChar;
+begin
+  New(ip);
+  ip := '';
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LOCAL_IP, @ip));
+  Result := ip;
+end;
+
+function THTTPResponse.TInfo.LocalPort : Word;
+var
+  port : Longint;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LOCAL_PORT, @port));
+  Result := port;
+end;
+
+function THTTPResponse.TInfo.LastSocket : curl_socket_t;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LASTSOCKET, @Result));
+end;
+
+function THTTPResponse.TInfo.ActiveSocket : curl_socket_t;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_ACTIVESOCKET, @Result));
+end;
+
+function THTTPResponse.TInfo.UserData : Pointer;
+var
+  data : PPChar = nil;
+begin
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIVATE, data));
+  if data <> nil then
+    Result := data^
+  else
+    Result := nil;
 end;
 
 end.
