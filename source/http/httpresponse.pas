@@ -172,6 +172,24 @@ type
         FErrors : PErrorStack;
       end;
 
+      TContent = class
+      public
+        { Get Content-Type
+          This is the value read from the Content-Type: field. If you get empty,
+          it means that the server didn't send a valid Content-Type header. }
+        function ContentType : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get content-length of download }
+        function Length : TDataSize;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
+      private
+        FCurl : CURL;
+        FErrors : PErrorStack;
+      end;
+
       { HTTP(S) session timeouts }
       TTimeout = class
       public
@@ -422,6 +440,44 @@ begin
   begin
     CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME, @dtime);
     Result.Milliseconds := ceil(dtime);
+  end;
+
+  FErrors^.Push(CurlResult);
+end;
+
+{ THTTPResponse.TContent }
+
+constructor THTTPResponse.TContent.Create(ACurl : CURL; AErrors : PErrorStack);
+begin
+  FCurl := ACurl;
+  FErrors := AErrors;
+end;
+
+function THTTPResponse.TContent.ContentType : String;
+var
+  ctype : PChar;
+begin
+  New(ctype);
+  ctype := '';
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_CONTENT_TYPE, @ctype));
+  Result := ctype;
+end;
+
+function THTTPResponse.TContent.Length : TDataSize;
+var
+  size : Longword = 0;
+  dsize : Double = 0;
+begin
+  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
+    @size);
+  Result := TDataSize.Create
+  Result.Bytes := size;
+
+  if CurlResult <> CURLE_OK then
+  begin
+    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+      @dsize);
+    Result.Bytes := ceil(dsize);
   end;
 
   FErrors^.Push(CurlResult);
