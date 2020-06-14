@@ -47,6 +47,7 @@ type
   TCurlStringList = class
   public
     constructor Create;
+    constructor Create (AList : pcurl_slist);
     destructor Destroy; override;
 
     { Return list first item }
@@ -71,6 +72,12 @@ constructor TCurlStringList.Create;
 begin
   FList := nil;
   FNext := nil;
+end;
+
+constructor TCurlStringList.Create (AList : pcurl_slist);
+begin
+  FList := AList;
+  FNext := AList;
 end;
 
 destructor TCurlStringList.Destroy;

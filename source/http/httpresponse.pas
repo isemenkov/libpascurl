@@ -191,6 +191,7 @@ type
         FErrors : PErrorStack;
       end;
 
+      { Get all known cookies }
       TCookies = class
       public
 
@@ -199,6 +200,7 @@ type
       private
         FCurl : CURL;
         FErrors : PErrorStack;
+        FList : TCurlStringList;
       end;
 
       { HTTP(S) session timeouts }
@@ -492,6 +494,15 @@ begin
   end;
 
   FErrors^.Push(CurlResult);
+end;
+
+{ THTTPResponse.TCookies }
+
+constructor THTTPResponse.TCoookies.Create (ACurl : CURL; AErrors :
+  PErrorStack);
+begin
+  FCurl := ACurl;
+  FErrors := AErrors;
 end;
 
 { THTTPResponse.TTimeout }
