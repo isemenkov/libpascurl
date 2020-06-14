@@ -31,7 +31,7 @@
         <PackageName Value="FCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="14">
       <Unit0>
         <Filename Value="libpascurl_testproject.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -85,6 +85,10 @@
         <Filename Value="errorstacktestcase.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit12>
+      <Unit13>
+        <Filename Value="../source/curlstringlist.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit13>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

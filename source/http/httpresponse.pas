@@ -41,7 +41,7 @@ interface
 
 uses
   Classes, SysUtils, libpascurl, curlresult, timeinterval, datasize, errorstack,
-  httpstatuscode;
+  httpstatuscode, curlstringlist;
 
 type
   { HTTP(S) session result response data }
@@ -172,6 +172,7 @@ type
         FErrors : PErrorStack;
       end;
 
+      { HTTP(S) content data }
       TContent = class
       public
         { Get Content-Type
@@ -183,6 +184,16 @@ type
         { Get content-length of download }
         function Length : TDataSize;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+      private
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
+      private
+        FCurl : CURL;
+        FErrors : PErrorStack;
+      end;
+
+      TCookies = class
+      public
+
       private
         constructor Create (ACurl : CURL; AErrors : PErrorStack);
       private
