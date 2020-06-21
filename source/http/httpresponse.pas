@@ -8,12 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Module:          Unit 'pascurl'                                            *)
-(* Functionality:   Provides THTTPResponse class                              *)
-(*                                                                            *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -184,6 +178,14 @@ type
         { Get content-length of download }
         function Length : TDataSize;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get content as string }
+        function ToString : String;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        { Get content as bytes array }
+        function ToBytes : TMemoryStream;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
       private
         constructor Create (ACurl : CURL; AErrors : PErrorStack);
       private
@@ -194,14 +196,33 @@ type
       { Get all known cookies }
       TCookies = class
       public
+        type
+          { Cookies enumerator }
+          TCookiesEnumerator = class
+          protected
 
-      private
-        constructor Create (ACurl : CURL; AErrors : PErrorStack);
-      private
-        FCurl : CURL;
-        FErrors : PErrorStack;
-        FList : TCurlStringList;
-      end;
+            FPosition : Cardinal;
+            function GetCurrent : String;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+          public
+            constructor Create;
+            function MoveNext : Boolean;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            function GetEnumerator : TCookiesEnumerator;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            property Current : String read GetCurrent;
+          end;
+        public
+          { Get cookies enumerator }
+          function GetEnumerator : TCookiesEnumerator;
+            {$IFNDEF DEBUG}inline;{$ENDIF}
+        private
+          constructor Create (ACurl : CURL; AErrors : PErrorStack);        
+        private
+          FCurl : CURL;
+          FErrors : PErrorStack;
+          FList : TCurlStringList;
+        end;
 
       { HTTP(S) session timeouts }
       TTimeout = class
@@ -252,6 +273,171 @@ type
         FCurl : CURL;
         FErrors : PErrorStack;
       end;
+
+      {  }
+      TSecure = class
+      public
+        type
+          TSSLResult = (
+            { The operation was successful }
+            ERR_OK                                                       = 0,
+            
+            { Unable to get issuer certificate" the issuer certificate could not 
+              be found: this occurs if the issuer certificate of an untrusted 
+              certificate cannot be found }
+            ERR_UNABLE_TO_GET_ISSUER_CERT                                = 2,
+            
+            { The CRL of a certificate could not be found }
+            ERR_UNABLE_TO_GET_CRL { UNUSED }                             = 3,
+
+            { The certificate signature could not be decrypted. This means that 
+              the actual signature value could not be determined rather than it 
+              not matching the expected value, this is only meaningful for RSA 
+              keys. }
+            ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE                         = 4,
+
+            { The CRL signature could not be decrypted: this means that the 
+              actual signature value could not be determined rather than it not 
+              matching the expected value. }
+            ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE { UNUSED }               = 5,
+
+            { The public key in the certificate SubjectPublicKeyInfo could not 
+              be read. }
+            ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY                       = 6,
+
+            { The signature of the certificate is invalid. }
+            ERR_CERT_SIGNATURE_FAILURE                                   = 7,
+
+            { The signature of the certificate is invalid. }
+            ERR_CRL_SIGNATURE_FAILURE { UNUSED }                         = 8,
+
+            { The certificate is not yet valid: the notBefore date is after the 
+              current time. }
+            ERR_CERT_NOT_YET_VALID                                       = 9, 
+
+            { The certificate has expired: that is the notAfter date is before 
+              the current time. }
+            ERR_CERT_HAS_EXPIRED                                         = 10,
+
+            { The CRL is not yet valid. }
+            ERR_CRL_NOT_YET_VALID { UNUSED }                             = 11,
+
+            { The CRL has expired. }
+            ERR_CRL_HAS_EXPIRED { UNUSED }                               = 12,
+
+            { The certificate notBefore field contains an invalid time. }
+            ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD                           = 13,
+
+            { The certificate notAfter field contains an invalid time. }
+            ERR_ERROR_IN_CERT_NOT_AFTER_FIELD                            = 14,
+
+            { The CRL lastUpdate field contains an invalid time. }
+            ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD { UNUSED }                = 15,
+
+            { The CRL nextUpdate field contains an invalid time. }
+            ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD { UNUSED }                = 16,
+
+            { An error occurred trying to allocate memory. This should never 
+              happen. }
+            ERR_OUT_OF_MEM                                               = 17, 
+
+            { The passed certificate is self signed and the same certificate 
+              cannot be found in the list of trusted certificates. }
+            ERR_DEPTH_ZERO_SELF_SIGNED_CERT                              = 18,
+
+            { The certificate chain could be built up using the untrusted 
+              certificates but the root could not be found locally. }
+            ERR_SELF_SIGNED_CERT_IN_CHAIN                                = 19,
+
+            { The issuer certificate of a locally looked up certificate could 
+              not be found. This normally means the list of trusted certificates 
+              is not complete. }
+            ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY                        = 20,
+
+            { No signatures could be verified because the chain contains only 
+              one certificate and it is not self signed. }
+            ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE                          = 21,
+
+            { The certificate chain length is greater than the supplied maximum 
+              depth. }
+            ERR_CERT_CHAIN_TOO_LONG { UNUSED }                           = 22,
+
+            { The certificate has been revoked. }
+            ERR_CERT_REVOKED { UNUSED }                                  = 23,
+
+            { A CA certificate is invalid. Either it is not a CA or its 
+              extensions are not consistent with the supplied purpose. }
+            ERR_INVALID_CA                                               = 24,
+
+            { The basicConstraints pathlength parameter has been exceeded. }
+            ERR_PATH_LENGTH_EXCEEDED                                     = 25,
+
+            { The supplied certificate cannot be used for the specified 
+              purpose. }
+            ERR_INVALID_PURPOSE                                          = 26,
+
+            { The root CA is not marked as trusted for the specified purpose. }
+            ERR_CERT_UNTRUSTED                                           = 27,
+
+            { The root CA is marked to reject the specified purpose. }
+            ERR_CERT_REJECTED                                            = 28,
+
+            { The current candidate issuer certificate was rejected because its 
+              subject name did not match the issuer name of the current 
+              certificate. Only displayed when the -issuer_checks option is 
+              set. }
+            ERR_SUBJECT_ISSUER_MISMATCH                                  = 29,
+
+            { The current candidate issuer certificate was rejected because its 
+              subject key identifier was present and did not match the authority 
+              key identifier current certificate. Only displayed when the 
+              -issuer_checks option is set. }
+            ERR_AKID_SKID_MISMATCH                                       = 30,
+
+            { The current candidate issuer certificate was rejected because its 
+              issuer name and serial number was present and did not match the 
+              authority key identifier of the current certificate. Only 
+              displayed when the -issuer_checks option is set. }
+            ERR_AKID_ISSUER_SERIAL_MISMATCH                              = 31,
+
+            { The current candidate issuer certificate was rejected because its 
+              keyUsage extension does not permit certificate signing. }
+            ERR_KEYUSAGE_NO_CERTSIGN                                     = 32,
+
+            { An application specific error. }
+            ERR_APPLICATION_VERIFICATION { UNUSED }                      = 50 
+          );
+
+          TSSLEnginesEnumerator = class
+          protected
+            FList : TCurlStringList;
+            FPosition : Cardinal;
+
+            function GetCurrent : String;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+          public
+            constructor Create;
+            function MoveNext : Boolean;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            function GetEnumerator : TSSLEnginesEnumerator;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            property Current : String read GetCurrent;
+          end;
+      private
+        constructor Create (ACurl : CURL; AErrors : PErrorStack);
+      public
+        {  }
+        function SSLEngines : TSSLEnginesEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        
+        {  }
+        function SSLResult : TSSLResult;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        {  }
+        function SSLProxyResult : TSSLResult;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+      end; 
 
       { Additional response information }
       TInfo = class
@@ -341,7 +527,7 @@ function THTTPResponse.TRequest.Length : TDataSize;
 var
   bytes : Longint = 0;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REQUEST_SIZE, @bytes);
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REQUEST_SIZE, @bytes));
   Result := TDataSize.Create;
   Result.Bytes := bytes;
 end;
@@ -378,7 +564,7 @@ function THTTPResponse.THeader.ConnectStatusCode : THTTPStatusCode;
 var
   Code : Longint = 0;
 begin
-  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_CONNECTCODE, @Code);
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_CONNECTCODE, @Code));
   Result := THTTPStatusCode(Code);
 end;
 
@@ -386,7 +572,7 @@ function THTTPResponse.THeader.StatusCode : THTTPStatusCode;
 var
   Code : Longint = 0;
 begin
-  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_RESPONSE_CODE, @Code);
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_RESPONSE_CODE, @Code));
   Result := THTTPStatusCode(Code);
 end;
 
@@ -394,7 +580,7 @@ function THTTPResponse.THeader.Version : THTTPVersion;
 var
   version : Longint = 0;
 begin
-  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_VERSION, @version);
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HTTP_VERSION, @version));
   Result := THTTPVersion(version);
 end;
 
@@ -402,7 +588,7 @@ function THTTPResponse.THeader.Length : TDataSize;
 var
   bytes : LongWord = 0;
 begin
-  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HEADER_SIZE, @bytes);
+  FErrors.Push(curl_easy_getinfo(FCurl, CURLINFO_HEADER_SIZE, @bytes));
   Result := TDataSize.Create;
   Result.Bytes := bytes;
 end;
@@ -483,7 +669,7 @@ var
 begin
   CurlResult := curl_easy_getinfo(FCurl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
     @size);
-  Result := TDataSize.Create
+  Result := TDataSize.Create;
   Result.Bytes := size;
 
   if CurlResult <> CURLE_OK then
@@ -494,6 +680,16 @@ begin
   end;
 
   FErrors^.Push(CurlResult);
+end;
+
+function THTTPResponse.TContent.ToString : String;
+begin
+  // TODO
+end;
+
+function THTTPResponse.TContent.ToBytes : TMemoryStream;
+begin
+  // TODO
 end;
 
 { THTTPResponse.TCookies }
@@ -685,7 +881,7 @@ function THTTPResponse.TInfo.ConnectionsCount : Cardinal;
 var
   count : Longint;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_NUM_CONNECTS, @count);
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_NUM_CONNECTS, @count));
   Result := count;
 end;
 

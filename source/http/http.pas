@@ -475,7 +475,7 @@ begin
     CURLE_SSL_ENGINE_INITFAILED :      Result := ERROR_SSL_ENGINE_INITFAILED;
     CURLE_HTTP2_STREAM :               Result := ERROR_HTTP2_STREAM;
     CURLE_HTTP3 :                      Result := ERROR_HTTP3;
-    otherwise                          Result := ERROR_SOMETHING_WRONG
+    otherwise                          Result := ERROR_SOMETHING_WRONG;
   end;
 end;
 
