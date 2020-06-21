@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit httpresponse;
+unit http.response;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -43,25 +43,12 @@ type
   public
     type
       { HTTP(S) session errors }
-      TError = class
-      public
+      IError = interface
         { Return TRUE if has errors }
         function HasErrors : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
 
-        { Return error stack }
+        { Return all errors stack }
         function Errors : TErrorStack;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-
-        { Return errors enumerator }
-        function GetEnumerator : TErrorsEnumerator;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-      private
-        constructor Create;
-        destructor Destroy;
-      private
-        FErrorStack : TErrorStack;
-        FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
       end;
 
       { HTTP(S) session request }
@@ -278,6 +265,7 @@ type
       TSecure = class
       public
         type
+          { SSL verify result code }
           TSSLResult = (
             { The operation was successful }
             ERR_OK                                                       = 0,
@@ -408,6 +396,51 @@ type
             ERR_APPLICATION_VERIFICATION { UNUSED }                      = 50 
           );
 
+          { HTTP(S) auth methods }
+          THTTPAuthMethod = (
+            { No HTTP authentication. 
+              A request does not contain any authentication information. This is 
+              equivalent to granting everyone access to the resource. }
+            AUTH_NONE                                      = CURLAUTH_NONE,
+
+            { HTTP Basic authentication (default). 
+              Basic authentication sends a Base64-encoded string that contains a 
+              user name and password for the client. Base64 is not a form of 
+              encryption and should be considered the same as sending the user 
+              name and password in clear text. If a resource needs to be 
+              protected, strongly consider using an authentication scheme other 
+              than basic authentication. }
+            AUTH_BASIC                                     = CURLAUTH_BASIC,
+
+            { HTTP Digest authentication. 
+              Digest access authentication is one of the agreed-upon methods a 
+              web server can use to negotiate credentials, such as username or 
+              password, with a user's web browser. This can be used to confirm 
+              the identity of a user before sending sensitive information, such 
+              as online banking transaction history. It applies a hash function 
+              to the username and password before sending them over the network. 
+              In contrast, basic access authentication uses the easily 
+              reversible Base64 encoding instead of hashing, making it 
+              non-secure unless used in conjunction with TLS. }
+            AUTH_DIGEST                                    = CURLAUTH_DIGEST,
+
+            { HTTP Negotiate (SPNEGO) authentication }
+            AUTH_NEGOTIATE                                 = CURLAUTH_NEGOTIATE,
+
+            { HTTP NTLM authentication }
+            AUTH_NTLM                                      = CURLAUTH_NTLM,
+
+            { HTTP Digest authentication with IE flavour }
+            AUTH_DIGEST_IE                                 = CURLAUTH_DIGEST_IE,
+
+            { HTTP NTLM authentication delegated to winbind helper }
+            AUTH_NTLM_WB                                   = CURLAUTH_NTLM_WB,
+
+            { HTTP Bearer token authentication }
+            AUTH_BEARER                                    = CURLAUTH_BEARER
+          );
+ 
+          { SSL engines enumerator }
           TSSLEnginesEnumerator = class
           protected
             FList : TCurlStringList;
@@ -423,6 +456,35 @@ type
               {$IFNDEF DEBUG}inline;{$ENDIF}
             property Current : String read GetCurrent;
           end;
+
+          { TLS info enumerator }
+          TTLSInfoEnumerator = class
+          protected
+
+            FPosition : Cardinal;
+
+          public
+            constructor Create;
+            function MoveNext : Boolean;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            function GetEnumerator : TTLSInfoEnumerator;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+
+          end;
+
+          { TLS chain enumerator }
+          TTLSChainEnumerator = class
+          protected
+
+            FPosition : Cardinal;
+
+          public
+            constructor Create;
+            function MoveNext : Boolean;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+            function GetEnumerator : TTLSChainEnumerator;
+              {$IFNDEF DEBUG}inline;{$ENDIF}
+          end;
       private
         constructor Create (ACurl : CURL; AErrors : PErrorStack);
       public
@@ -437,6 +499,16 @@ type
         {  }
         function SSLProxyResult : TSSLResult;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        {  }
+        function TLSInfo : TTLSInfoEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        {  }
+        function TLSChain : TTLSChainEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+
+        
       end; 
 
       { Additional response information }
@@ -488,32 +560,8 @@ type
 
 implementation
 
-{ THTTPResponse.TError }
-
-constructor THTTPResponse.TError.Create;
-begin
-  FErrorStack := TErrorStack.Create;
-end;
-
-destructor THTTPResponse.TError.Destroy;
-begin
-  FreeAndNil(FErrorStack);
-end;
-
-function THTTPResponse.TError.HasErrors : Boolean;
-begin
-  Result := FErrorStack.Count > 0;
-end;
-
-function THTTPResponse.TError.Errors : TErrorStack;
-begin
-  Result := FErrorStack;
-end;
-
-function THTTPResponse.TError.GetEnumerator : TErrorsEnumerator;
-begin
-  Result := FErrorStack.GetEnumerator;
-end;
+uses
+  http.response.error;
 
 { THTTPResponse.TRequest }
 
