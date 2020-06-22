@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.utils.stringlist;
+unit utils.result;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,128 +34,97 @@ unit curl.utils.stringlist;
 interface
 
 uses
-  libpascurl;
+  SysUtils;
 
 type
-  { CURL library string list }
-  TStringList = class
+  { Value not exists exception }
+  TValueNotExistsException = class(Exception);  
+
+  { Error not exists exception }
+  TErrorNotExistException = class(Exception);  
+
+  { Contains result value or error type like in GO or Rust lang }
+  generic TResult<V, E> = class
   public
-    constructor Create;
-    constructor Create (AList : pcurl_slist);
-    destructor Destroy; override;
+    { Create new rsult contains value }
+    constructor Create (AValue : V);
 
-    { Return list first item }
-    function First : String;
+    { Create new result contains error }
+    constructor Create (AError : E);
+
+    { Return true if result contains value }
+    function IsOk : Boolean;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
-    { Return list next element }
-    function Next : String;
+    { Return true if result contains error }
+    function IsErr : Boolean;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
-    { Return TRUE if list if empty }
-    function IsEmpty : Boolean;
+    { Return value if not exists raise TValueNotExistsException }
+    function Value : V;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
-    { Add new string to list }
-    procedure Add (AItem : String);
+    { Return error if not exists raise TErrorNotExistsException }
+    function Error : E;
       {$IFNDEF DEBUG}inline;{$ENDIF}
-
-    { Convert TStringList to CURL pcurl_slist }
-    property ToCurlList : pcurl_slist read FList;
-  private
-    FList : pcurl_slist;
-    FNext : pcurl_slist;
-  end;
-
-  { Helper which add enumerator to TStringList class }
-  TStringListEnumeratorHelper = class helper for TStringList 
-  public
+  protected
     type
-      { TStringList enumerator }
-      TStringListEnumerator = class 
-      protected
-        function GetCurrent : String;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-      public
-        constructor Create (AList : TStringList);
-        destructor Destroy; override;
-
-        function MoveNext : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        function GetEnumerator : TStringListEnumerator;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        property Current : String read GetCurrent;
-      private
-        FList : TStringList;
+      TValue = record
+        Ok : Boolean;
+        case Boolean of
+          True  : (Value : record val : V; end;);
+          False : (Error : record err : E; end;);
       end;
-  public
-    function GetEnumerator : TStringListEnumerator;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+  protected
+    FValue : TValue;
   end;
 
 implementation
 
-{ TStringList }
+{ TResult generic }
 
-constructor TStringList.Create;
+constructor TResult.Create (AValue : V);
 begin
-  FList := nil;
-  FNext := nil;
+  FValue.Ok := True;
+  FValue.Value.val := AValue;
 end;
 
-constructor TStringList.Create (AList : pcurl_slist);
+constructor TResult.Create (AError : E);
 begin
-  FList := AList;
-  FNext := AList;
+  FValue.Ok := False;
+  FValue.Error.err := AError;
 end;
 
-destructor TStringList.Destroy;
+function TResult.IsOk : Boolean;
 begin
-  curl_slist_free_all(FList);
-  FNext := nil;
-  inherited Destroy;
+  Result := FValue.Ok;
 end;
 
-function TStringList.First : String;
+function TResult.IsErr : Boolean;
 begin
-  if FList <> nil then
+  Result := not FValue.Ok;
+end;
+
+function TResult.Value : V;
+begin
+  if IsOk then
   begin
-    Result := FList^.data;
-    FNext := FList^.next;
+    Result := FValue.Value.val;
   end else 
   begin
-    Result := '';
+    raise TValueNotExistsException.Create;
   end;
 end;
 
-function TStringList.Next : String;
+function TResult.Error : E;
 begin
-  if FNext <> nil then
+  if IsErr then
   begin
-    Result := FNext^.data;
-    FNext := FNext^.next;
-    Exit;
-  end else
+    Result := FValue.Error.err;
+  end else 
   begin
-    Result := '';  
+    raise TErrorNotExistException.Create;
   end;
-end;
-
-function TStringList.IsEmpty : Boolean;
-begin
-  Result := (FList = nil);
-end;
-
-procedure TStringList.Add (AItem : String);
-begin
-  FList := curl_slist_append(FList, PChar(AItem));
-end;
-
-{ TStringListEnumeratorHelper }
-
-function TStringListEnumeratorHelper.GetEnumerator : TStringListEnumerator;
-begin
-  Result := TStringListEnumerator.Create(Self);
 end;
 
 end.
