@@ -82,8 +82,10 @@ type
 
         function MoveNext : Boolean;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+
         function GetEnumerator : TStringListEnumerator;
           {$IFNDEF DEBUG}inline;{$ENDIF}
+          
         property Current : String read GetCurrent;
       private
         FList : TStringList;
@@ -156,6 +158,30 @@ end;
 function TStringListEnumeratorHelper.GetEnumerator : TStringListEnumerator;
 begin
   Result := TStringListEnumerator.Create(Self);
+end;
+
+{ TStringListEnumeratorHelper.TStringListEnumerator }
+
+constructor TStringListEnumeratorHelper.TStringListEnumerator.Create (AErrors :
+  TStringList);
+begin
+  FList := AErrors;
+end;
+
+function TStringListEnumeratorHelper.TStringListEnumerator.GetCurrent : String;
+begin
+  Result := FList.Flist^.data;
+end;
+
+function TStringListEnumeratorHelper.TStringListEnumerator.MoveNext : Boolean;
+begin
+  Result := (FList.FList^.next <> nil);
+end;
+
+function TStringListEnumeratorHelper.TStringListEnumerator.GetEnumerator :
+  TStringListEnumerator;
+begin
+  Result := TStringListEnumerator.Create(FList);
 end;
 
 end.

@@ -24,9 +24,12 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit errorstack;
+unit curl.utils.errorstack;
 
 {$mode objfpc}{$H+}
+{$IFOPT D+}
+  {$DEFINE DEBUG}
+{$ENDIF}
 
 interface
 
@@ -39,42 +42,51 @@ type
   PErrorStack = ^TErrorStack;
   TErrorStack = class
   public
-    type
-      { Errors enumerator }
-      TErrorsEnumerator = class
-      protected
-        FErrors : TStringList;
-        FPosition : Cardinal;
-        function GetCurrent : String;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-      public
-        constructor Create (AErrors : TStringList);
-        function MoveNext : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        function GetEnumerator : TErrorsEnumerator;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        property Current : String read GetCurrent;
-      end;
-  public
     { Create new error stack }
     constructor Create;
     destructor Destroy; override;
 
     { Add error to stack }
     procedure Push (AError : CURLcode);
+    
     { Add error message to stack }
     procedure Push (AMessage : String);
+    
     { Return top error and remove it from stack }
     function Pop : String;
+    
     { Stack count elements }
     function Count : Cardinal;
-
-    { Get errors enumerator }
-    function GetEnumerator : TErrorsEnumerator;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
   private
     FErrors : TStringList;
   end;
+
+  { Helper which add enumerator to TErrorStack class }
+  TErrorStackEnumeratorHelper = class helper for TErrorStack
+  public
+    type
+      { Errors enumerator }
+      TErrorsEnumerator = class
+      protected
+        FErrors : TStringList;
+
+        function GetCurrent : String;
+        {$IFNDEF DEBUG}inline;{$ENDIF}
+      public
+        constructor Create (AErrors : TStringList);
+        
+        function MoveNext : Boolean;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        
+        function GetEnumerator : TErrorsEnumerator;
+          {$IFNDEF DEBUG}inline;{$ENDIF}
+        
+        property Current : String read GetCurrent;
+      end;
+  public
+    function GetEnumerator : TErrorsEnumerator;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+  end;  
 
 const
   ErrorsMessages : array [CURLE_OK .. CURL_LAST] of String = (
@@ -436,30 +448,34 @@ begin
   Result := FErrors.Count;
 end;
 
-function TErrorStack.GetEnumerator : TErrorsEnumerator;
+{ TErrorStackEnumeratorHelper }
+
+function TErrorStackEnumeratorHelper.GetEnumerator : TErrorsEnumerator;
 begin
-  Result := TErrorsEnumerator.Create(FErrors);
+  Result := TErrorsEnumerator.Create(Self.FErrors);
 end;
 
-{ TErrorStack.TErrorsEnumerator }
+{ TErrorsStackEnumeratorHelper.TErrorsEnumerator }
 
-constructor TErrorStack.TErrorsEnumerator.Create (AErrors : TStringList);
+constructor TErrorStackEnumeratorHelper.TErrorsEnumerator.Create (AErrors : 
+  TStringList);
 begin
   FErrors := AErrors;
   FPosition := 0;
 end;
 
-function TErrorStack.TErrorsEnumerator.MoveNext : Boolean;
+function TErrorStackEnumeratorHelper.TErrorsEnumerator.MoveNext : Boolean;
 begin
   Result := FPosition < FErrors.Count;
 end;
 
-function TErrorStack.TErrorsEnumerator.GetEnumerator : TErrorsEnumerator;
+function TErrorStackEnumeratorHelper.TErrorsEnumerator.GetEnumerator : 
+  TErrorsEnumerator;
 begin
   Result := Self;
 end;
 
-function TErrorStack.TErrorsEnumerator.GetCurrent : String;
+function TErrorStackEnumeratorHelper.TErrorsEnumerator.GetCurrent : String;
 begin
   Result := FErrors[FPosition];
   Inc(FPosition);
