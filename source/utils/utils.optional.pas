@@ -77,7 +77,6 @@ implementation
 constructor TOptional.Create;
 begin
   FValue.Ok := False;
-  FValue.Value := nil;
 end;
 
 constructor TOptional.Create (AValue : T);
@@ -103,7 +102,7 @@ begin
     Result := FValue.Value;
   end else 
   begin
-    raise TNoneValueException.Create;
+    raise TNoneValueException.Create('Value not exists');
   end;
 end;
 

@@ -5,65 +5,95 @@ unit errorstacktestcase;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, errorstack, libpascurl;
+  Classes, SysUtils, fpcunit, testregistry, curl.utils.errorstack, libpascurl;
 
 type
   { TErrorStackTestCase }
   TErrorStackTestCase = class(TTestCase)
   published
-    procedure TestStartInitialization;
-    procedure TestErrorOk;
-    procedure TestErrorMessages;
+    procedure TestEmptyErrorStack;
+    procedure TestErrorStack;
+    procedure TestErrorStackEnumerator;
   end;
 
 implementation
 
-
-{ TErrorStackTestCase }
-
-procedure TErrorStackTestCase.TestStartInitialization;
+procedure TErrorStackTestCase.TestEmptyErrorStack;
 var
-  errors : TErrorStack;
+  e : TErrorStack;
 begin
-  errors := TErrorStack.Create;
-  AssertTrue('Test start initialization count', errors.Count = 0);
-  FreeAndNil(errors);
+  e := TErrorStack.Create;
+
+  AssertTrue('Error stack must be empty', e.Count = 0);
+  AssertTrue('Error value must be none', e.Pop.IsNone);
+
+  FreeAndNil(e);
 end;
 
-procedure TErrorStackTestCase.TestErrorOk;
+procedure TErrorStackTestCase.TestErrorStack;
 var
-  errors : TErrorStack;
+  e : TErrorStack;
+  val : TErrorStack.TOptionalString;
 begin
-  errors := TErrorStack.Create;
-  errors.Push(CURLE_OK);
-  AssertTrue('Test CURLE_OK error', errors.Count = 0);
-  FreeAndNil(errors);
+  e := TErrorStack.Create;
+
+  e.Push(CURLE_OK);
+  AssertTrue('Error stack must be empty', e.Count = 0);
+  AssertTrue('Error value must be none', e.Pop.IsNone);
+
+  e.Push(CURLE_URL_MALFORMAT);
+  AssertTrue('Error stack count must be 1', e.Count = 1);
+  val := e.Pop;
+  AssertTrue('Error value must be some', val.IsSome);
+  AssertTrue('Incorrect error text value', val.Unwrap =
+    'The URL was not properly formatted.');
+  AssertTrue('Error stack must be empty', e.Count = 0);
+
+  FreeAndNil(e);
 end;
 
-procedure TErrorStackTestCase.TestErrorMessages;
+procedure TErrorStackTestCase.TestErrorStackEnumerator;
 var
-  errors : TErrorStack;
+  e : TErrorStack;
+  val : String;
+  index : Integer;
 begin
-  errors := TErrorStack.Create;
+  e := TErrorStack.Create;
 
-  errors.Push(CURLE_UNSUPPORTED_PROTOCOL);
-  AssertTrue('Test CURLE_UNSUPPORTED_PROTOCOL message',
-    errors.Pop = 'The URL you passed to libcurl used a protocol that this '    +
-    'libcurl does not support.');
+  e.Push(CURLE_OK);
+  e.Push(CURLE_COULDNT_CONNECT);
+  e.Push(CURLE_OBSOLETE20);
+  e.Push('Test error message');
 
-  errors.Push(CURLE_FAILED_INIT);
-  AssertTrue('Test CURLE_FAILED_INIT message',
-    errors.Pop = 'Very early initialization code failed.');
+  Index := 0;
+  for val in e do
+  begin
+    case Index of
+      0 : begin
+        AssertTrue('Incorrect error message CURLE_COULDNT_CONNECT',
+          val = 'Failed to connect to host or proxy.');
+      end;
+      1 : begin
+        AssertTrue('Incorrect error message CURLE_OBSOLETE20',
+          val = 'These error codes will never be returned.');
+      end;
+      2 : begin
+        AssertTrue('Incorrect custom error message',
+          val = 'Test error message');
+      end;
+      3 : begin
+        Fail('Impossible value');
+      end;
+    end;
+    Inc(Index);
+  end;
 
-  errors.Push(CURLE_URL_MALFORMAT);
-  AssertTrue('Test CURLE_URL_MALFORMAT message',
-    errors.Pop = 'The URL was not properly formatted.');
-
-  AssertTrue('Test errors count', errors.Count = 0);
-  FreeAndNil(errors);
+  FreeAndNil(e);
 end;
 
 initialization
+
   RegisterTest(TErrorStackTestCase);
+
 end.
 

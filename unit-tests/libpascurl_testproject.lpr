@@ -3,9 +3,8 @@ program libpascurl_testproject;
 {$mode objfpc}{$H+}
 
 uses
-  Interfaces, Forms, GuiTestRunner, timeintervaltestcase, datasizetestcase,
-  pascurl, curlresult, timeinterval, datasize, errorstack, DNSProperty,
-  httpstatuscode, errorstacktestcase;
+  Interfaces, Forms, GuiTestRunner, errorstacktestcase, libpascurl,
+  optionaltestcase;
 
 {$R *.res}
 

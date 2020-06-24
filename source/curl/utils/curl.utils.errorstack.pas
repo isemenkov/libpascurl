@@ -34,13 +34,16 @@ unit curl.utils.errorstack;
 interface
 
 uses
-  Classes, SysUtils, fgl, libpascurl;
+  Classes, SysUtils, fgl, libpascurl, utils.optional;
 
 type
   { TErrorStack }
   { Store CURL functions errors }
   PErrorStack = ^TErrorStack;
   TErrorStack = class
+  public
+    type
+      TOptionalString = specialize TOptional<String>;
   public
     { Create new error stack }
     constructor Create;
@@ -53,7 +56,7 @@ type
     procedure Push (AMessage : String);
     
     { Return top error and remove it from stack }
-    function Pop : String;
+    function Pop : TOptionalString;
     
     { Stack count elements }
     function Count : Cardinal;
@@ -69,6 +72,7 @@ type
       TErrorsEnumerator = class
       protected
         FErrors : TStringList;
+        FPosition : Cardinal;
 
         function GetCurrent : String;
         {$IFNDEF DEBUG}inline;{$ENDIF}
@@ -432,15 +436,15 @@ begin
   end;
 end;
 
-function TErrorStack.Pop: String;
+function TErrorStack.Pop: TOptionalString;
 begin
   if FErrors.Count > 0 then
   begin
-    Result := FErrors.Strings[0];
+    Result := TOptionalString.Create(FErrors.Strings[0]);
     FErrors.Delete(0);
     Exit;
   end;
-  Result := '';
+  Result := TOptionalString.Create;
 end;
 
 function TErrorStack.Count: Cardinal;

@@ -31,64 +31,39 @@
         <PackageName Value="FCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="14">
+    <Units Count="8">
       <Unit0>
         <Filename Value="libpascurl_testproject.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="timeintervaltestcase.pas"/>
+        <Filename Value="../source/libpascurl.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit1>
       <Unit2>
-        <Filename Value="../source/pascurl.pas"/>
+        <Filename Value="../source/utils/utils.optional.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="datasizetestcase.pas"/>
+        <Filename Value="../source/utils/utils.result.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
       <Unit4>
-        <Filename Value="../source/curlresult.pas"/>
+        <Filename Value="../source/curl/utils/curl.utils.errorstack.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="../source/timeinterval.pas"/>
+        <Filename Value="../source/curl/utils/curl.utils.stringlist.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
-        <Filename Value="../source/datasize.pas"/>
+        <Filename Value="errorstacktestcase.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit6>
       <Unit7>
-        <Filename Value="../source/errorstack.pas"/>
+        <Filename Value="optionaltestcase.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit7>
-      <Unit8>
-        <Filename Value="../source/dnsproperty.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="DNSProperty"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="../source/http/http.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit9>
-      <Unit10>
-        <Filename Value="../source/http/httpresponse.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit10>
-      <Unit11>
-        <Filename Value="../source/http/httpstatuscode.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="errorstacktestcase.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit12>
-      <Unit13>
-        <Filename Value="../source/curlstringlist.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit13>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -98,7 +73,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../source;../source/http"/>
+      <OtherUnitFiles Value="../source/utils;../source/curl/utils;../source"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
