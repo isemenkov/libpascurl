@@ -34,7 +34,7 @@ unit curl.utils.errorstack;
 interface
 
 uses
-  Classes, SysUtils, fgl, libpascurl, utils.optional;
+  Classes, SysUtils, libpascurl, utils.optional;
 
 type
   { TErrorStack }

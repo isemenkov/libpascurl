@@ -47,10 +47,10 @@ type
   generic TResult<V, E> = class
   public
     { Create new rsult contains value }
-    constructor Create (AValue : V);
+    constructor CreateValue (AValue : V);
 
     { Create new result contains error }
-    constructor Create (AError : E);
+    constructor CreateError (AError : E);
 
     { Return true if result contains value }
     function IsOk : Boolean;
@@ -69,11 +69,14 @@ type
       {$IFNDEF DEBUG}inline;{$ENDIF}
   protected
     type
+      PV = ^V;
+      PE = ^E;
+
       TValue = record
         Ok : Boolean;
         case Boolean of
-          True  : (Value : record val : V; end;);
-          False : (Error : record err : E; end;);
+          True  : (Value : PV);
+          False : (Error : PE);
       end;
   protected
     FValue : TValue;
@@ -83,16 +86,18 @@ implementation
 
 { TResult generic }
 
-constructor TResult.Create (AValue : V);
+constructor TResult.CreateValue (AValue : V);
 begin
   FValue.Ok := True;
-  FValue.Value.val := AValue;
+  New(FValue.Value);
+  FValue.Value^ := AValue;
 end;
 
-constructor TResult.Create (AError : E);
+constructor TResult.CreateError (AError : E);
 begin
   FValue.Ok := False;
-  FValue.Error.err := AError;
+  New(FValue.Error);
+  FValue.Error^ := AError;
 end;
 
 function TResult.IsOk : Boolean;
@@ -109,10 +114,10 @@ function TResult.Value : V;
 begin
   if IsOk then
   begin
-    Result := FValue.Value.val;
+    Result := FValue.Value^;
   end else 
   begin
-    raise TValueNotExistsException.Create;
+    raise TValueNotExistsException.Create('Value not exists');
   end;
 end;
 
@@ -120,10 +125,10 @@ function TResult.Error : E;
 begin
   if IsErr then
   begin
-    Result := FValue.Error.err;
+    Result := FValue.Error^;
   end else 
   begin
-    raise TErrorNotExistException.Create;
+    raise TErrorNotExistException.Create('Error not exists');
   end;
 end;
 
