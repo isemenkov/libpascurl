@@ -8,13 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Module:          Unit 'pascurl'                                            *)
-(* Functionality:                                                             *)
-(*                                                                            *)
-(*                                                                            *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -31,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit datasize;
+unit utils.datasize;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -41,7 +34,7 @@ unit datasize;
 interface
 
 uses
-  Classes, SysUtils;
+  SysUtils;
 
 type
   { TDataSize }
@@ -52,7 +45,8 @@ type
       TByteRange = 0 .. 1023;
       TKilobyteRange = 0 .. 1023;
       TMegabyteRange = 0 .. 1023;
-      TGigabyteRange = type QWord;
+      TGigabyteRange = 0 .. 1023;
+      TTerabyteRange = type QWord;
 
       { TByte }
 
@@ -109,28 +103,76 @@ type
 
         property Value : TGigabyteRange read FGigabytes write FGigabytes;
       end;
+
+      { TTerabyte }
+
+      TTerabyte = class
+      private
+        FTerabytes : TTerabyteRange;
+      public
+        constructor Create;
+        constructor Create (ASize : TTerabyteRange);
+        constructor Create (ASize : TTerabyte);
+        destructor Destroy; override;
+
+        property Value : TTerabyteRange read FTerabytes write FTerabytes;
+      end;
+
   private
     FBytes : TByte;
     FKilobytes : TKilobyte;
     FMegabytes : TMegabyte;
     FGigabytes : TGigabyte;
+    FTerabytes : TTerabyte;
 
-    function GetBytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    procedure SetBytes (ASize : QWord); {$IFNDEF DEBUG}inline;{$ENDIF}
-    function GetKilobytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    procedure SetKilobytes (ASize : QWord); {$IFNDEF DEBUG}inline;{$ENDIF}
-    function GetMegabytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    procedure SetMegabytes (ASize : QWord); {$IFNDEF DEBUG}inline;{$ENDIF}
-    function GetGigabytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    procedure SetGigabytes (ASize : QWord); {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetBytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    procedure SetBytes (ASize : QWord); 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function GetKilobytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    procedure SetKilobytes (ASize : QWord); 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function GetMegabytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    procedure SetMegabytes (ASize : QWord); 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function GetGigabytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    procedure SetGigabytes (ASize : QWord); 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    function GetTerabytes : QWord;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    procedure SetTerabytes (ASize : QWord);
+      {$IFNDEF DEBUG}inline;{$ENDIF}
   public
     constructor Create;
     destructor Destroy; override;
 
-    function ToBytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function ToKilobytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function ToMegabytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
-    function ToGigabytes : QWord; {$IFNDEF DEBUG}inline;{$ENDIF}
+    function ToBytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function ToKilobytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function ToMegabytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
+    function ToGigabytes : QWord; 
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    function ToTerabytes : QWord;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+    
     function {%H-}ToString (ASuffix : string = '') : string;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
@@ -142,6 +184,8 @@ type
     property MiB : QWord read GetMegabytes write SetMegabytes;
     property Gigabytes : QWord read GetGigabytes write SetGigabytes;
     property GiB : QWord read GetGigabytes write SetGigabytes;
+    property Terabytes : QWord read GetTerabytes write SetTerabytes;
+    property TiB : QWord read GetTerabytes write SetTerabytes;
   end;
 
 implementation
@@ -209,12 +253,23 @@ begin
   FGigabytes.Value := ASize;
 end;
 
+function TDataSize.GetTerabytes : QWord;
+begin
+  Result := FTerabytes.Value;
+end;
+
+procedure TDataSize.SetTerabytes (ASize : QWord);
+begin
+  FTerabytes.Value := ASize;
+end;
+
 constructor TDataSize.Create;
 begin
   FBytes := TByte.Create;
   FKilobytes := TKilobyte.Create;
   FMegabytes := TMegabyte.Create;
   FGigabytes := TGigabyte.Create;
+  FTerabytes := TTerabyte.Create;
 end;
 
 destructor TDataSize.Destroy;
@@ -223,6 +278,7 @@ begin
   FreeAndNil(FKilobytes);
   FreeAndNil(FMegabytes);
   FreeAndNil(FGigabytes);
+  FreeAndNil(FTerabytes);
 
   inherited Destroy;
 end;
@@ -230,6 +286,8 @@ end;
 function TDataSize.ToBytes: QWord;
 begin
   Result := 0;
+  if FTerabytes.Value > 0 then
+    Result := Result + (FTerabytes.Value * 1099511628000);
   if FGigabytes.Value > 0 then
     Result := Result + (FGigabytes.Value * 1073741824);
   if FMegabytes.Value > 0 then
@@ -243,6 +301,8 @@ end;
 function TDataSize.ToKilobytes: QWord;
 begin
   Result := 0;
+  if FTerabytes.Value > 0 then
+    Result := Result + (FTerabytes.Value * 1073741824);
   if FGigabytes.Value > 0 then
     Result := Result + (FGigabytes.Value * 1048576);
   if FMegabytes.Value > 0 then
@@ -254,6 +314,8 @@ end;
 function TDataSize.ToMegabytes: QWord;
 begin
   Result := 0;
+  if FTerabytes.Value > 0 then
+    Result := Result + (FTerabytes.Value * 1048576);
   if FGigabytes.Value > 0 then
     Result := Result + (FGigabytes.Value * 1024);
   if FMegabytes.Value > 0 then
@@ -262,11 +324,25 @@ end;
 
 function TDataSize.ToGigabytes: QWord;
 begin
-  Result := FGigabytes.Value;
+  Result := 0;
+  if FTerabytes.Value > 0 then
+    Result := Result + (FTerabytes.Value * 1024);
+  if FGigabytes.Value > 0 then  
+    Result := Result + FGigabytes.Value;
+end;
+
+function TDataSize.ToTerabytes : QWord;
+begin
+  Result := FTerabytes.Value;
 end;
 
 function TDataSize.ToString (ASuffix : string): string;
 begin
+  if FTerabytes.Value > 0 then
+  begin
+    Result := Format('%0.2d,%0.2d',
+      [FTerabytes.Value, FGigabytes.Value]) + 'TiB' + ASuffix;
+  end else
   if FGigabytes.Value > 0 then
   begin
     Result := Format('%0.2d,%0.2d',
@@ -285,6 +361,28 @@ begin
   begin
     Result := Format('%0.2d', [FBytes.Value]) + ' B' + ASuffix;
   end;
+end;
+
+{ TDataSize.TTerabyte }
+
+constructor TDataSize.TTerabyte.Create;
+begin
+  FTerabytes := 0;
+end;
+
+constructor TDataSize.TTerabyte.Create(ASize : TTerabyteRange);
+begin
+  FTerabytes := ASize; 
+end;
+
+constructor TDataSize.TTerabyte.Create(ASize : TTerabyte);
+begin
+  FTerabytes := ASize.Value;
+end;
+
+destructor TDataSize.TTerabyte.Destroy;
+begin
+  inherited Destroy;
 end;
 
 { TDataSize.TGigabyte }

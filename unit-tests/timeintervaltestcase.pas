@@ -5,7 +5,7 @@ unit timeintervaltestcase;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, timeinterval;
+  Classes, SysUtils, fpcunit, testregistry, utils.timeinterval;
 
 type
 

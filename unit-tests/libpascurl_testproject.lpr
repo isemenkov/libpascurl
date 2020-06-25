@@ -4,7 +4,7 @@ program libpascurl_testproject;
 
 uses
   Interfaces, Forms, GuiTestRunner, errorstacktestcase, libpascurl,
-  optionaltestcase, resulttestcase;
+  optionaltestcase, resulttestcase, timeintervaltestcase, datasizetestcase;
 
 {$R *.res}
 

@@ -8,13 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Module:          Unit 'pascurl'                                            *)
-(* Functionality:                                                             *)
-(*                                                                            *)
-(*                                                                            *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -31,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit timeinterval;
+unit utils.timeinterval;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -41,7 +34,7 @@ unit timeinterval;
 interface
 
 uses
-  Classes, SysUtils;
+  SysUtils;
 
 type
   { TTimeInterval }
