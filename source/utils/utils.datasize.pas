@@ -250,7 +250,14 @@ end;
 
 procedure TDataSize.SetGigabytes(ASize: QWord);
 begin
-  FGigabytes.Value := ASize;
+  if ASize <= High(TGigabyteRange) then
+  begin
+    FGigabytes.Value := ASize;
+  end else
+  begin
+    FGigabytes.Value := ASize mod 1024;
+    Terabytes := ASize div 1024;
+  end;
 end;
 
 function TDataSize.GetTerabytes : QWord;

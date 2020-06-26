@@ -167,11 +167,35 @@ var
   s : TDataSize;
 begin
   s := TDataSize.Create;
+  s.Gigabytes := Low(TDataSize.TGigabyteRange);
+  AssertTrue('Test gigabytes low range vaue', s.Bytes = 0);
+  AssertTrue('Test gigabytes low range vaue', s.Kilobytes = 0);
+  AssertTrue('Test gigabytes low range vaue', s.Megabytes = 0);
+  AssertTrue('Test gigabytes low range vaue',
+    s.Gigabytes = Low(TDataSize.TGigabyteRange));
+  AssertTrue('Test gigabytes low range vaue', s.Terabytes = 0);
+
+  s.Gigabytes := High(TDataSize.TGigabyteRange);
+  AssertTrue('Test gigabytes high range vaue', s.Bytes = 0);
+  AssertTrue('Test gigabytes high range vaue', s.Kilobytes = 0);
+  AssertTrue('Test gigabytes high range vaue', s.Megabytes = 0);
+  AssertTrue('Test gigabytes high range vaue',
+    s.Gigabytes = High(TDataSize.TGigabyteRange));
+  AssertTrue('Test gigabytes high range vaue', s.Terabytes = 0);
+
   s.Gigabytes := 476;
   AssertTrue('Test gigabytes custom value', s.Bytes = 0);
   AssertTrue('Test gigabytes custom value', s.Kilobytes = 0);
   AssertTrue('Test gigabytes custom value', s.Megabytes = 0);
   AssertTrue('Test gigabytes custom value', s.Gigabytes = 476);
+  AssertTrue('Test gigabytes custom value', s.Terabytes = 0);
+
+  s.Gigabytes := 1476;
+  AssertTrue('Test gigabytes custom value', s.Bytes = 0);
+  AssertTrue('Test gigabytes custom value', s.Kilobytes = 0);
+  AssertTrue('Test gigabytes custom value', s.Megabytes = 0);
+  AssertTrue('Test gigabytes custom value', s.Gigabytes = 452);
+  AssertTrue('Test gigabytes custom value', s.Terabytes = 1);
 
   FreeAndNil(s);
 end;
