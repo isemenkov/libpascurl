@@ -41,6 +41,12 @@ type
   { Store CURL functions errors }
   PErrorStack = ^TErrorStack;
   TErrorStack = class
+  private
+    FErrors : TStringList;
+    FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
+  private
+    { Error buffer pointer }
+    function GetErrorBuffer : PChar;
   public
     type
       TOptionalString = specialize TOptional<String>;
@@ -60,8 +66,9 @@ type
     
     { Stack count elements }
     function Count : Cardinal;
-  private
-    FErrors : TStringList;
+  
+    { Get internal additional error buffer }
+    property ErrorBuffer : PChar read GetErrorBuffer;
   end;
 
   { Helper which add enumerator to TErrorStack class }
@@ -420,11 +427,22 @@ begin
   inherited Destroy;
 end;
 
+function TErrorStack.GetErrorBuffer : PChar;
+begin
+  Result := @FErrorBuffer[0];
+end;
+
 procedure TErrorStack.Push(AError: CURLcode);
 begin
   if AError <> CURLE_OK then
   begin
     FErrors.Add(ErrorsMessages[AError]);
+  end;
+
+  if FErrorBuffer[0] <> #0 then
+  begin
+    FErrors.Add(FErrorBuffer);
+    FillChar(FErrorBuffer, CURL_ERROR_SIZE, #0);
   end;
 end;
 
@@ -433,6 +451,12 @@ begin
   if AMessage <> '' then
   begin
     FErrors.Add(AMessage);
+  end;
+
+  if FErrorBuffer[0] <> #0 then
+  begin
+    FErrors.Add(FErrorBuffer);
+    FillChar(FErrorBuffer, CURL_ERROR_SIZE, #0);
   end;
 end;
 

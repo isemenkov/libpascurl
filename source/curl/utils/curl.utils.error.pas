@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit http.response.error;
+unit curl.utils.error;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,11 +34,11 @@ unit http.response.error;
 interface
 
 uses
-  libpascurl, errorstack, http.response;
+  libpascurl, errorstack;
 
 type
-  { HTTP(S) session errors }
-  TError = class(TInterfacedObject, THTTPResponse.IError)
+  { Curl errors storage }
+  TError = class
   public
     constructor Create;
     destructor Destroy; override;
@@ -52,10 +52,10 @@ type
       {$IFNDEF DEBUG}inline;{$ENDIF}
   private
     FErrorStack : TErrorStack;
-    FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
   end;
-
-  TErrorEnumeratorHelper = class helper for IError
+  
+  { Curl errors storage enumerator helper }
+  TErrorEnumeratorHelper = class helper for TError
     { Get errors enumerator }
     function GetEnumerator : TErrorStack.TErrorsEnumerator;
   end;

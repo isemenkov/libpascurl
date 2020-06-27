@@ -9,6 +9,9 @@
 /unit-tests/libpascurl_testproject.fpcunit.ini
 /unit-tests/libpascurl_testproject.ico
 
+#Project files
+.vscode/
+
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
 *.dll

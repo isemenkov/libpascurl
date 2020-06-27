@@ -14,6 +14,7 @@ type
     procedure TestEmptyErrorStack;
     procedure TestErrorStack;
     procedure TestErrorStackEnumerator;
+    procedure TestAdditionalErrorBuffer;
   end;
 
 implementation
@@ -87,6 +88,28 @@ begin
     end;
     Inc(Index);
   end;
+
+  FreeAndNil(e);
+end;
+
+procedure TErrorStackTestCase.TestAdditionalErrorBuffer;
+var
+  e : TErrorStack;
+  message : PChar;
+  buffer : Pointer;
+begin
+  e := TErrorStack.Create;
+
+  e.Push(CURLE_AUTH_ERROR);
+  message := 'Error message';
+  buffer := e.ErrorBuffer;
+  Move(message^, buffer^, Length(message));
+  e.Push(CURLE_OK);
+
+  AssertTrue('Incorrect error message CURLE_AUTH_ERROR',
+    e.Pop.Unwrap = 'An authentication function returned an error.');
+  AssertTrue('Incorrect additional error buffer message',
+    e.Pop.Unwrap = 'Error message');
 
   FreeAndNil(e);
 end;
