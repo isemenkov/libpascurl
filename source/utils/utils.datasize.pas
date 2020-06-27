@@ -348,7 +348,7 @@ begin
   if FTerabytes.Value > 0 then
   begin
     Result := Format('%0.2d,%0.2d',
-      [FTerabytes.Value, FGigabytes.Value]) + 'TiB' + ASuffix;
+      [FTerabytes.Value, FGigabytes.Value]) + ' TiB' + ASuffix;
   end else
   if FGigabytes.Value > 0 then
   begin
