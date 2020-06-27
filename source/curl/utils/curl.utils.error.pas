@@ -34,7 +34,7 @@ unit curl.utils.error;
 interface
 
 uses
-  libpascurl, errorstack;
+  libpascurl, curl.utils.errorstack;
 
 type
   { Curl errors storage }

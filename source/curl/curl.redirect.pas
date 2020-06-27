@@ -8,12 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Module:          Unit 'pascurl'                                            *)
-(* Functionality:                                                             *)
-(*                                                                            *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -30,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curlstringlist;
+unit curl.redirect;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -40,73 +34,83 @@ unit curlstringlist;
 interface
 
 uses
-  Classes, SysUtils, libpascurl;
+  curl.utils.errorstack, utils.timeinterval, libpascurl;
 
 type
-  { CURL library string list }
-  TCurlStringList = class
+  { Response redirected options }
+  TRedirect = class
   public
-    constructor Create;
-    constructor Create (AList : pcurl_slist);
-    destructor Destroy; override;
-
-    { Return list first item }
-    function First : String;
+    { Return true if request is redirected }
+    function IsRedirected : Boolean;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
-    { Return TRUE if list if empty }
-    function IsEmpty : Boolean;
+    { Return redirect count times }
+    function Count : Longint;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
-    { Add new string to list }
-    function Add (AItem : String) : TCurlStringList;
+    { Return redirected URL }
+    function Url : String;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+
+    { Return the time for all redirection steps }
+    function TotalTime : TTimeInterval;
       {$IFNDEF DEBUG}inline;{$ENDIF}
   private
-    FList : pcurl_slist;
-    FNext : pcurl_slist;
+    constructor Create(ACurl : CURL; AErrors : PErrorStack);
+  private
+    FCurl : CURL;
+    FErrors : PErrorStack;
   end;
 
 implementation
 
-constructor TCurlStringList.Create;
+{ THTTPResponse.TRedirect }
+
+constructor TRedirect.Create (ACurl : CURL;
+  AErrors : PErrorStack);
 begin
-  FList := nil;
-  FNext := nil;
+  FCurl := ACurl;
+  FErrors := AErorrs;
 end;
 
-constructor TCurlStringList.Create (AList : pcurl_slist);
+function TRedirect.IsRedirected : Boolean;
 begin
-  FList := AList;
-  FNext := AList;
+  Result := Count > 0;
 end;
 
-destructor TCurlStringList.Destroy;
+function TRedirect.Count : Longint;
 begin
-  curl_slist_free_all(FList);
-  FNext := nil;
-  inherited Destroy;
+  Result := 0;
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_COUNT, @Result));
 end;
 
-function TCurlStringList.First : String;
+function TRedirect.Url : String;
+var
+  url : PChar;
 begin
-  if FList <> nil then
+  New(url);
+  url := '';
+  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_URL, @url));
+  Result := url;
+end;
+
+function TRedirect.TotalTime : TTimeInterval;
+var
+  time : Longword = 0;
+  dtime : Double = 0;
+  CurlResult : CURLcode;
+begin
+  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME_T, @time);
+  Result := TTimeInterval.Create;
+  Result.Milliseconds := time;
+
+  if CurlResult <> CURLE_OK then
   begin
-    Result := FList^.data;
-    Exit;
+    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME, @dtime);
+    Result.Milliseconds := ceil(dtime);
   end;
-  Result := '';
-end;
 
-function TCurlStringList.IsEmpty : Boolean;
-begin
-  Result := (FList = nil);
-end;
-
-function TCurlStringList.Add (AItem : String) : TCurlStringList;
-begin
-  FList := curl_slist_append(FList, PChar(AItem));
-  Result := Self;
+  FErrors^.Push(CurlResult);
 end;
 
 end.
-

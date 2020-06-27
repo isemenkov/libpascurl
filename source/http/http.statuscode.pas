@@ -8,12 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Module:          Unit 'pascurl'                                            *)
-(* Functionality:   Provides                                                  *)
-(*                                                                            *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -30,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit httpstatuscode;
+unit http.statuscode;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -38,9 +32,6 @@ unit httpstatuscode;
 {$ENDIF}
 
 interface
-
-uses
-  Classes, SysUtils;
 
 type
   THTTPStatusCode = (
