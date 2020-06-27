@@ -34,22 +34,25 @@ unit curl.utils.stringlist;
 interface
 
 uses
-  libpascurl;
+  SysUtils, libpascurl, utils.optional;
 
 type
   { CURL library string list }
   TStringList = class
   public
+    type
+      TOptionalString = specialize TOptional<String>;
+  private
+    FList : pcurl_slist;
+    FNext : pcurl_slist;
+    FEnd : Boolean;
+  public
     constructor Create;
     constructor Create (AList : pcurl_slist);
     destructor Destroy; override;
 
-    { Return list first item }
-    function First : String;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
-
     { Return list next element }
-    function Next : String;
+    function Next : TOptionalString;
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
     { Return TRUE if list if empty }
@@ -60,11 +63,12 @@ type
     procedure Add (AItem : String);
       {$IFNDEF DEBUG}inline;{$ENDIF}
 
+    { Clear string list }
+    procedure Clear;
+      {$IFNDEF DEBUG}inline;{$ENDIF}
+
     { Convert TStringList to CURL pcurl_slist }
     property ToCurlList : pcurl_slist read FList;
-  private
-    FList : pcurl_slist;
-    FNext : pcurl_slist;
   end;
 
   { Helper which add enumerator to TStringList class }
@@ -78,7 +82,6 @@ type
           {$IFNDEF DEBUG}inline;{$ENDIF}
       public
         constructor Create (AList : TStringList);
-        destructor Destroy; override;
 
         function MoveNext : Boolean;
           {$IFNDEF DEBUG}inline;{$ENDIF}
@@ -89,6 +92,7 @@ type
         property Current : String read GetCurrent;
       private
         FList : TStringList;
+        FCurrent : TStringList.TOptionalString;
       end;
   public
     function GetEnumerator : TStringListEnumerator;
@@ -103,12 +107,14 @@ constructor TStringList.Create;
 begin
   FList := nil;
   FNext := nil;
+  FEnd := False;
 end;
 
 constructor TStringList.Create (AList : pcurl_slist);
 begin
   FList := AList;
   FNext := AList;
+  FEnd := False;
 end;
 
 destructor TStringList.Destroy;
@@ -118,28 +124,25 @@ begin
   inherited Destroy;
 end;
 
-function TStringList.First : String;
+function TStringList.Next : TOptionalString;
 begin
-  if FList <> nil then
+  if (FList <> nil) and (FNext = nil) and (not FEnd) then
   begin
-    Result := FList^.data;
+    Result := TOptionalString.Create(FList^.data);
     FNext := FList^.next;
-  end else 
+  end else if FNext <> nil then
   begin
-    Result := '';
-  end;
-end;
-
-function TStringList.Next : String;
-begin
-  if FNext <> nil then
-  begin
-    Result := FNext^.data;
+    Result := TOptionalString.Create(FNext^.data);
     FNext := FNext^.next;
+    if FNext = nil then
+    begin
+      FEnd := True;
+    end;
     Exit;
   end else
   begin
-    Result := '';  
+    Result := TOptionalString.Create;
+    FEnd := False;
   end;
 end;
 
@@ -153,6 +156,13 @@ begin
   FList := curl_slist_append(FList, PChar(AItem));
 end;
 
+procedure TStringList.Clear;
+begin
+  curl_slist_free_all(FList);
+  FList := nil;
+  FNext := nil;
+end;
+
 { TStringListEnumeratorHelper }
 
 function TStringListEnumeratorHelper.GetEnumerator : TStringListEnumerator;
@@ -162,20 +172,21 @@ end;
 
 { TStringListEnumeratorHelper.TStringListEnumerator }
 
-constructor TStringListEnumeratorHelper.TStringListEnumerator.Create (AErrors :
+constructor TStringListEnumeratorHelper.TStringListEnumerator.Create (AList :
   TStringList);
 begin
-  FList := AErrors;
+  FList := AList;
 end;
 
 function TStringListEnumeratorHelper.TStringListEnumerator.GetCurrent : String;
 begin
-  Result := FList.Flist^.data;
+  Result := FCurrent.Unwrap;
 end;
 
 function TStringListEnumeratorHelper.TStringListEnumerator.MoveNext : Boolean;
 begin
-  Result := (FList.FList^.next <> nil);
+  FCurrent := FList.Next;
+  Result := FCurrent.IsSome;
 end;
 
 function TStringListEnumeratorHelper.TStringListEnumerator.GetEnumerator :
