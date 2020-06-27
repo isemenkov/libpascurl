@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.redirect;
+unit curl.response.redirect;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -64,7 +64,7 @@ type
 
 implementation
 
-{ THTTPResponse.TRedirect }
+{ TRedirect }
 
 constructor TRedirect.Create (ACurl : CURL;
   AErrors : PErrorStack);
