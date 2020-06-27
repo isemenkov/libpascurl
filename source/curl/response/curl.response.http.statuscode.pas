@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit http.statuscode;
+unit curl.response.http.statuscode;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
