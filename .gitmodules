@@ -1,0 +1,3 @@
+[submodule "pascalutils"]
+	path = pascalutils
+	url = https://github.com/isemenkov/pascalutils
