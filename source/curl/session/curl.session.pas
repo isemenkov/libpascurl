@@ -34,7 +34,8 @@ unit curl.session;
 interface
 
 uses
-  libpascurl, curl.session.protocol, curl.utils.errorsstack;
+  libpascurl, curl.session.protocol, curl.utils.errorsstack, 
+  curl.request.method;
 
 type
   TSession = class
@@ -45,6 +46,8 @@ type
     FPathAsIs : Boolean;
     FUrl : String;
     FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+    FRequestMethod : curl.request.method.TMethod;
+    FCustomRequestMethod : String;
   protected
     constructor Create;
     destructor Destroy; override;
@@ -145,6 +148,12 @@ type
       smtp://mail.example.com:587/ - This will connect to a SMTP server on the 
       alternative mail port. }
     property Url : String write FUrl;
+
+    { Set request method. }
+    property RequestMethod : curl.request.method.TMethod write FRequestMethod;
+
+    { Set custom request method. }
+    property CustomRequestMethod : String write FCustomRequestMethod;
   end;
 
 implementation
@@ -154,6 +163,7 @@ implementation
 constructor TSession.Create;
 begin
   FErrorsStack := TErrorsStack.Create;
+  PathAsIs := False;
 end;
 
 destructor TSession.Destroy;

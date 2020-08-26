@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session;
+unit curl.request.method;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -33,42 +33,47 @@ unit curl.http.session;
 
 interface
 
-uses
-  libpascurl, curl.session;
-
 type
-  THTTP = class
-  public
-    type
-      TSession = class(curl.session.TSession)
-      protected
-        
-      public
-        constructor Create;
-        destructor Destroy; override;
+  TMethod = (
+    { The GET method is used to retrieve information from the given server using 
+      a given URI. Requests using GET should only retrieve data and should have 
+      no other effect on the data. }    
+    GET,
 
-        { Do not handle dot dot sequences. }
-        property PathAsIs; 
+    { The HEAD method is functionally similar to GET, except that the server 
+      replies with a response line and headers, but no entity-body. }
+    HEAD,
 
-        { Provide the URL to use in the request. }
-        property Url;   
-      end;
-  end;    
+    { A POST request is used to send data to the server, for example, customer 
+      information, file upload, etc. using HTML forms. }
+    POST,
+
+    { The PUT method is used to request the server to store the included 
+      entity-body at a location specified by the given URL. }
+    PUT,
+
+    { The DELETE method is used to request the server to delete a file at a 
+      location specified by the given URL. }
+    DELETE,
+
+    { Establishes a tunnel to the server identified by a given URI. }
+    CONNECT,
+
+    { Describes the communication options for the target resource. }
+    OPTIONS,
+
+    { Performs a message loop-back test along the path to the target resource. }
+    TRACE,
+
+    { A PATCH request is considered a set of instructions on how to modify a 
+      resource. Contrast this with PUT; which is a complete representation of a 
+      resource. }
+    PATCH,
+
+    { Custom request method. }
+    CUSTOM
+  );
 
 implementation
-
-{ THTTP.TSession }
-
-constructor THTTP.TSession.Create;
-begin
-  AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  DefaultProtocol := [PROTOCOL_HTTPS];
-end;
-
-destructor THTTP.TSession.Destroy;
-begin
-  inherited Destroy;
-end;
 
 end.
