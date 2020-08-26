@@ -34,17 +34,24 @@ unit curl.session;
 interface
 
 uses
-  libpascurl, curl.session.protocol;
+  libpascurl, curl.session.protocol, curl.utils.errorsstack;
 
 type
   TSession = class
-  protected
+  private
     FAllowedProtocols : TProtocols;
     FAllowedProtocolRedirects : TProtocols;
     FDefaultProtocol : TProtocol;
     FPathAsIs : Boolean;
     FUrl : String;
+    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
   protected
+    constructor Create;
+    destructor Destroy; override;
+
+    { Collect CURL errors. }
+    property ErrorsStack : TErrorsStack read FErrorsStack;
+
     { Set allowed protocols. 
       Pass a bitmask of TProtocol defines. If used, this bitmask limits what 
       protocols libcurl may use in the transfer. This allows you to have a 
@@ -86,7 +93,7 @@ type
       sequences to remain in the path and some clients want to pass these on in 
       order to try out server implementations.
       By default libcurl will merge such sequences before using the path. }
-    property PathAsIs : Boolean write FPathAsIs;
+    property PathAsIs : Boolean write FPathAsIs default False;
 
     { Provide the URL to use in the request. 
       Pass in a string to the URL to work with. The parameter should be a string
@@ -141,5 +148,18 @@ type
   end;
 
 implementation
+
+{ TSession }
+
+constructor TSession.Create;
+begin
+  FErrorsStack := TErrorsStack.Create;
+end;
+
+destructor TSession.Destroy;
+begin
+  FreeAndNil(FErrorsStack);
+  inherited Destroy;
+end;
 
 end.

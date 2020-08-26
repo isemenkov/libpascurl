@@ -41,7 +41,14 @@ type
   public
     type
       TSession = class(curl.session.TSession)
+      protected
+        
+      public
+        { Do not handle dot dot sequences. }
+        property PathAsIs; 
 
+        { Provide the URL to use in the request. }
+        property Url;   
       end;
   end;    
 

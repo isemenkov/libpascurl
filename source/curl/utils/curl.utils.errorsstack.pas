@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.utils.errorstack;
+unit curl.utils.errorsstack;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,70 +34,24 @@ unit curl.utils.errorstack;
 interface
 
 uses
-  Classes, SysUtils, libpascurl, utils.optional;
+  libpascurl, utils.errorsstack, utils.optional;
 
 type
-  { TErrorStack }
-  { Store CURL functions errors }
-  PErrorStack = ^TErrorStack;
-  TErrorStack = class
+  { Collect CURL errors. }
+  PErrorsStack = ^TErrorStack;
+  TErrorsStack = class(utils.errorsstack.TListErrorsStack<String>)
   private
-    FErrors : TStringList;
     FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
-  private
+  
     { Error buffer pointer }
     function GetErrorBuffer : PChar;
   public
-    type
-      TOptionalString = specialize TOptional<String>;
-  public
-    { Create new error stack }
-    constructor Create;
-    destructor Destroy; override;
-
     { Add error to stack }
     procedure Push (AError : CURLcode);
-    
-    { Add error message to stack }
-    procedure Push (AMessage : String);
-    
-    { Return top error and remove it from stack }
-    function Pop : TOptionalString;
-    
-    { Stack count elements }
-    function Count : Cardinal;
   
     { Get internal additional error buffer }
     property ErrorBuffer : PChar read GetErrorBuffer;
   end;
-
-  { Helper which add enumerator to TErrorStack class }
-  TErrorStackEnumeratorHelper = class helper for TErrorStack
-  public
-    type
-      { Errors enumerator }
-      TErrorsEnumerator = class
-      protected
-        FErrors : TStringList;
-        FPosition : Cardinal;
-
-        function GetCurrent : String;
-        {$IFNDEF DEBUG}inline;{$ENDIF}
-      public
-        constructor Create (AErrors : TStringList);
-        
-        function MoveNext : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        
-        function GetEnumerator : TErrorsEnumerator;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        
-        property Current : String read GetCurrent;
-      end;
-  public
-    function GetEnumerator : TErrorsEnumerator;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
-  end;  
 
 const
   ErrorsMessages : array [CURLE_OK .. CURL_LAST] of String = (
@@ -414,99 +368,25 @@ const
 
 implementation
 
-{ TErrorStack }
+{ TErrorsStack }
 
-constructor TErrorStack.Create;
-begin
-  FErrors := TStringList.Create;
-end;
-
-destructor TErrorStack.Destroy;
-begin
-  FreeAndNil(FErrors);
-  inherited Destroy;
-end;
-
-function TErrorStack.GetErrorBuffer : PChar;
+function TErrorsStack.GetErrorBuffer : PChar;
 begin
   Result := @FErrorBuffer[0];
 end;
 
-procedure TErrorStack.Push(AError: CURLcode);
+procedure TErrorsStack.Push(AError: CURLcode);
 begin
   if AError <> CURLE_OK then
   begin
-    FErrors.Add(ErrorsMessages[AError]);
+    Push(ErrorsMessages[AError]);
   end;
 
   if FErrorBuffer[0] <> #0 then
   begin
-    FErrors.Add(FErrorBuffer);
+    Push(FErrorBuffer);
     FillChar(FErrorBuffer, CURL_ERROR_SIZE, #0);
   end;
-end;
-
-procedure TErrorStack.Push(AMessage : String);
-begin
-  if AMessage <> '' then
-  begin
-    FErrors.Add(AMessage);
-  end;
-
-  if FErrorBuffer[0] <> #0 then
-  begin
-    FErrors.Add(FErrorBuffer);
-    FillChar(FErrorBuffer, CURL_ERROR_SIZE, #0);
-  end;
-end;
-
-function TErrorStack.Pop: TOptionalString;
-begin
-  if FErrors.Count > 0 then
-  begin
-    Result := TOptionalString.Create(FErrors.Strings[0]);
-    FErrors.Delete(0);
-    Exit;
-  end;
-  Result := TOptionalString.Create;
-end;
-
-function TErrorStack.Count: Cardinal;
-begin
-  Result := FErrors.Count;
-end;
-
-{ TErrorStackEnumeratorHelper }
-
-function TErrorStackEnumeratorHelper.GetEnumerator : TErrorsEnumerator;
-begin
-  Result := TErrorsEnumerator.Create(Self.FErrors);
-end;
-
-{ TErrorsStackEnumeratorHelper.TErrorsEnumerator }
-
-constructor TErrorStackEnumeratorHelper.TErrorsEnumerator.Create (AErrors : 
-  TStringList);
-begin
-  FErrors := AErrors;
-  FPosition := 0;
-end;
-
-function TErrorStackEnumeratorHelper.TErrorsEnumerator.MoveNext : Boolean;
-begin
-  Result := FPosition < FErrors.Count;
-end;
-
-function TErrorStackEnumeratorHelper.TErrorsEnumerator.GetEnumerator : 
-  TErrorsEnumerator;
-begin
-  Result := Self;
-end;
-
-function TErrorStackEnumeratorHelper.TErrorsEnumerator.GetCurrent : String;
-begin
-  Result := FErrors[FPosition];
-  Inc(FPosition);
 end;
 
 end.
