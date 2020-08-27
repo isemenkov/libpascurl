@@ -40,14 +40,16 @@ uses
 type
   TSession = class
   private
+    FCURL : CURL;
+    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+
     FAllowedProtocols : TProtocols;
     FAllowedProtocolRedirects : TProtocols;
     FDefaultProtocol : TProtocol;
-    FPathAsIs : Boolean;
-    FUrl : String;
-    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
-    FRequestMethod : curl.request.method.TMethod;
-    FCustomRequestMethod : String;
+    procedure SetPathAsIs (APathAsIs : Boolean);
+    procedure SetUrl (AUrl : String);
+    procedure SetRequestMethod (ARequestMethod : curl.request.method.TMethod);
+    procedure SetCustomRequestMethod (ACustomRequestMethod : String);
   protected
     constructor Create;
     destructor Destroy; override;
@@ -96,7 +98,7 @@ type
       sequences to remain in the path and some clients want to pass these on in 
       order to try out server implementations.
       By default libcurl will merge such sequences before using the path. }
-    property PathAsIs : Boolean write FPathAsIs default False;
+    property PathAsIs : Boolean write SetPathAsIs default False;
 
     { Provide the URL to use in the request. 
       Pass in a string to the URL to work with. The parameter should be a string
@@ -147,13 +149,13 @@ type
       port 8080 rather than 80.
       smtp://mail.example.com:587/ - This will connect to a SMTP server on the 
       alternative mail port. }
-    property Url : String write FUrl;
+    property Url : String write SetUrl;
 
     { Set request method. }
-    property RequestMethod : curl.request.method.TMethod write FRequestMethod;
+    property RequestMethod : curl.request.method.TMethod write SetRequestMethod;
 
     { Set custom request method. }
-    property CustomRequestMethod : String write FCustomRequestMethod;
+    property CustomRequestMethod : String write SetCustomRequestMethod;
   end;
 
 implementation
@@ -171,5 +173,44 @@ begin
   FreeAndNil(FErrorsStack);
   inherited Destroy;
 end;
+
+procedure TSession.SetCustomRequestMethod (ACustomRequestMethod : String);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_CUSTOMREQUEST, 
+    PChar(ACustomRequestMethod)));
+end;
+
+procedure TSession.SetRequestMethod (ARequestMethod : 
+  curl.request.method.TMethod);
+var
+  method : String;
+begin
+  case ARequestMethod of
+    GET :     begin method := 'GET';     end;
+    HEAD :    begin method := 'HEAD';    end;
+    POST :    begin method := 'POST';    end;
+    PUT :     begin method := 'PUT';     end;
+    DELETE :  begin method := 'DELETE';  end;
+    CONNECT : begin method := 'CONNECT'; end;
+    OPTIONS : begin method := 'OPTIONS'; end;
+    TRACE :   begin method := 'TRACE';   end;
+    PATCH :   begin method := 'PATCH';   end; 
+  end;
+
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_CUSTOMREQUEST, 
+    PChar(method)));
+end;
+
+procedure TSession.SetUrl (AUrl : String);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_URL, PChar(AUrl)));
+end;
+
+procedure TSession.SetPathAsIs (APathAsIs : Boolean);
+begin
+  FErrorsStack.Push(curl_easy_setoptFCURL, CURLOPT_PATH_AS_IS, 
+    Longint(APathAsIs));
+end;
+
 
 end.
