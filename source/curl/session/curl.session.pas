@@ -40,16 +40,19 @@ uses
 type
   TSession = class
   private
-    FCURL : CURL;
-    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+    function CreateProtocolsBitmask (AProtocols : TProtocols) : Longint;
 
-    FAllowedProtocols : TProtocols;
-    FAllowedProtocolRedirects : TProtocols;
-    FDefaultProtocol : TProtocol;
+    procedure SetAllowedProtocols (AAllowedProtocols : TProtocols);
+    procedure SetAllowedProtocolRedirects (AAllowedProtocolRedirects : 
+      TProtocols);
+    procedure SetDefaultProtocol (ADefaultProtocol : TProtocol);
     procedure SetPathAsIs (APathAsIs : Boolean);
     procedure SetUrl (AUrl : String);
     procedure SetRequestMethod (ARequestMethod : curl.request.method.TMethod);
     procedure SetCustomRequestMethod (ACustomRequestMethod : String);
+  protected
+    FCURL : CURL;
+    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
   protected
     constructor Create;
     destructor Destroy; override;
@@ -63,7 +66,7 @@ type
       libcurl built to support a wide range of protocols but still limit 
       specific transfers to only be allowed to use a subset of them. 
       By default libcurl will accept all protocols it supports. }
-    property AllowedProtocols : TProtocols write FAllowedProtocols;
+    property AllowedProtocols : TProtocols write SetAllowedProtocols;
 
     { Set protocols allowed to redirect to.
       Pass a bitmask of TProtocol defines. If used, this bitmask limits what 
@@ -78,7 +81,7 @@ type
       CURLPROTO_ALL enables all protocols on redirect, including those disabled 
       for security. }
     property AllowedProtocolRedirects : TProtocols 
-      write FAllowedProtocolRedirects;
+      write SetAllowedProtocolRedirects;
     
     { Default protocol to use if the URL is missing a scheme name. 
       This option tells libcurl to use protocol if the URL is missing a scheme 
@@ -86,7 +89,7 @@ type
       An unknown or unsupported protocol causes error CURLE_UNSUPPORTED_PROTOCOL 
       when libcurl parses a schemeless URL. 
       This option does not change the default proxy protocol (http). }
-    property DefaultProtocol : TProtocol write FDefaultProtocol;
+    property DefaultProtocol : TProtocol write SetDefaultProtocol;
 
     { Do not handle dot dot sequences. 
       Set the True, to explicitly tell libcurl to not alter the given path 
@@ -186,15 +189,15 @@ var
   method : String;
 begin
   case ARequestMethod of
-    GET :     begin method := 'GET';     end;
-    HEAD :    begin method := 'HEAD';    end;
-    POST :    begin method := 'POST';    end;
-    PUT :     begin method := 'PUT';     end;
-    DELETE :  begin method := 'DELETE';  end;
+    GET     : begin method := 'GET';     end;
+    HEAD    : begin method := 'HEAD';    end;
+    POST    : begin method := 'POST';    end;
+    PUT     : begin method := 'PUT';     end;
+    DELETE  : begin method := 'DELETE';  end;
     CONNECT : begin method := 'CONNECT'; end;
     OPTIONS : begin method := 'OPTIONS'; end;
-    TRACE :   begin method := 'TRACE';   end;
-    PATCH :   begin method := 'PATCH';   end; 
+    TRACE   : begin method := 'TRACE';   end;
+    PATCH   : begin method := 'PATCH';   end; 
   end;
 
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_CUSTOMREQUEST, 
@@ -212,5 +215,90 @@ begin
     Longint(APathAsIs));
 end;
 
+procedure TSession.SetDefaultProtocol (ADefaultProtocol : TProtocol);
+var
+  protocol : String;
+begin
+  case ADefaultProtocol of
+    PROTOCOL_DICT   : begin protocol := 'dict';   end;
+    PROTOCOL_FILE   : begin protocol := 'file';   end;
+    PROTOCOL_FTP    : begin protocol := 'ftp';    end;
+    PROTOCOL_FTPS   : begin protocol := 'ftps';   end;
+    PROTOCOL_GOPHER : begin protocol := 'gopher'; end;
+    PROTOCOL_HTTP   : begin protocol := 'http';   end;
+    PROTOCOL_HTTPS  : begin protocol := 'https';  end;
+    PROTOCOL_IMAP   : begin protocol := 'imap';   end;
+    PROTOCOL_IMAPS  : begin protocol := 'imaps';  end;
+    PROTOCOL_LDAP   : begin protocol := 'ldap';   end;
+    PROTOCOL_LDAPS  : begin protocol := 'ldaps';  end;
+    PROTOCOL_POP3   : begin protocol := 'pop3';   end;
+    PROTOCOL_POP3S  : begin protocol := 'pop3s';  end;
+    PROTOCOL_RTMP   : begin protocol := 'rtmp';   end;
+    PROTOCOL_RTMPE  : begin protocol := 'rtmpe';  end;
+    PROTOCOL_RTMPS  : begin protocol := 'rtmps';  end;
+    PROTOCOL_RTMPT  : begin protocol := 'rtmpt';  end;
+    PROTOCOL_RTMPTE : begin protocol := 'rtmpte'; end;
+    PROTOCOL_RTMPTS : begin protocol := 'rtmpts'; end;
+    PROTOCOL_RTSP   : begin protocol := 'rtsp';   end;
+    PROTOCOL_SCP    : begin protocol := 'scp';    end;
+    PROTOCOL_SFTP   : begin protocol := 'sftp';   end;
+    PROTOCOL_SMB    : begin protocol := 'smb';    end;
+    PROTOCOL_SMBS   : begin protocol := 'smbs';   end;
+    PROTOCOL_SMTP   : begin protocol := 'smtp';   end;
+    PROTOCOL_SMTPS  : begin protocol := 'smtps';  end;
+    PROTOCOL_TELNET : begin protocol := 'telnet'; end;
+    PROTOCOL_TFTP   : begin protocol := 'tftp';   end;
+  end;
+ 
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_DEFAULT_PROTOCOL, 
+    PChar(protocol)));
+end;
+
+function TSession.CreateProtocolsBitmask (AProtocols : TProtocols) : Longint;
+begin
+  Result := 0;
+
+  if PROTOCOL_DICT   in AProtocols then Result := (Result or CURLPROTO_DICT);
+  if PROTOCOL_FILE   in AProtocols then Result := (Result or CURLPROTO_FILE);
+  if PROTOCOL_FTP    in AProtocols then Result := (Result or CURLPROTO_FTP);
+  if PROTOCOL_FTPS   in AProtocols then Result := (Result or CURLPROTO_FTPS);
+  if PROTOCOL_GOPHER in AProtocols then Result := (Result or CURLPROTO_GOPHER);
+  if PROTOCOL_HTTP   in AProtocols then Result := (Result or CURLPROTO_HTTP);
+  if PROTOCOL_HTTPS  in AProtocols then Result := (Result or CURLPROTO_HTTPS);
+  if PROTOCOL_IMAP   in AProtocols then Result := (Result or CURLPROTO_IMAP);
+  if PROTOCOL_IMAPS  in AProtocols then Result := (Result or CURLPROTO_IMAPS);
+  if PROTOCOL_LDAP   in AProtocols then Result := (Result or CURLPROTO_LDAP);
+  if PROTOCOL_LDAPS  in AProtocols then Result := (Result or CURLPROTO_LDAPS);
+  if PROTOCOL_POP3   in AProtocols then Result := (Result or CURLPROTO_POP3);
+  if PROTOCOL_POP3S  in AProtocols then Result := (Result or CURLPROTO_POP3S);
+  if PROTOCOL_RTMP   in AProtocols then Result := (Result or CURLPROTO_RTMP);
+  if PROTOCOL_RTMPE  in AProtocols then Result := (Result or CURLPROTO_RTMPE); 
+  if PROTOCOL_RTMPS  in AProtocols then Result := (Result or CURLPROTO_RTMPS);
+  if PROTOCOL_RTMPT  in AProtocols then Result := (Result or CURLPROTO_RTMPT);
+  if PROTOCOL_RTMPTE in AProtocols then Result := (Result or CURLPROTO_RTMPTE);
+  if PROTOCOL_RTMPTS in AProtocols then Result := (Result or CURLPROTO_RTMPTS);
+  if PROTOCOL_RTSP   in AProtocols then Result := (Result or CURLPROTO_RTSP);
+  if PROTOCOL_SCP    in AProtocols then Result := (Result or CURLPROTO_SCP);
+  if PROTOCOL_SFTP   in AProtocols then Result := (Result or CURLPROTO_SFTP);
+  if PROTOCOL_SMB    in AProtocols then Result := (Result or CURLPROTO_SMB);
+  if PROTOCOL_SMBS   in AProtocols then Result := (Result or CURLPROTO_SMBS);
+  if PROTOCOL_SMTP   in AProtocols then Result := (Result or CURLPROTO_SMTP);
+  if PROTOCOL_SMTPS  in AProtocols then Result := (Result or CURLPROTO_SMTPS);
+  if PROTOCOL_TELNET in AProtocols then Result := (Result or CURLPROTO_TELNET);
+  if PROTOCOL_TFTP   in AProtocols then Result := (Result or CURLPROTO_TFTP);
+end;
+
+procedure TSession.SetAllowedProtocolRedirects (AAllowedProtocolRedirects :
+  TProtocols);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_REDIR_PROTOCOLS,
+    CreateProtocolsBitmask(AAllowedProtocolRedirects)));
+end;
+
+procedure TSession.SetAllowedProtocols (AAllowedProtocols : TProtocols);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_PROTOCOLS,
+    CreateProtocolsBitmask(AAllowedProtocols)));
+end;
 
 end.
