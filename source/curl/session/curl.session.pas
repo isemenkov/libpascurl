@@ -210,6 +210,7 @@ implementation
 
 constructor TSession.Create;
 begin
+  FCURL := curl_easy_init;
   FErrorsStack := TErrorsStack.Create;
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER,
     FErrorsStack.ErrorBuffer));
@@ -218,6 +219,7 @@ end;
 
 destructor TSession.Destroy;
 begin
+  curl_easy_cleanup(FCURL);
   FreeAndNil(FErrorsStack);
   inherited Destroy;
 end;

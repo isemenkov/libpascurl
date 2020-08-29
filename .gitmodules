@@ -1,3 +1,6 @@
 [submodule "pascalutils"]
 	path = pascalutils
 	url = https://github.com/isemenkov/pascalutils
+[submodule "libpasc-algorithms"]
+	path = libpasc-algorithms
+	url = https://github.com/isemenkov/libpasc-algorithms/
