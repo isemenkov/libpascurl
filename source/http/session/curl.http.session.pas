@@ -51,7 +51,16 @@ type
         property PathAsIs; 
 
         { Provide the URL to use in the request. }
-        property Url;   
+        property Url;  
+
+        { Source interface for outgoing traffic. }
+        property InterfaceName; 
+
+        { Set Unix domain socket. }
+        property UnixSocketPath;
+
+        { Set an abstract Unix domain socket. }
+        property AbstractUnixSocket;
       end;
   end;    
 

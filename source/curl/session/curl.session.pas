@@ -50,6 +50,9 @@ type
     procedure SetUrl (AUrl : String);
     procedure SetRequestMethod (ARequestMethod : curl.request.method.TMethod);
     procedure SetCustomRequestMethod (ACustomRequestMethod : String);
+    procedure SetInterfaceName (AInterfaceName : String);
+    procedure SetUnixSocketPath (AUnixSocketPath : String);
+    procedure SetAbstractUnixSocket (AAbstractUnixSocket : String);
   protected
     FCURL : CURL;
     FErrorsStack : curl.utils.errorsstack.TErrorsStack;
@@ -159,6 +162,46 @@ type
 
     { Set custom request method. }
     property CustomRequestMethod : String write SetCustomRequestMethod;
+
+    { Source interface for outgoing traffic. 
+      Pass a string as parameter. This sets the interface name to use as 
+      outgoing network interface. The name can be an interface name, an IP 
+      address, or a host name.
+      If the parameter starts with "if!" then it is treated as only as interface
+      name and no attempt will ever be named to do treat it as an IP address or 
+      to do name resolution on it. If the parameter starts with "host!" it is 
+      treated as either an IP address or a hostname. Hostnames are resolved 
+      synchronously. Using the if! format is highly recommended when using the
+      multi interfaces to avoid allowing the code to block. If "if!" is 
+      specified but the parameter does not match an existing interface,
+      CURLE_INTERFACE_FAILED is returned from the libcurl function used to 
+      perform the transfer.
+      libcurl does not support using network interface names for this option on 
+      Windows. }
+    property InterfaceName : String write SetInterfaceName;
+
+    { Set Unix domain socket. 
+      Enables the use of Unix domain sockets as connection endpoint and sets the
+      path to path. If path is NULL, then Unix domain sockets are disabled. An 
+      empty string will result in an error at some point, it will not disable 
+      use of Unix domain sockets.
+      When enabled, curl will connect to the Unix domain socket instead of 
+      establishing a TCP connection to a host. Since no TCP connection is 
+      created, curl does not need to resolve the DNS hostname in the URL.
+      The maximum path length on Cygwin, Linux and Solaris is 107. On other 
+      platforms it might be even less. }
+    property UnixSocketPath : String write SetUnixSocketPath;
+
+    { Set an abstract Unix domain socket. 
+      Enables the use of an abstract Unix domain socket instead of establishing 
+      a TCP connection to a host. The parameter should be a string to a 
+      null-terminated string holding the path of the socket. The path will be 
+      set to path prefixed by a NULL byte (this is the convention for abstract 
+      sockets, however it should be stressed that the path passed to this 
+      function should not contain a leading NULL).
+      On non-supporting platforms, the abstract address will be interpreted as 
+      an empty string and fail gracefully, generating a run-time error. }
+    property AbstractUnixSocket : String write SetAbstractUnixSocket;
   end;
 
 implementation
@@ -168,6 +211,8 @@ implementation
 constructor TSession.Create;
 begin
   FErrorsStack := TErrorsStack.Create;
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER,
+    FErrorsStack.ErrorBuffer));
   PathAsIs := False;
 end;
 
@@ -299,6 +344,24 @@ procedure TSession.SetAllowedProtocols (AAllowedProtocols : TProtocols);
 begin
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_PROTOCOLS,
     CreateProtocolsBitmask(AAllowedProtocols)));
+end;
+
+procedure TSession.SetInterfaceName (AInterfaceName : String);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_INTERFACE,
+    PChar(AInterfaceName)));
+end;
+
+procedure TSession.SetUnixSocketPath (AUnixSocketPath : String);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_UNIX_SOCKET_PATH,
+    PChar(AUnixSocketPath)));
+end;
+
+procedure TSession.SetAbstractUnixSocket (AAbstractUnixSocket : String);
+begin
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ABSTRACT_UNIX_SOCKET,
+    PChar(AAbstractUnixSocket)));
 end;
 
 end.
