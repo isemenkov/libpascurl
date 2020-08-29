@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session;
+unit curl.http.writer;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,55 +34,16 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.writer;
+  libpascurl, curl.session.writer;
 
 type
-  THTTP = class
+  TWriter = class(curl.session.writer.TWriter)
   public
-    type
-      TSession = class(curl.session.TSession)
-      protected
-        FWriter : curl.http.writer.TWriter;  
-      public
-        constructor Create;
-        destructor Destroy; override;
 
-        { Do not handle dot dot sequences. }
-        property PathAsIs; 
+    property DownloadCallback;   
 
-        { Provide the URL to use in the request. }
-        property Url;  
-
-        { Source interface for outgoing traffic. }
-        property InterfaceName; 
-
-        { Set Unix domain socket. }
-        property UnixSocketPath;
-
-        { Set an abstract Unix domain socket. }
-        property AbstractUnixSocket;
-
-        {  }
-        property Content : curl.http.writer.TWriter read FWriter;
-      end;
-  end;    
+  end; 
 
 implementation
-
-{ THTTP.TSession }
-
-constructor THTTP.TSession.Create;
-begin
-  FWriter := curl.http.writer.TWriter.Create(FCURL, FErrorsStack);
-  AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  DefaultProtocol := [PROTOCOL_HTTPS];
-end;
-
-destructor THTTP.TSession.Destroy;
-begin
-  FreeAndNil(FWriter);
-  inherited Destroy;
-end;
 
 end.

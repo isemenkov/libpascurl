@@ -34,7 +34,8 @@ unit curl.session.writer;
 interface
 
 uses
-  Classes, libpascurl, curl.utils.errorsstack, container.arraylist;
+  libpascurl, curl.utils.errorsstack, container.arraylist, 
+  container.memorybuffer;
 
 type
   TWriter = class
@@ -46,14 +47,23 @@ type
   protected
     FCURL : CURL;
     FErrorsStack : PErrorsStack;
-    FBuffer : TMemoryStream;
+    FBuffer : TMemoryBuffer;
     FDownloadFunction : TDownloadFunction;
   private
     class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
       ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
     function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
+
+    function GetDownloadBufferData : Pointer;
+    function GetDownloadBufferDataSize : Cardinal;
   protected
     constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+
+    { Get download data buffer pointer. } 
+    property DownloadData : Pointer read GetDownloadBufferData;
+
+    { Get download data size. }
+    property DownloadDataSize : Cardinal read GetDownloadBufferDataSize;
 
     { Set callback for writing received data. 
       This callback function gets called by libcurl as soon as there is data 
@@ -71,7 +81,7 @@ constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
   FCURL := ACURL;
   FErrorsStack := AErrorsStack;
-  FBuffer := TMemoryStream.Create;
+  FBuffer := TMemoryBuffer.Create;
   FErrorsStack^.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEDATA, Pointer(Self)));
   FErrorsStack^.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEFUNCTION,
     @TWriter.DownloadFunctionCallback));  
@@ -90,8 +100,23 @@ begin
 end;
 
 function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
+var
+  size : Cardinal;
 begin
-  Result := FBuffer.Write(APrt^, ASize);
+  size := FBuffer.GetBufferDataSize;
+  Move(APtr^, FBuffer.GetAppendBuffer(ASize)^, ASize);
+  FBuffer.SetBufferDataSize(size + ASize);
+  Result := ASize;
+end;
+
+function TWriter.GetDownloadBufferData : Pointer;
+begin
+  Result := FBuffer.GetBufferData;
+end;
+
+function TWriter.GetDownloadBufferDataSize : Cardinal;
+begin
+  Result := FBuffer.GetBufferDataSize;
 end;
 
 end.
