@@ -34,14 +34,14 @@ unit curl.http.writer;
 interface
 
 uses
-  libpascurl, curl.session.writer;
+  curl.session.writer;
 
 type
   TWriter = class(curl.session.writer.TWriter)
   public
-
-    property DownloadCallback;   
-
+    property DownloadData;
+    property DownloadDataSize;    
+    property DownloadCallback;
   end; 
 
 implementation

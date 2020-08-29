@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session;
+unit curl.http.content;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,59 +34,26 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.writer, curl.http.content;
+  Classes, libpascurl, curl.http.writer;
 
 type
-  THTTP = class
+  TContent = class
+  protected
+    FWriter : curl.http.writer.TWriter;
+  
+  protected
+    constructor Create (AWriter : curl.http.writer.TWriter);
+
+    function GetAsString : String;
+    function GetAsData : PByte;  
   public
-    type
-      TSession = class(curl.session.TSession)
-      protected
-        FWriter : curl.http.writer.TWriter;
-        FContent : curl.http.content.TContent;  
-      public
-        constructor Create;
-        destructor Destroy; override;
+    { Get content data as string. }
+    property AsString : String read GetAsString;
 
-        { Do not handle dot dot sequences. }
-        property PathAsIs; 
-
-        { Provide the URL to use in the request. }
-        property Url;  
-
-        { Source interface for outgoing traffic. }
-        property InterfaceName; 
-
-        { Set Unix domain socket. }
-        property UnixSocketPath;
-
-        { Set an abstract Unix domain socket. }
-        property AbstractUnixSocket;
-
-        { Get download data. }
-        property Download : curl.http.writer.TWriter read FWriter;
-
-        { Get content. }
-        property Content : curl.http.content.TContent read FContent;
-      end;
-  end;    
+    { Get content data as pointer to byte. }
+    property AsData : PByte read GetAsData;
+  end;
 
 implementation
-
-{ THTTP.TSession }
-
-constructor THTTP.TSession.Create;
-begin
-  FWriter := curl.http.writer.TWriter.Create(FCURL, FErrorsStack);
-  AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  DefaultProtocol := [PROTOCOL_HTTPS];
-end;
-
-destructor THTTP.TSession.Destroy;
-begin
-  FreeAndNil(FWriter);
-  inherited Destroy;
-end;
 
 end.
