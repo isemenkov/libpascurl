@@ -39,6 +39,9 @@ uses
 
 type
   TSession = class
+  protected
+    FCURL : CURL;
+    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
   private
     function CreateProtocolsBitmask (AProtocols : TProtocols) : Longint;
 
@@ -53,9 +56,6 @@ type
     procedure SetInterfaceName (AInterfaceName : String);
     procedure SetUnixSocketPath (AUnixSocketPath : String);
     procedure SetAbstractUnixSocket (AAbstractUnixSocket : String);
-  protected
-    FCURL : CURL;
-    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
   protected
     constructor Create;
     destructor Destroy; override;

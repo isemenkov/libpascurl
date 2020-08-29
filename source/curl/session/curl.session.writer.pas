@@ -34,34 +34,35 @@ unit curl.session.writer;
 interface
 
 uses
-  libpascurl, curl.utils.errorsstack, container.arraylist, utils.functor;
+  Classes, libpascurl, curl.utils.errorsstack, container.arraylist;
 
 type
   TWriter = class
   public
     type
       { Set callback for writing received data. }
-      TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : LongWord 
-        of object;
-  private
-    type
-      TBuffer = specialize TArrayList<PChar, TCompareFunctorPChar>;  
-    var
-      FCURL : CURL;
-      FErrorsStack : PErrorsStack;
-      FBuffer : TBuffer;
+      TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
+        LongWord  of object;
   protected
-    { This callback function gets called by libcurl as soon as there is data 
+    FCURL : CURL;
+    FErrorsStack : PErrorsStack;
+    FBuffer : TMemoryStream;
+    FDownloadFunction : TDownloadFunction;
+  private
+    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
+      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
+    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
+  protected
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+
+    { Set callback for writing received data. 
+      This callback function gets called by libcurl as soon as there is data 
       received that needs to be saved. For most transfers, this callback gets 
       called many times and each invoke delivers another chunk of data. ptr 
       points to the delivered data, and the size of that data is nmemb; size is 
       always 1. }
-    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
-    function DownloadFunction (APtr : PChar; ASize : LongWord; ANmemb : 
-      LongWord) : LongWord;
-  public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    property DownloadCallback : TDownloadFunction read FDownloadFunction
+      write FDownloadFunction;
   end;
 
 implementation
@@ -70,22 +71,27 @@ constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
   FCURL := ACURL;
   FErrorsStack := AErrorsStack;
-  FBuffer := TBuffer.Create;
+  FBuffer := TMemoryStream.Create;
   FErrorsStack^.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEDATA, Pointer(Self)));
   FErrorsStack^.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEFUNCTION,
     @TWriter.DownloadFunctionCallback));  
 end;
 
 class function TWriter.DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-  ANmem : LongWord; AData : Pointer) : LongWord; cdecl;
+  ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
 begin
-  Result := TWriter(AData).DownloadFunction(APtr, ASize, ANmem);
+  if Assigned(TWriter(AData).FDownloadFunction) then
+  begin
+    Result := TWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
+  end else
+  begin
+    Result := TWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
+  end;
 end;
 
-function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord; ANmem :
-  LongWord) : LongWord;
+function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
 begin
-  
+  Result := FBuffer.Write(APrt^, ASize);
 end;
 
 end.
