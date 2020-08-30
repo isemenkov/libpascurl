@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.writer;
+unit curl.response;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,13 +34,12 @@ unit curl.http.writer;
 interface
 
 uses
-  curl.session.writer;
+  libpascurl;
 
 type
-  TWriter = class(curl.session.writer.TWriter)
-  public   
-    property DownloadCallback;
-  end; 
+  TResponse = class
+  
+  end;
 
 implementation
 

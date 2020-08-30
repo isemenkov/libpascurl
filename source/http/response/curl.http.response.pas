@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.content;
+unit curl.http.response;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,47 +34,13 @@ unit curl.http.content;
 interface
 
 uses
-  Classes, libpascurl, curl.http.writer;
+  libpascurl, curl.response;
 
 type
-  TContent = class
-  protected
-    FWriter : curl.http.writer.PWriter;
-  
-  protected
-    constructor Create (AWriter : curl.http.writer.PWriter);
+  TResponse = class(curl.response.TResponse)
 
-    function GetAsString : String;
-    function GetAsData : PByte;  
-  public
-    { Get content data as string. }
-    property AsString : String read GetAsString;
-
-    { Get content data as pointer to byte. }
-    property AsData : PByte read GetAsData;
   end;
 
 implementation
-
-constructor TContent.Create (AWriter : curl.http.writer.PWriter);
-begin
-  FWriter := AWriter;
-end;
-
-function TContent.GetAsString : String;
-var
-  Stream : TStringStream;
-begin
-  Stream := TStringStream.Create('');
-  Stream.Write(FWriter^.GetBufferData, FWriter^.GetBufferDataSize);
-  Result := Stream.DataString;
-  UniqueString(Result);
-  FreeAndNil(Stream);
-end;
-
-function TContent.GetAsData : PByte;
-begin
-  Result := PByte(FWriter^.GetBufferData);
-end;
 
 end.

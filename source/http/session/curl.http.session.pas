@@ -34,7 +34,7 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.writer, curl.http.content;
+  libpascurl, curl.session, curl.http.writer;
 
 type
   THTTP = class
@@ -42,8 +42,7 @@ type
     type
       TSession = class(curl.session.TSession)
       protected
-        FWriter : curl.http.writer.TWriter;
-        FContent : curl.http.content.TContent;  
+        FWriter : curl.http.writer.TWriter; 
       public
         constructor Create;
         destructor Destroy; override;
@@ -65,9 +64,6 @@ type
 
         { Get download data. }
         property Download : curl.http.writer.TWriter read FWriter;
-
-        { Get content. }
-        property Content : curl.http.content.TContent read FContent;
       end;
   end;    
 

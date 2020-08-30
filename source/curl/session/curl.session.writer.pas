@@ -54,17 +54,8 @@ type
     class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
       ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
     function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-
-    function GetDownloadBufferData : Pointer;
-    function GetDownloadBufferDataSize : Cardinal;
   protected
     constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-
-    { Get download data buffer pointer. } 
-    property DownloadData : Pointer read GetDownloadBufferData;
-
-    { Get download data size. }
-    property DownloadDataSize : Cardinal read GetDownloadBufferDataSize;
 
     { Set callback for writing received data. 
       This callback function gets called by libcurl as soon as there is data 
@@ -108,16 +99,6 @@ begin
   Move(APtr^, FBuffer.GetAppendBuffer(ASize)^, ASize);
   FBuffer.SetBufferDataSize(size + ASize);
   Result := ASize;
-end;
-
-function TWriter.GetDownloadBufferData : Pointer;
-begin
-  Result := FBuffer.GetBufferData;
-end;
-
-function TWriter.GetDownloadBufferDataSize : Cardinal;
-begin
-  Result := FBuffer.GetBufferDataSize;
 end;
 
 end.
