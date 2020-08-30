@@ -39,10 +39,10 @@ uses
 type
   TContent = class
   protected
-    FWriter : curl.http.writer.TWriter;
+    FWriter : curl.http.writer.PWriter;
   
   protected
-    constructor Create (AWriter : curl.http.writer.TWriter);
+    constructor Create (AWriter : curl.http.writer.PWriter);
 
     function GetAsString : String;
     function GetAsData : PByte;  
@@ -55,5 +55,26 @@ type
   end;
 
 implementation
+
+constructor TContent.Create (AWriter : curl.http.writer.PWriter);
+begin
+  FWriter := AWriter;
+end;
+
+function TContent.GetAsString : String;
+var
+  Stream : TStringStream;
+begin
+  Stream := TStringStream.Create('');
+  Stream.Write(FWriter^.GetBufferData, FWriter^.GetBufferDataSize);
+  Result := Stream.DataString;
+  UniqueString(Result);
+  FreeAndNil(Stream);
+end;
+
+function TContent.GetAsData : PByte;
+begin
+  Result := PByte(FWriter^.GetBufferData);
+end;
 
 end.

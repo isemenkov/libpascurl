@@ -38,6 +38,7 @@ uses
   container.memorybuffer;
 
 type
+  PWriter = ^TWriter;
   TWriter = class
   public
     type

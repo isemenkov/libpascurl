@@ -78,6 +78,7 @@ implementation
 constructor THTTP.TSession.Create;
 begin
   FWriter := curl.http.writer.TWriter.Create(FCURL, FErrorsStack);
+  FContent := curl.http.content.TContent.Create(@FWriter);
   AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   DefaultProtocol := [PROTOCOL_HTTPS];
@@ -85,6 +86,7 @@ end;
 
 destructor THTTP.TSession.Destroy;
 begin
+  FreeAndNil(FContent);
   FreeAndNil(FWriter);
   inherited Destroy;
 end;
