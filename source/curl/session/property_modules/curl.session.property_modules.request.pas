@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.property_modules.writer;
+unit curl.session.property_modules.request;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,15 +34,50 @@ unit curl.http.property_modules.writer;
 interface
 
 uses
-  libcurl, curl.utils.errors_stack, curl.session.property_modules.writer;
+  libpascurl, curl.session.property_module, curl.request.method;
 
 type
-  TWriter = class(curl.session.property_modules.writer.TWriter)
-  public
-    { Set callback for writing received data. }
-    property DownloadCallback;
-  end; 
+  TModuleRequest = class(TPropertyModule)
+  protected
+    { Set request method. }
+    procedure SetMethod (AMethod : TMethod);
+
+    { Set custom request method. }
+    procedure SetCustomMethod (AMethod : String);
+  protected
+    { Set request method. }
+    property Method : TMethod write SetMethod;
+
+    { Set custom request method. }
+    property CustomMethod : String write SetCustomMethod;
+  end;
 
 implementation
+
+{ TModuleRequest }
+
+procedure TModuleRequest.SetMethod (AMethod : TMethod);
+var
+  method : String;
+begin
+  case AMethod of
+    GET     : begin method := 'GET';     end;
+    HEAD    : begin method := 'HEAD';    end;
+    POST    : begin method := 'POST';    end;
+    PUT     : begin method := 'PUT';     end;
+    DELETE  : begin method := 'DELETE';  end;
+    CONNECT : begin method := 'CONNECT'; end;
+    OPTIONS : begin method := 'OPTIONS'; end;
+    TRACE   : begin method := 'TRACE';   end;
+    PATCH   : begin method := 'PATCH';   end; 
+  end;
+
+  Option(CURLOPT_CUSTOMREQUEST, method);
+end;
+
+procedure TModuleRequest.SetCustomMethod (AMethod : String);
+begin
+  Option(CURLOPT_CUSTOMREQUEST, AMethod);
+end;
 
 end.

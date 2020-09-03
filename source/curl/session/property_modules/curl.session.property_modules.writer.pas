@@ -37,8 +37,8 @@ uses
   libpascurl, container.memorybuffer, curl.session.property_module;
 
 type
-  PWriter = ^TWriter;
-  TWriter = class(TPropertyModule)
+  PModuleWriter = ^TModuleWriter;
+  TModuleWriter = class(TPropertyModule)
   public
     type
       { Set callback for writing received data. }
@@ -69,8 +69,8 @@ implementation
 
 { TWriter }
 
-class function TWriter.DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-  ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
+class function TModuleWriter.DownloadFunctionCallback (APtr : PChar; ASize : 
+  LongWord; ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
 begin
   if Assigned(TWriter(AData).FDownloadFunction) then
   begin
@@ -81,7 +81,7 @@ begin
   end;
 end;
 
-constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TModuleWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
   FBuffer := TMemoryBuffer.Create;
@@ -90,13 +90,14 @@ begin
   Option(CURLOPT_WRITEFUNCTION, @TWriter.DownloadFunctionCallback);
 end;
 
-destructor TWriter.Destroy;
+destructor TModuleWriter.Destroy;
 begin
   FreeAndNil(FBuffer);
   inherited Destroy;
 end;
 
-function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
+function TModuleWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : 
+  LongWord;
 var
   size : Cardinal;
 begin

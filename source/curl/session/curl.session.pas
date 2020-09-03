@@ -41,8 +41,7 @@ type
   private
     procedure SetPathAsIs (APathAsIs : Boolean);
     procedure SetUrl (AUrl : String);
-    procedure SetRequestMethod (ARequestMethod : curl.request.method.TMethod);
-    procedure SetCustomRequestMethod (ACustomRequestMethod : String);
+    
     procedure SetInterfaceName (AInterfaceName : String);
     procedure SetUnixSocketPath (AUnixSocketPath : String);
     procedure SetAbstractUnixSocket (AAbstractUnixSocket : String);
@@ -112,12 +111,6 @@ type
       alternative mail port. }
     property Url : String write SetUrl;
 
-    { Set request method. }
-    property RequestMethod : curl.request.method.TMethod write SetRequestMethod;
-
-    { Set custom request method. }
-    property CustomRequestMethod : String write SetCustomRequestMethod;
-
     { Source interface for outgoing traffic. 
       Pass a string as parameter. This sets the interface name to use as 
       outgoing network interface. The name can be an interface name, an IP 
@@ -169,33 +162,6 @@ begin
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER,
     FErrorsStack.ErrorBuffer));
   PathAsIs := False;
-end;
-
-procedure TSession.SetCustomRequestMethod (ACustomRequestMethod : String);
-begin
-  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_CUSTOMREQUEST, 
-    PChar(ACustomRequestMethod)));
-end;
-
-procedure TSession.SetRequestMethod (ARequestMethod : 
-  curl.request.method.TMethod);
-var
-  method : String;
-begin
-  case ARequestMethod of
-    GET     : begin method := 'GET';     end;
-    HEAD    : begin method := 'HEAD';    end;
-    POST    : begin method := 'POST';    end;
-    PUT     : begin method := 'PUT';     end;
-    DELETE  : begin method := 'DELETE';  end;
-    CONNECT : begin method := 'CONNECT'; end;
-    OPTIONS : begin method := 'OPTIONS'; end;
-    TRACE   : begin method := 'TRACE';   end;
-    PATCH   : begin method := 'PATCH';   end; 
-  end;
-
-  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_CUSTOMREQUEST, 
-    PChar(method)));
 end;
 
 procedure TSession.SetUrl (AUrl : String);

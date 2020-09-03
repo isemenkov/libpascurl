@@ -34,8 +34,10 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.session.property_modules.protocols, 
-  curl.http.property_modules.writer;
+  libpascurl, curl.session, 
+  curl.http.session.property_modules.protocols, 
+  curl.http.session.property_modules.writer, 
+  curl.http.session.property_modules.request;
 
 type
   THTTP = class
@@ -43,8 +45,9 @@ type
     type
       TSession = class(curl.session.TSession)
       protected
-        FWriter : TWriter;
+        FWriter : TModuleWriter;
         FProtocols : TModuleProtocols; 
+        FRequest : TModuleRequest;
       public
         constructor Create;
         destructor Destroy; override;
@@ -65,7 +68,10 @@ type
         property AbstractUnixSocket;
 
         { Get download writer object. }
-        property Download : TWriter read FWriter;
+        property Download : TModuleWriter read FWriter;
+
+        { Set request methods. }
+        property Request : TModuleRequest read FRequest;
       end;
   end;    
 
@@ -76,7 +82,8 @@ implementation
 constructor THTTP.TSession.Create;
 begin
   FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
-  FWriter := TWriter.Create(Handle, ErrorsStorage);
+  FWriter := TModuleWriter.Create(Handle, ErrorsStorage);
+  FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -87,6 +94,7 @@ destructor THTTP.TSession.Destroy;
 begin
   FreeAndNil(FProtocols);
   FreeAndNil(FWriter);
+  FreeAndNil(FRequest);
   inherited Destroy;
 end;
 
