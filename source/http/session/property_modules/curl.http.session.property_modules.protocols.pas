@@ -40,8 +40,6 @@ type
   TModuleProtocols = 
     class(curl.session.property_modules.protocols.TModuleProtocols)
   public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);  
-
     { Set allowed protocols. }
     property Allowed;
 
@@ -53,12 +51,5 @@ type
   end;
 
 implementation
-
-{ TModuleProtocols }
-
-constructor TModuleProtocols.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-begin
-  inherited Create(ACURL, AErrorsStack);
-end;
 
 end.

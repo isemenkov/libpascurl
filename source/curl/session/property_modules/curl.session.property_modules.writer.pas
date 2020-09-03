@@ -44,16 +44,12 @@ type
       { Set callback for writing received data. }
       TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
         LongWord  of object;
+  public
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    destructor Destroy; override;
   protected
     FBuffer : TMemoryBuffer;
     FDownloadFunction : TDownloadFunction;
-  private
-    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
-    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-  protected
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-    destructor Destroy; override;
 
     { Set callback for writing received data. 
       This callback function gets called by libcurl as soon as there is data 
@@ -63,6 +59,10 @@ type
       always 1. }
     property DownloadCallback : TDownloadFunction read FDownloadFunction
       write FDownloadFunction;
+  private
+    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
+      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
+    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
   end;
 
 implementation

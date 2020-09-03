@@ -39,19 +39,10 @@ uses
 type
   TWriter = class(curl.session.property_modules.writer.TWriter)
   public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-
     { Set callback for writing received data. }
     property DownloadCallback;
   end; 
 
 implementation
-
-{ TWriter }
-
-constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-begin
-  inherited Create(ACURL, AErrorsStack);
-end;
 
 end.

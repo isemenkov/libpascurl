@@ -39,8 +39,6 @@ uses
 type
   TModuleProtocols = class(curl.session.property_module.TPropertyModule)
   protected  
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-
     { Get CURL library protocols bitmask. }
     function GetCURLProtocolsBitmask (AProtocols : curl.protocol.TProtocols) : 
       Longint;
@@ -87,11 +85,6 @@ type
 implementation
 
 { TModuleProtocols }
-
-constructor TModuleProtocols.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-begin
-  inherited Create(ACURL, AErrorsStack);
-end;
 
 function TModuleProtocols.GetCURLProtocolsBitmask (AProtocols : 
   curl.protocol.TProtocols) : Longint;

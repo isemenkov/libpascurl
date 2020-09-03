@@ -34,7 +34,7 @@ unit curl.session.property_module;
 interface
 
 uses
-  libpascurl, curl.utils.errorsstack;
+  libpascurl, curl.utils.errors_stack;
 
 type
   { Base class for all curl.session property modules classes. }
@@ -44,17 +44,17 @@ type
     FCURL : CURL;
 
     { Errors messages stores. } 
-    FErrorsStack : curl.utils.errorsstack.PErrorsStack;
-  protected
-    { Property module constructor. }
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
-
+    FErrorsStack : PErrorsStack;
+  
     { Set CURL library option. }
     procedure Option (ACURLOption : Longint; AValue : Longint); overload;
     procedure Option (ACURLOption : Longint; AValue : String); overload;
     procedure Option (ACURLOption : Longint; AValue : Pointer); overload;
     procedure Option (ACURLOption : Longint; AValue : Int64); overload;
-    procedure Option (ACURLOption : Longint; AValue : Boolean); overload;  
+    procedure Option (ACURLOption : Longint; AValue : Boolean); overload; 
+  public
+    { Property module constructor. }
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack); 
   end;
 
 implementation

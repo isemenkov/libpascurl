@@ -35,7 +35,7 @@ interface
 
 uses
   libpascurl, curl.session, curl.http.session.property_modules.protocols, 
-  curl.http.writer;
+  curl.http.property_modules.writer;
 
 type
   THTTP = class
@@ -43,7 +43,7 @@ type
     type
       TSession = class(curl.session.TSession)
       protected
-        FWriter : curl.http.writer.TWriter;
+        FWriter : TWriter;
         FProtocols : TModuleProtocols; 
       public
         constructor Create;
@@ -65,7 +65,7 @@ type
         property AbstractUnixSocket;
 
         { Get download writer object. }
-        property Download : curl.http.writer.TWriter read FWriter;
+        property Download : TWriter read FWriter;
       end;
   end;    
 
@@ -75,9 +75,8 @@ implementation
 
 constructor THTTP.TSession.Create;
 begin
-  FProtocols := TModuleProtocols.Create(handle, ErrorsStorage);
-  FWriter := curl.http.writer.TWriter.Create(Handle, ErrorsStorage);
-  FContent := curl.http.content.TContent.Create(@FWriter);
+  FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
+  FWriter := TWriter.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -87,7 +86,6 @@ end;
 destructor THTTP.TSession.Destroy;
 begin
   FreeAndNil(FProtocols);
-  FreeAndNil(FContent);
   FreeAndNil(FWriter);
   inherited Destroy;
 end;
