@@ -62,7 +62,7 @@ type
         { Set an abstract Unix domain socket. }
         property AbstractUnixSocket;
 
-        { Get download data. }
+        { Get download writer object. }
         property Download : curl.http.writer.TWriter read FWriter;
       end;
   end;    

@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.writer;
+unit curl.base;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,67 +34,46 @@ unit curl.session.writer;
 interface
 
 uses
-  libpascurl, container.memorybuffer, curl.session.propertymodule;
+  libpascurl, curl.utils.errorsstack;
 
 type
-  PWriter = ^TWriter;
-  TWriter = class(curl.session.propertymodule.TPropertyModule)
-  public
-    type
-      { Set callback for writing received data. }
-      TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
-        LongWord  of object;
+  { Base class for all curl classes. }
+  TCURLBase = class
   protected
-    FBuffer : TMemoryBuffer;
-    FDownloadFunction : TDownloadFunction;
-  private
-    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
-    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-  protected
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    { CURL library handle. }
+    FCURL : CURL;
 
-    { Set callback for writing received data. 
-      This callback function gets called by libcurl as soon as there is data 
-      received that needs to be saved. For most transfers, this callback gets 
-      called many times and each invoke delivers another chunk of data. ptr 
-      points to the delivered data, and the size of that data is nmemb; size is 
-      always 1. }
-    property DownloadCallback : TDownloadFunction read FDownloadFunction
-      write FDownloadFunction;
+    { Store CURL library errors messages. }
+    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+  protected
+    { Initialize new curl easy session. }
+    constructor Create;
+
+    { Destroy and clean curl session. }
+    destructor Destroy; override;  
   end;
 
 implementation
 
-constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+{ TCURLBase }
+
+constructor TCURLBase.Create;
 begin
-  inherited Create(ACURL, AErrorsStack);
-  FBuffer := TMemoryBuffer.Create;
-  Errors.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEDATA, Pointer(Self)));
-  Errors.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEFUNCTION,
-    @TWriter.DownloadFunctionCallback));  
+  FCURL := curl_easy_init;
+  FErrorsStack := TErrorsStack.Create;
 end;
 
-class function TWriter.DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-  ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
+destructor TCURLBase.Destroy;
 begin
-  if Assigned(TWriter(AData).FDownloadFunction) then
-  begin
-    Result := TWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
-  end else
-  begin
-    Result := TWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
-  end;
+  curl_easy_cleanup(FCURL);
+  FreeAndNil(FErrorsStack);
+  inherited Destroy;
 end;
 
-function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-var
-  size : Cardinal;
-begin
-  size := FBuffer.GetBufferDataSize;
-  Move(APtr^, FBuffer.GetAppendBuffer(ASize)^, ASize);
-  FBuffer.SetBufferDataSize(size + ASize);
-  Result := ASize;
-end;
+initialization
+  curl_global_init(CURL_GLOBAL_ALL);
+
+finalization
+  curl_global_cleanup;
 
 end.

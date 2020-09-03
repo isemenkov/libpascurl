@@ -34,14 +34,11 @@ unit curl.session;
 interface
 
 uses
-  libpascurl, curl.session.protocol, curl.utils.errorsstack, 
+  libpascurl, curl.base, curl.session.protocol, curl.utils.errorsstack, 
   curl.request.method;
 
 type
-  TSession = class
-  protected
-    FCURL : CURL;
-    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+  TSession = class(TCURLBase)
   private
     function CreateProtocolsBitmask (AProtocols : TProtocols) : Longint;
 
@@ -58,7 +55,6 @@ type
     procedure SetAbstractUnixSocket (AAbstractUnixSocket : String);
   protected
     constructor Create;
-    destructor Destroy; override;
 
     { Collect CURL errors. }
     property ErrorsStack : TErrorsStack read FErrorsStack;
@@ -210,18 +206,10 @@ implementation
 
 constructor TSession.Create;
 begin
-  FCURL := curl_easy_init;
-  FErrorsStack := TErrorsStack.Create;
+  inherited Create;
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER,
     FErrorsStack.ErrorBuffer));
   PathAsIs := False;
-end;
-
-destructor TSession.Destroy;
-begin
-  curl_easy_cleanup(FCURL);
-  FreeAndNil(FErrorsStack);
-  inherited Destroy;
 end;
 
 procedure TSession.SetCustomRequestMethod (ACustomRequestMethod : String);
