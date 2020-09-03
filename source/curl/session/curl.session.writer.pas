@@ -70,9 +70,9 @@ constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
   FBuffer := TMemoryBuffer.Create;
-  Errors.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEDATA, Pointer(Self)));
-  Errors.Push(curl_easy_setopt(FCURL, CURLOPT_WRITEFUNCTION,
-    @TWriter.DownloadFunctionCallback));  
+
+  Option(CURLOPT_WRITEDATA, Pointer(Self));
+  Option(CURLOPT_WRITEFUNCTION, @TWriter.DownloadFunctionCallback);
 end;
 
 class function TWriter.DownloadFunctionCallback (APtr : PChar; ASize : LongWord;

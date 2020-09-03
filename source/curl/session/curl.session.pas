@@ -56,9 +56,6 @@ type
   protected
     constructor Create;
 
-    { Collect CURL errors. }
-    property ErrorsStack : TErrorsStack read FErrorsStack;
-
     { Set allowed protocols. 
       Pass a bitmask of TProtocol defines. If used, this bitmask limits what 
       protocols libcurl may use in the transfer. This allows you to have a 

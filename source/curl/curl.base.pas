@@ -45,12 +45,27 @@ type
 
     { Store CURL library errors messages. }
     FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+
+    { Return CURL library errors storage. }
+    function GetErrors : TErrorsStack;
+
+    { Return pointer to CURL library errors storage. }
+    function GetErrorsStorage : PErrorsStack;
   protected
     { Initialize new curl easy session. }
     constructor Create;
 
     { Destroy and clean curl session. }
     destructor Destroy; override;  
+
+    { Provide access to CURL handle. }
+    property Handle : CURL read FCURL;
+
+    { Provide access to CURL error messages storage. }
+    property Errors : TErrorsStack read GetErrors;
+
+    { Provide pointer to CURL error messages storage. }
+    property ErrorsStorage : PErrorsStack read GetErrorsStorage;
   end;
 
 implementation
@@ -68,6 +83,16 @@ begin
   curl_easy_cleanup(FCURL);
   FreeAndNil(FErrorsStack);
   inherited Destroy;
+end;
+
+function TCURLBase.GetErrors : TErrorsStack;
+begin
+  Result := FErrorsStack;
+end;
+
+function TCURLBase.GetErrorsStorage : PErrorsStack;
+begin
+  Result := @FErrorsStack;
 end;
 
 initialization

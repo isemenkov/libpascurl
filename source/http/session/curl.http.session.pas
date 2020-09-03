@@ -73,8 +73,9 @@ implementation
 
 constructor THTTP.TSession.Create;
 begin
-  FWriter := curl.http.writer.TWriter.Create(FCURL, FErrorsStack);
+  FWriter := curl.http.writer.TWriter.Create(Handle, ErrorsStorage);
   FContent := curl.http.content.TContent.Create(@FWriter);
+  
   AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   DefaultProtocol := [PROTOCOL_HTTPS];

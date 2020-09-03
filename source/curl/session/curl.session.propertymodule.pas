@@ -49,11 +49,12 @@ type
     { Property module constructor. }
     constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 
-    { Return CURL library errors storage. }
-    function GetErrors : TErrorsStack;
-  protected  
-    { Provide access to errors messages storage. }
-    property Errors : TErrorsStack read GetErrors;
+    { Set CURL library option. }
+    procedure Option (ACURLOption : Longint; AValue : Longint); overload;
+    procedure Option (ACURLOption : Longint; AValue : String); overload;
+    procedure Option (ACURLOption : Longint; AValue : Pointer); overload;
+    procedure Option (ACURLOption : Longint; AValue : Int64); overload;
+    procedure Option (ACURLOption : Longint; AValue : Boolean); overload;  
   end;
 
 implementation
@@ -66,9 +67,29 @@ begin
   FErrorsStack := AErrorsStack;
 end;
 
-function TPropertyModule.GetErrors : TErrorsStack;
+procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Longint);
 begin
-  Result := FErrorsStack^;
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : Longint; AValue : String);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, PChar(AValue)));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Pointer);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Int64);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Boolean);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, Longint(AValue)));
 end;
 
 end.
