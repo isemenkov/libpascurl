@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.base;
+unit curl.easy;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,17 +34,17 @@ unit curl.base;
 interface
 
 uses
-  libpascurl, curl.utils.errorsstack;
+  libpascurl, curl.utils.errors_stack;
 
 type
   { Base class for all curl classes. }
-  TCURLBase = class
+  TCURLEasy = class
   protected
     { CURL library handle. }
     FCURL : CURL;
 
     { Store CURL library errors messages. }
-    FErrorsStack : curl.utils.errorsstack.TErrorsStack;
+    FErrorsStack : curl.utils.errors_stack.TErrorsStack;
 
     { Return CURL library errors storage. }
     function GetErrors : TErrorsStack;
@@ -72,25 +72,25 @@ implementation
 
 { TCURLBase }
 
-constructor TCURLBase.Create;
+constructor TCURLEasy.Create;
 begin
   FCURL := curl_easy_init;
   FErrorsStack := TErrorsStack.Create;
 end;
 
-destructor TCURLBase.Destroy;
+destructor TCURLEasy.Destroy;
 begin
   curl_easy_cleanup(FCURL);
   FreeAndNil(FErrorsStack);
   inherited Destroy;
 end;
 
-function TCURLBase.GetErrors : TErrorsStack;
+function TCURLEasy.GetErrors : TErrorsStack;
 begin
   Result := FErrorsStack;
 end;
 
-function TCURLBase.GetErrorsStorage : PErrorsStack;
+function TCURLEasy.GetErrorsStorage : PErrorsStack;
 begin
   Result := @FErrorsStack;
 end;

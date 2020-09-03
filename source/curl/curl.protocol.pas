@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.protocol;
+unit curl.protocol;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}

@@ -34,7 +34,8 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.writer;
+  libpascurl, curl.session, curl.http.session.property_modules.protocols, 
+  curl.http.writer;
 
 type
   THTTP = class
@@ -42,7 +43,8 @@ type
     type
       TSession = class(curl.session.TSession)
       protected
-        FWriter : curl.http.writer.TWriter; 
+        FWriter : curl.http.writer.TWriter;
+        FProtocols : TModuleProtocols; 
       public
         constructor Create;
         destructor Destroy; override;
@@ -73,16 +75,18 @@ implementation
 
 constructor THTTP.TSession.Create;
 begin
+  FProtocols := TModuleProtocols.Create(handle, ErrorsStorage);
   FWriter := curl.http.writer.TWriter.Create(Handle, ErrorsStorage);
   FContent := curl.http.content.TContent.Create(@FWriter);
   
-  AllowedProtocols := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  AllowedProtocolRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
-  DefaultProtocol := [PROTOCOL_HTTPS];
+  FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
+  FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
+  FProtocols.Default := PROTOCOL_HTTPS;
 end;
 
 destructor THTTP.TSession.Destroy;
 begin
+  FreeAndNil(FProtocols);
   FreeAndNil(FContent);
   FreeAndNil(FWriter);
   inherited Destroy;

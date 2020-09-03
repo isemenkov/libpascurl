@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.utils.errorsstack;
+unit curl.utils.errors_stack;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}

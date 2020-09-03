@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.propertymodule;
+unit curl.http.property_modules.writer;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,62 +34,24 @@ unit curl.session.propertymodule;
 interface
 
 uses
-  libpascurl, curl.utils.errorsstack;
+  libcurl, curl.utils.errors_stack, curl.session.property_modules.writer;
 
 type
-  { Base class for all curl.session property modules classes. }
-  TPropertyModule = class
-  protected
-    { CURL library handle. }
-    FCURL : CURL;
-
-    { Errors messages stores. } 
-    FErrorsStack : curl.utils.errorsstack.PErrorsStack;
-  protected
-    { Property module constructor. }
+  TWriter = class(curl.session.property_modules.writer.TWriter)
+  public
     constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 
-    { Set CURL library option. }
-    procedure Option (ACURLOption : Longint; AValue : Longint); overload;
-    procedure Option (ACURLOption : Longint; AValue : String); overload;
-    procedure Option (ACURLOption : Longint; AValue : Pointer); overload;
-    procedure Option (ACURLOption : Longint; AValue : Int64); overload;
-    procedure Option (ACURLOption : Longint; AValue : Boolean); overload;  
-  end;
+    { Set callback for writing received data. }
+    property DownloadCallback;
+  end; 
 
 implementation
 
-{ TPropertyModule }
+{ TWriter }
 
-constructor TPropertyModule.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
-  FCURL := ACURL;
-  FErrorsStack := AErrorsStack;
-end;
-
-procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Longint);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : Longint; AValue : String);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, PChar(AValue)));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Pointer);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Int64);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : Longint; AValue : Boolean);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, Longint(AValue)));
+  inherited Create(ACURL, AErrorsStack);
 end;
 
 end.

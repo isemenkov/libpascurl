@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.writer;
+unit curl.http.session.property_modules.protocols;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,67 +34,31 @@ unit curl.session.writer;
 interface
 
 uses
-  libpascurl, container.memorybuffer, curl.session.propertymodule;
+  libcurl, curl.utils.errors_stack, curl.session.property_modules.protocols;
 
 type
-  PWriter = ^TWriter;
-  TWriter = class(curl.session.propertymodule.TPropertyModule)
+  TModuleProtocols = 
+    class(curl.session.property_modules.protocols.TModuleProtocols)
   public
-    type
-      { Set callback for writing received data. }
-      TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
-        LongWord  of object;
-  protected
-    FBuffer : TMemoryBuffer;
-    FDownloadFunction : TDownloadFunction;
-  private
-    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
-    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-  protected
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);  
 
-    { Set callback for writing received data. 
-      This callback function gets called by libcurl as soon as there is data 
-      received that needs to be saved. For most transfers, this callback gets 
-      called many times and each invoke delivers another chunk of data. ptr 
-      points to the delivered data, and the size of that data is nmemb; size is 
-      always 1. }
-    property DownloadCallback : TDownloadFunction read FDownloadFunction
-      write FDownloadFunction;
+    { Set allowed protocols. }
+    property Allowed;
+
+    { Set protocols allowed to redirect to. }
+    property AllowedRedirects;
+
+    { Default protocol to use if the URL is missing a scheme name. }
+    property Default;
   end;
 
 implementation
 
-constructor TWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+{ TModuleProtocols }
+
+constructor TModuleProtocols.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
-  FBuffer := TMemoryBuffer.Create;
-
-  Option(CURLOPT_WRITEDATA, Pointer(Self));
-  Option(CURLOPT_WRITEFUNCTION, @TWriter.DownloadFunctionCallback);
-end;
-
-class function TWriter.DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-  ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
-begin
-  if Assigned(TWriter(AData).FDownloadFunction) then
-  begin
-    Result := TWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
-  end else
-  begin
-    Result := TWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
-  end;
-end;
-
-function TWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-var
-  size : Cardinal;
-begin
-  size := FBuffer.GetBufferDataSize;
-  Move(APtr^, FBuffer.GetAppendBuffer(ASize)^, ASize);
-  FBuffer.SetBufferDataSize(size + ASize);
-  Result := ASize;
 end;
 
 end.
