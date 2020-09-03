@@ -37,7 +37,8 @@ uses
   libpascurl, curl.session, 
   curl.http.session.property_modules.protocols, 
   curl.http.session.property_modules.writer, 
-  curl.http.session.property_modules.request;
+  curl.http.session.property_modules.request,
+  curl.http.session.property_modules.options;
 
 type
   THTTP = class
@@ -48,6 +49,7 @@ type
         FWriter : TModuleWriter;
         FProtocols : TModuleProtocols; 
         FRequest : TModuleRequest;
+        FOptions : TModuleOptions;
       public
         constructor Create;
         destructor Destroy; override;
@@ -58,20 +60,14 @@ type
         { Provide the URL to use in the request. }
         property Url;  
 
-        { Source interface for outgoing traffic. }
-        property InterfaceName; 
-
-        { Set Unix domain socket. }
-        property UnixSocketPath;
-
-        { Set an abstract Unix domain socket. }
-        property AbstractUnixSocket;
-
         { Get download writer object. }
         property Download : TModuleWriter read FWriter;
 
         { Set request methods. }
         property Request : TModuleRequest read FRequest;
+
+        { Set options. }
+        property Options : TModuleOptions read FOptions;
       end;
   end;    
 
@@ -84,6 +80,7 @@ begin
   FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
   FWriter := TModuleWriter.Create(Handle, ErrorsStorage);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
+  FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -95,6 +92,7 @@ begin
   FreeAndNil(FProtocols);
   FreeAndNil(FWriter);
   FreeAndNil(FRequest);
+  FreeAndNil(FOptions);
   inherited Destroy;
 end;
 

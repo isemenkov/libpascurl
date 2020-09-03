@@ -34,7 +34,7 @@ unit curl.http.session.property_modules.protocols;
 interface
 
 uses
-  libcurl, curl.utils.errors_stack, curl.session.property_modules.protocols;
+  curl.session.property_modules.protocols;
 
 type
   TModuleProtocols = 

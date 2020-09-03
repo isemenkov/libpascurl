@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.writer;
+unit curl.http.session.property_modules.options;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,15 +34,39 @@ unit curl.http.session.property_modules.writer;
 interface
 
 uses
-  curl.session.property_modules.writer;
+  libpascurl, curl.utils.errors_stack,
+  curl.session.property_modules.options,
+  curl.http.session.property_modules.socket;
 
 type
-  TModuleWriter = class(curl.session.property_modules.writer.TModuleWriter)
+  TModuleOptions = class(curl.session.property_modules.options.TModuleOptions)
+  protected
+    FSocket : TModuleSocket;  
   public
-    { Set callback for writing received data. }
-    property DownloadCallback;
-  end; 
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    destructor Destroy;
+
+    { Do not handle dot dot sequences. }
+    property PathAsIs;
+
+    { Set socket options. }
+    property Socket : TModuleSocket read FSocket;
+  end;
 
 implementation
+
+{ TModuleOptions }
+
+constructor TModuleOptions.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+begin
+  inherited Create(ACURL, AErrorsStack);
+  FSocket := TModuleSocket.Create(ACURL, AErrorsStack);
+end;
+
+destructor TModuleOptions.Destroy;
+begin
+  FreeAndNil(FSocket);
+  inherited Destroy;
+end;
 
 end.

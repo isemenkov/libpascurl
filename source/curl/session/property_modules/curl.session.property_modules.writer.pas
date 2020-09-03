@@ -37,7 +37,6 @@ uses
   libpascurl, container.memorybuffer, curl.session.property_module;
 
 type
-  PModuleWriter = ^TModuleWriter;
   TModuleWriter = class(TPropertyModule)
   public
     type
@@ -50,7 +49,7 @@ type
   protected
     FBuffer : TMemoryBuffer;
     FDownloadFunction : TDownloadFunction;
-
+  protected
     { Set callback for writing received data. 
       This callback function gets called by libcurl as soon as there is data 
       received that needs to be saved. For most transfers, this callback gets 

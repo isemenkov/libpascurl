@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.writer;
+unit curl.http.session.property_modules.socket;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,14 +34,20 @@ unit curl.http.session.property_modules.writer;
 interface
 
 uses
-  curl.session.property_modules.writer;
+  curl.session.property_modules.socket;
 
 type
-  TModuleWriter = class(curl.session.property_modules.writer.TModuleWriter)
+  TModuleSocket = class(curl.session.property_modules.socket.TModuleSocket)
   public
-    { Set callback for writing received data. }
-    property DownloadCallback;
-  end; 
+    { Source interface for outgoing traffic. }
+    property InterfaceName;
+
+    { Set Unix domain socket. }
+    property UnixSocketPath;
+
+    { Set an abstract Unix domain socket. }
+    property AbstractUnixSocket;
+  end;
 
 implementation
 

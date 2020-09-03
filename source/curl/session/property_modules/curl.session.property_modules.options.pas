@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.writer;
+unit curl.session.property_modules.options;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,15 +34,34 @@ unit curl.http.session.property_modules.writer;
 interface
 
 uses
-  curl.session.property_modules.writer;
+  libpascurl, container.memorybuffer, curl.session.property_module;
 
 type
-  TModuleWriter = class(curl.session.property_modules.writer.TModuleWriter)
-  public
-    { Set callback for writing received data. }
-    property DownloadCallback;
-  end; 
+  TModuleOptions = class(TPropertyModule)
+  protected
+    { Do not handle dot dot sequences. }
+    procedure SetPathAsIs (APathAsIs : Boolean);
+  protected  
+    { Do not handle dot dot sequences. 
+      Set the True, to explicitly tell libcurl to not alter the given path 
+      before passing it on to the server.
+      This instructs libcurl to NOT squash sequences of "/../" or "/./" that may
+      exist in the URL's path part and that is supposed to be removed according 
+      to RFC 3986 section 5.2.4.
+      Some server implementations are known to (erroneously) require the dot dot 
+      sequences to remain in the path and some clients want to pass these on in 
+      order to try out server implementations.
+      By default libcurl will merge such sequences before using the path. }
+    property PathAsIs : Boolean write SetPathAsIs default False;
+  end;
 
 implementation
+
+{ TModuleOptions }
+
+procedure TModuleOptions.SetPathAsIs (APathAsIs : Boolean);
+begin
+  Option(CURLOPT_PATH_AS_IS, APathAsIs);
+end;
 
 end.

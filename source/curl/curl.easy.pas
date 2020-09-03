@@ -51,13 +51,7 @@ type
 
     { Return pointer to CURL library errors storage. }
     function GetErrorsStorage : PErrorsStack;
-  protected
-    { Initialize new curl easy session. }
-    constructor Create;
-
-    { Destroy and clean curl session. }
-    destructor Destroy; override;  
-
+  
     { Provide access to CURL handle. }
     property Handle : CURL read FCURL;
 
@@ -66,6 +60,12 @@ type
 
     { Provide pointer to CURL error messages storage. }
     property ErrorsStorage : PErrorsStack read GetErrorsStorage;
+  public
+    { Initialize new curl easy session. }
+    constructor Create;
+
+    { Destroy and clean curl session. }
+    destructor Destroy; override; 
   end;
 
 implementation
@@ -76,6 +76,9 @@ constructor TCURLEasy.Create;
 begin
   FCURL := curl_easy_init;
   FErrorsStack := TErrorsStack.Create;
+  
+  FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_ERRORBUFFER,
+    FErrorsStack.ErrorBuffer));
 end;
 
 destructor TCURLEasy.Destroy;
