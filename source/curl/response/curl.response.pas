@@ -34,13 +34,54 @@ unit curl.response;
 interface
 
 uses
-  libpascurl;
+  libpascurl, curl.utils.errors_stack;
 
 type
   TResponse = class
+  protected
+    { CURL library handle. }
+    FCURL : CURL;
+
+    { Store CURL library errors messages. }
+    FErrorsStack : PErrorsStack;
+
+    { Return CURL library errors storage. }
+    function GetErrors : TErrorsStack;
+
+    { Return pointer to CURL library errors storage. }
+    function GetErrorsStorage : PErrorsStack;
   
+    { Provide access to CURL handle. }
+    property Handle : CURL read FCURL;
+
+    { Provide access to CURL error messages storage. }
+    property Errors : TErrorsStack read GetErrors;
+
+    { Provide pointer to CURL error messages storage. }
+    property ErrorsStorage : PErrorsStack read GetErrorsStorage;
+  public
+    { Initialize new curl easy session. }
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
   end;
 
 implementation
+
+{ TResponse }
+
+constructor TResponse.Create(ACURL : CURL; AErrorsStack : PErrorsStack);
+begin
+  FCURL := ACURL;
+  FErrorsStack := AErrorsStack;
+end;
+
+function TResponse.GetErrors : TErrorsStack;
+begin
+  Result := FErrorsStack^;
+end;
+
+function TResponse.GetErrorsStorage : PErrorsStack;
+begin
+  Result := FErrorsStack;
+end;
 
 end.

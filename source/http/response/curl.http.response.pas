@@ -34,13 +34,32 @@ unit curl.http.response;
 interface
 
 uses
-  libpascurl, curl.response;
+  libpascurl, curl.utils.errors_stack,  curl.response;
 
 type
   TResponse = class(curl.response.TResponse)
+  protected
+  public
+    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    destructor Destroy; override;
+    
+    { Provide access to CURL error messages storage. }
+    property Errors;
 
   end;
 
 implementation
+
+{ TResponse }
+
+constructor TResponse.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+begin
+  inherited Create(ACURL, AErrorsStack);
+end;
+
+destructor TResponse.Destroy;
+begin
+  inherited Destroy;
+end;
 
 end.

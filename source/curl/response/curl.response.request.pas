@@ -34,7 +34,7 @@ unit curl.response.request;
 interface
 
 uses
-  curl.utils.errorstack, libpascurl;
+  libpascurl, curl.utils.errorstack;
 
 type
   { Request info }

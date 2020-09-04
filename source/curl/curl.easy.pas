@@ -44,7 +44,7 @@ type
     FCURL : CURL;
 
     { Store CURL library errors messages. }
-    FErrorsStack : curl.utils.errors_stack.TErrorsStack;
+    FErrorsStack : TErrorsStack;
 
     { Return CURL library errors storage. }
     function GetErrors : TErrorsStack;

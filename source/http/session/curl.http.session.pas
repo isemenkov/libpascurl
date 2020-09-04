@@ -34,9 +34,10 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, 
+  libpascurl, curl.session, curl.http.response,
   curl.http.session.property_modules.protocols, 
   curl.http.session.property_modules.writer, 
+  curl.request.method,
   curl.http.session.property_modules.request,
   curl.http.session.property_modules.options;
 
@@ -52,10 +53,10 @@ type
         FOptions : TModuleOptions;
       public
         constructor Create;
-        destructor Destroy; override;
+        destructor Destroy; override; 
 
-        { Do not handle dot dot sequences. }
-        property PathAsIs; 
+        { Provide access to CURL library error messages storage. }
+        property Errors;
 
         { Provide the URL to use in the request. }
         property Url;  
@@ -63,11 +64,11 @@ type
         { Get download writer object. }
         property Download : TModuleWriter read FWriter;
 
-        { Set request methods. }
-        property Request : TModuleRequest read FRequest;
-
         { Set options. }
         property Options : TModuleOptions read FOptions;
+
+        { Send current request using GET method. }
+        function Get : TResponse;
       end;
   end;    
 
@@ -94,6 +95,12 @@ begin
   FreeAndNil(FRequest);
   FreeAndNil(FOptions);
   inherited Destroy;
+end;
+
+function THTTP.TSession.Get : TResponse;
+begin
+  FRequest.Method := TMethod.GET;
+  Result := TResponse.Create(Handle, ErrorsStorage);
 end;
 
 end.
