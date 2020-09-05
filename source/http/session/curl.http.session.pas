@@ -81,6 +81,7 @@ uses
 
 constructor THTTP.TSession.Create;
 begin
+  inherited Create;
   FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
   FWriter := TModuleWriter.Create(Handle, ErrorsStorage);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);

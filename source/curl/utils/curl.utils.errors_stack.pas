@@ -34,7 +34,7 @@ unit curl.utils.errors_stack;
 interface
 
 uses
-  libpascurl, utils.errorsstack, utils.optional;
+  libpascurl, utils.errorsstack;
 
 type
   { Collect CURL errors. }

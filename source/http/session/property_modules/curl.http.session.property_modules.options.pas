@@ -44,7 +44,7 @@ type
     FSocket : TModuleSocket;  
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
-    destructor Destroy;
+    destructor Destroy; override;
 
     { Do not handle dot dot sequences. }
     property PathAsIs;

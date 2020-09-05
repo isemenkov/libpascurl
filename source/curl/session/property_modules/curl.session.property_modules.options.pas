@@ -34,7 +34,7 @@ unit curl.session.property_modules.options;
 interface
 
 uses
-  libpascurl, container.memorybuffer, curl.session.property_module;
+  libpascurl, curl.session.property_module;
 
 type
   TModuleOptions = class(TPropertyModule)

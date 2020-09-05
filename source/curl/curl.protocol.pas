@@ -33,9 +33,6 @@ unit curl.protocol;
 
 interface
 
-uses
-  libpascurl;
-
 type
   TProtocol = (
     { DICT is a dictionary network protocol, it allows clients to ask dictionary
