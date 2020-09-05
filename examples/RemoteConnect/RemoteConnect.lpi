@@ -24,7 +24,7 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="21">
+    <Units Count="22">
       <Unit0>
         <Filename Value="RemoteConnect.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -94,21 +94,25 @@
         <IsPartOfProject Value="True"/>
       </Unit16>
       <Unit17>
-        <Filename Value="../../libpasc-algorithms/source/container.memorybuffer.pas"/>
+        <Filename Value="../../source/curl/session/curl.session.property_module.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit17>
       <Unit18>
-        <Filename Value="../../source/http/response/property_modules/curl.http.response.property_modules.content.pas"/>
+        <Filename Value="../../libpasc-algorithms/source/container.memorybuffer.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit18>
       <Unit19>
-        <Filename Value="../../source/curl/response/property_modules/curl.response.property_modules.content.pas"/>
+        <Filename Value="../../source/http/response/property_modules/curl.http.response.property_modules.content.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit19>
       <Unit20>
-        <Filename Value="../../source/curl/curl.property_module.pas"/>
+        <Filename Value="../../source/curl/response/property_modules/curl.response.property_modules.content.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit20>
+      <Unit21>
+        <Filename Value="../../source/curl/response/curl.response.property_module.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit21>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

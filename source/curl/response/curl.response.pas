@@ -34,10 +34,13 @@ unit curl.response;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack;
+  libpascurl, curl.utils.errors_stack, container.memorybuffer;
 
 type
   TResponse = class
+  public 
+    type
+      PMemoryBuffer = ^TMemoryBuffer;  
   protected
     { CURL library handle. }
     FCURL : libpascurl.CURL;
@@ -45,11 +48,17 @@ type
     { Store CURL library errors messages. }
     FErrorsStack : PErrorsStack;
 
+    { Download / Upload data buffer. }
+    FBuffer : PMemoryBuffer;
+
     { Return CURL library errors storage. }
     function GetErrors : TErrorsStack;
 
     { Return pointer to CURL library errors storage. }
     function GetErrorsStorage : PErrorsStack;
+
+    { Get memory buffer download / upload data buffer. }
+    function GetMemoryBuffer : PMemoryBuffer;
   
     { Provide access to CURL handle. }
     property Handle : libpascurl.CURL read FCURL;
@@ -59,9 +68,13 @@ type
 
     { Provide pointer to CURL error messages storage. }
     property ErrorsStorage : PErrorsStack read GetErrorsStorage;
+
+    { Get memory buffer download / upload data buffer. }
+    property MemoryBuffer : PMemoryBuffer read GetMemoryBuffer;
   public
     { Initialize new curl easy session. }
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
+      ABuffer : PMemoryBuffer);
   end;
 
 implementation
@@ -69,10 +82,11 @@ implementation
 { TResponse }
 
 constructor TResponse.Create(ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack);
+  PErrorsStack; ABuffer : PMemoryBuffer);
 begin
   FCURL := ACURL;
   FErrorsStack := AErrorsStack;
+  FBuffer := ABuffer;
   FErrorsStack^.Push(curl_easy_perform(Handle));
 end;
 
@@ -84,6 +98,11 @@ end;
 function TResponse.GetErrorsStorage : PErrorsStack;
 begin
   Result := FErrorsStack;
+end;
+
+function TResponse.GetMemoryBuffer : PMemoryBuffer;
+begin
+  Result := FBuffer;
 end;
 
 end.

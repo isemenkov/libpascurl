@@ -34,7 +34,7 @@ unit curl.response.property_module;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack;
+  libpascurl, curl.utils.errors_stack, math;
 
 type
   { Base class for all curl.response property modules classes. }
@@ -52,7 +52,7 @@ type
     { Set CURL library option. }
     function GetBooleanValue (ACURLInfo : CURLINFO) : Boolean;
     function GetLongintValue (ACURLInfo : CURLINFO) : Longint;
-    //function GetInt64Value (ACURLInfo : CURLINFO): Int64;
+    function GetInt64Value (AOldProp : CURLINFO; ANewProp : CURLINFO): QWord;
     function GetStringValue (ACURLInfo : CURLINFO) : String;
     //function GetPointerValue (ACURLInfo : CURLINFO) : Pointer;
   end;
@@ -89,6 +89,35 @@ begin
   res := '';  
   FErrorsStack^.Push(curl_easy_getinfo(FCURL, ACURLInfo, @res));
   Result := res;
+end;
+
+function TPropertyModule.GetInt64Value (AOldProp : CURLINFO; ANewProp : 
+  CURLINFO) : QWord;
+
+  function ResultValue (AValue : Longint) : QWord;
+  begin
+    if AValue >= 0 then
+    begin
+      Exit(AValue);
+    end;
+    Result := 0;
+  end;
+
+var
+  size : curl_off_t = 0;
+  dsize : Double = 0;
+  curl_res : CURLcode;
+begin
+  curl_res := curl_easy_getinfo(FCURL, ANewProp, @size);
+  Result := ResultValue(size);
+
+  if curl_res <> CURLE_OK then
+  begin
+    curl_res := curl_easy_getinfo(FCURL, AOldProp, @dsize);
+    Result := ResultValue(ceil(dsize));
+  end;
+
+  FErrorsStack^.Push(curl_res);
 end;
 
 end.

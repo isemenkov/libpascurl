@@ -34,14 +34,26 @@ unit curl.session;
 interface
 
 uses
-  libpascurl, curl.easy;
+  SysUtils, libpascurl, curl.easy, container.memorybuffer;
 
 type
   TSession = class(TCURLEasy)
+  public
+    type
+      PMemoryBuffer = ^TMemoryBuffer;
   protected
+    { Download / Upload data buffer. }
+    FBuffer : TMemoryBuffer;
+
     { Provide the URL to use in the request. }
     procedure SetUrl (AUrl : String);
+
+    { Get memory buffer download / upload data buffer. }
+    function GetMemoryBuffer : PMemoryBuffer;
   protected
+    { Get memory buffer download / upload data buffer. }
+    property MemoryBuffer : PMemoryBuffer read GetMemoryBuffer;
+
     { Provide the URL to use in the request. 
       Pass in a string to the URL to work with. The parameter should be a string
       which must be URL-encoded in the following format: scheme://host:port/path
@@ -92,15 +104,35 @@ type
       smtp://mail.example.com:587/ - This will connect to a SMTP server on the 
       alternative mail port. }
     property Url : String write SetUrl;
+  public
+    constructor Create;
+    destructor Destroy; override;
   end;
 
 implementation
 
 { TSession }
 
+constructor TSession.Create;
+begin
+  inherited Create;
+  FBuffer := TMemoryBuffer.Create;
+end;
+
+destructor TSession.Destroy;
+begin
+  FreeAndNil(FBuffer);
+  inherited Destroy;
+end;
+
 procedure TSession.SetUrl (AUrl : String);
 begin
   FErrorsStack.Push(curl_easy_setopt(FCURL, CURLOPT_URL, PChar(AUrl)));
+end;
+
+function TSession.GetMemoryBuffer : PMemoryBuffer;
+begin
+  Result := @FBuffer;
 end;
 
 end.

@@ -34,18 +34,33 @@ unit curl.http.response.property_modules.content;
 interface
 
 uses
-  SysUtils, libpascurl, curl.response.property_modules.content;
+  SysUtils, libpascurl, utils.datasize, 
+  curl.response.property_modules.content;
 
 type
   TModuleContent = class(curl.response.property_modules.content.TModuleContent)
   protected
+    FContent : String;
+
     { Get Content-Type }
     function GetContentType : String;
+
+    { Get content length. }
+    function GetLength : TDataSize;
+
+    { Get content as string. }
+    function GetString : String;
   public
     { Get Content-Type
       This is the value read from the Content-Type: field. If you get empty,
       it means that the server didn't send a valid Content-Type header. }
     property ContentType : String read GetContentType;
+
+    { Get content-length of content data. }
+    property Length : TDataSize read GetLength;
+
+    { Get content as string value. }
+    property ToString : String read GetString;
   end;  
 
 implementation
@@ -55,6 +70,23 @@ implementation
 function TModuleContent.GetContentType : String;
 begin
   Result := GetStringValue(CURLINFO_CONTENT_TYPE);
+end;
+
+function TModuleContent.GetLength : TDataSize;
+begin
+  Result := TDataSize.Create;
+  Result.Bytes := GetInt64Value(CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+    CURLINFO_CONTENT_LENGTH_DOWNLOAD_T);
+end;
+
+function TModuleContent.GetString : String;
+begin
+  if FBuffer^.IsEmpty then
+  begin
+    Exit('');
+  end;
+
+  Result := PChar(FBuffer^.GetBufferData);
 end;
 
 end.

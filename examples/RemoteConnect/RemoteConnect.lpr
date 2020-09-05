@@ -32,7 +32,8 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, curl.http.session, libpascurl;
+  Classes, SysUtils, CustApp, curl.http.session, libpascurl,
+  curl.response.property_modules.content;
 
 type
 
@@ -98,6 +99,15 @@ begin
     if HasOption('a', 'all') or HasOption('content-type') then
       writeln('Content type: ':COLUMN_SIZE, FResponse.Content.ContentType);
 
+    if HasOption('a', 'all') or HasOption('content-size') then
+      writeln('Content size: ':COLUMN_SIZE, FResponse.Content.Length.ToString);
+
+    if HasOption('e', 'echo') then
+    begin
+      writeln();
+      writeln('-=== Content ===-');
+      writeln(FResponse.Content.ToString);
+    end;
   end;
   {
     if HasOption('a', 'all') or HasOption('effective-url') then
@@ -144,9 +154,7 @@ begin
     if HasOption('a', 'all') or HasOption('header-size') then
       writeln('Header size: ':COLUMN_SIZE, FResponse.Value.HeaderSize.ToString);
 
-    if HasOption('a', 'all') or HasOption('content-size') then
-      writeln('Content size: ':COLUMN_SIZE,
-        FResponse.Value.Downloaded.ToString);
+
 
     if HasOption('a', 'all') or HasOption('total-time') then
       writeln('Total time: ':COLUMN_SIZE, FResponse.Value.TotalTime.ToString);
@@ -175,12 +183,7 @@ begin
       writeln('Download speed: ':COLUMN_SIZE,
         FResponse.Value.DownloadSpeed.ToString('/s'));
 
-    if HasOption('e', 'echo') then
-    begin
-      writeln();
-      writeln('-=== Content ===-');
-      writeln(FResponse.Value.Content);
-    end;
+
   end else
     writeln(FResponse.Value.ErrorMessage);
   }

@@ -42,7 +42,8 @@ type
   protected
     FContent : TModuleContent;
   public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
+      ABuffer : PMemoryBuffer);
     destructor Destroy; override;
     
     { Provide access to CURL error messages storage. }
@@ -57,10 +58,10 @@ implementation
 { TResponse }
 
 constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack);
+  PErrorsStack; ABuffer : PMemoryBuffer);
 begin
-  inherited Create(ACURL, AErrorsStack);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage);
+  inherited Create(ACURL, AErrorsStack, ABuffer);
+  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
 end;
 
 destructor TResponse.Destroy;

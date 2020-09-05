@@ -34,16 +34,30 @@ unit curl.response.property_modules.content;
 interface
 
 uses
-  libpascurl, curl.response.property_module;
+  libpascurl, container.memorybuffer, curl.utils.errors_stack,
+  curl.response.property_module;
 
 type
   TModuleContent = class(TPropertyModule)
-  
+  public
+    type
+      PMemoryBuffer = ^TMemoryBuffer;
+  protected
+    FBuffer : PMemoryBuffer;
+  public
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
+      ABuffer : PMemoryBuffer);
   end;
 
 implementation
 
 { TModuleContent }
 
+constructor TModuleContent.Create(ACURL : libpascurl.CURL; AErrorsStack : 
+  PErrorsStack; ABuffer : PMemoryBuffer);
+begin
+  inherited Create(ACURL, AErrorsStack);
+  FBuffer := ABuffer;
+end;
 
 end.

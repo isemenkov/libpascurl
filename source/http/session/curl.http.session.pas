@@ -83,7 +83,7 @@ constructor THTTP.TSession.Create;
 begin
   inherited Create;
   FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
-  FWriter := TModuleWriter.Create(Handle, ErrorsStorage);
+  FWriter := TModuleWriter.Create(Handle, ErrorsStorage, MemoryBuffer);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
   FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
   
@@ -104,7 +104,7 @@ end;
 function THTTP.TSession.Get : TResponse;
 begin
   FRequest.Method := TMethod.GET;
-  Result := TResponse.Create(Handle, ErrorsStorage);
+  Result := TResponse.Create(Handle, ErrorsStorage, MemoryBuffer);
 end;
 
 end.

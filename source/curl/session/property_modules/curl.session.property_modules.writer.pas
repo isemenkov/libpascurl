@@ -41,14 +41,16 @@ type
   TModuleWriter = class(TPropertyModule)
   public
     type
+      PMemoryBuffer = ^TMemoryBuffer;
+
       { Set callback for writing received data. }
       TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
         LongWord  of object;
   public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
-    destructor Destroy; override;
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
+      ABuffer : PMemoryBuffer);
   protected
-    FBuffer : TMemoryBuffer;
+    FBuffer : PMemoryBuffer;
     FDownloadFunction : TDownloadFunction;
   protected
     { Set callback for writing received data. 
@@ -82,19 +84,13 @@ begin
 end;
 
 constructor TModuleWriter.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack);
+  PErrorsStack; ABuffer : PMemoryBuffer);
 begin
   inherited Create(ACURL, AErrorsStack);
-  FBuffer := TMemoryBuffer.Create;
+  FBuffer := ABuffer;
 
   Option(CURLOPT_WRITEDATA, Pointer(Self));
   Option(CURLOPT_WRITEFUNCTION, @TModuleWriter.DownloadFunctionCallback);
-end;
-
-destructor TModuleWriter.Destroy;
-begin
-  FreeAndNil(FBuffer);
-  inherited Destroy;
 end;
 
 function TModuleWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : 
@@ -102,9 +98,9 @@ function TModuleWriter.DownloadFunction (APtr : PChar; ASize : LongWord) :
 var
   size : Cardinal;
 begin
-  size := FBuffer.GetBufferDataSize;
-  Move(APtr^, FBuffer.GetAppendBuffer(ASize)^, ASize);
-  FBuffer.SetBufferDataSize(size + ASize);
+  size := FBuffer^.GetBufferDataSize;
+  Move(APtr^, FBuffer^.GetAppendBuffer(ASize)^, ASize);
+  FBuffer^.SetBufferDataSize(size + ASize);
   Result := ASize;
 end;
 
