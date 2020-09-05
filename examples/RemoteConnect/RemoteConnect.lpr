@@ -65,6 +65,8 @@ var
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
     'redirect-time');
+const
+  COLUMN_SIZE = 31;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -90,9 +92,14 @@ begin
   FSession.Url := NonOptions[0];
   FResponse := FSession.Get;
 
-  {
-  if FResponse.Ok and not FResponse.Value.HasErrors then
+
+  //if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
+    if HasOption('a', 'all') or HasOption('content-type') then
+      writeln('Content type: ':COLUMN_SIZE, FResponse.Content.ContentType);
+
+  end;
+  {
     if HasOption('a', 'all') or HasOption('effective-url') then
       writeln('Url: ':COLUMN_SIZE, FResponse.Value.EffectiveUrl);
 
@@ -101,9 +108,6 @@ begin
 
     if HasOption('a', 'all') or HasOption('redirect-count') then
       writeln('Redirect count: ':COLUMN_SIZE, FResponse.Value.RedirectCount);
-
-    if HasOption('a', 'all') or HasOption('content-type') then
-      writeln('Content type: ':COLUMN_SIZE, FResponse.Value.ContentType);
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
       writeln('Primary IP: ':COLUMN_SIZE, FResponse.Value.PrimaryIP);

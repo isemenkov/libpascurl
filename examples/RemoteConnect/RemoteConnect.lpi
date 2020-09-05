@@ -24,7 +24,7 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="18">
+    <Units Count="21">
       <Unit0>
         <Filename Value="RemoteConnect.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -97,6 +97,18 @@
         <Filename Value="../../libpasc-algorithms/source/container.memorybuffer.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit17>
+      <Unit18>
+        <Filename Value="../../source/http/response/property_modules/curl.http.response.property_modules.content.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="../../source/curl/response/property_modules/curl.response.property_modules.content.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="../../source/curl/curl.property_module.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit20>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -106,7 +118,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../../source/http/session;../../source/http/response;../../source;../../source/curl/session;../../source/curl;../../source/curl/utils;../../pascalutils/source;../../source/curl/response;../../source/http/session/property_modules;../../source/curl/session/property_modules;../../libpasc-algorithms/source"/>
+      <OtherUnitFiles Value="../../source/http/session;../../source/http/response;../../source;../../source/curl/session;../../source/curl;../../source/curl/utils;../../pascalutils/source;../../source/curl/response;../../source/http/session/property_modules;../../source/curl/session/property_modules;../../libpasc-algorithms/source;../../source/http/response/property_modules;../../source/curl/response/property_modules"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>

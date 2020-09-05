@@ -73,6 +73,7 @@ constructor TResponse.Create(ACURL : libpascurl.CURL; AErrorsStack :
 begin
   FCURL := ACURL;
   FErrorsStack := AErrorsStack;
+  FErrorsStack^.Push(curl_easy_perform(Handle));
 end;
 
 function TResponse.GetErrors : TErrorsStack;

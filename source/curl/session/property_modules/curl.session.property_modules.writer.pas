@@ -35,7 +35,7 @@ interface
 
 uses
   SysUtils, libpascurl, curl.utils.errors_stack, container.memorybuffer,
-  curl.property_module;
+  curl.session.property_module;
 
 type
   TModuleWriter = class(TPropertyModule)

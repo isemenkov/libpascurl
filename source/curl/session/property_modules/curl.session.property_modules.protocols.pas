@@ -34,7 +34,7 @@ unit curl.session.property_modules.protocols;
 interface
 
 uses
-  libpascurl, curl.property_module, curl.protocol;
+  libpascurl, curl.session.property_module, curl.protocol;
 
 type
   TModuleProtocols = class(TPropertyModule)

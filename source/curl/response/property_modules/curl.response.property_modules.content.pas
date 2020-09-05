@@ -34,12 +34,16 @@ unit curl.response.property_modules.content;
 interface
 
 uses
-  libpascurl, curl.property_module;
+  libpascurl, curl.response.property_module;
 
 type
+  TModuleContent = class(TPropertyModule)
   
-
+  end;
 
 implementation
+
+{ TModuleContent }
+
 
 end.

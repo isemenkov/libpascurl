@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.session.property_module;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,39 +34,63 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.http.response.property_modules.content;
+  libpascurl, curl.utils.errors_stack;
 
 type
-  TResponse = class(curl.response.TResponse)
-  protected
-    FContent : TModuleContent;
+  { Base class for all curl.session property modules classes. }
+  TPropertyModule = class
   public
+    { Property module constructor. }
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
-    destructor Destroy; override;
-    
-    { Provide access to CURL error messages storage. }
-    property Errors;
+  protected
+    { CURL library handle. }
+    FCURL : libpascurl.CURL;
 
-    { Get content data. }
-    property Content : TModuleContent read FContent;
+    { Errors messages stores. } 
+    FErrorsStack : PErrorsStack;
+  
+    { Set CURL library option. }
+    procedure Option (ACURLOption : CURLoption; AValue : Boolean); overload;
+    procedure Option (ACURLOption : CURLoption; AValue : Longint); overload;
+    procedure Option (ACURLOption : CURLoption; AValue : Int64); overload;
+    procedure Option (ACURLOption : CURLoption; AValue : String); overload;
+    procedure Option (ACURLOption : CURLoption; AValue : Pointer); overload;
   end;
 
 implementation
 
-{ TResponse }
+{ TPropertyModule }
 
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
+constructor TPropertyModule.Create (ACURL : libpascurl.CURL; AErrorsStack :
   PErrorsStack);
 begin
-  inherited Create(ACURL, AErrorsStack);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage);
+  FCURL := ACURL;
+  FErrorsStack := AErrorsStack;
 end;
 
-destructor TResponse.Destroy;
+procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Longint);
 begin
-  FreeAndNil(FContent);
-  inherited Destroy;
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : String);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, PChar(AValue)));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Pointer);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Int64);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
+end;
+
+procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Boolean);
+begin
+  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, Longint(AValue)));
 end;
 
 end.

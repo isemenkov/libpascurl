@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.property_module;
+unit curl.http.response.property_modules.content;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,63 +34,27 @@ unit curl.property_module;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack;
+  SysUtils, libpascurl, curl.response.property_modules.content;
 
 type
-  { Base class for all curl.session property modules classes. }
-  TPropertyModule = class
-  public
-    { Property module constructor. }
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
+  TModuleContent = class(curl.response.property_modules.content.TModuleContent)
   protected
-    { CURL library handle. }
-    FCURL : libpascurl.CURL;
-
-    { Errors messages stores. } 
-    FErrorsStack : PErrorsStack;
-  
-    { Set CURL library option. }
-    procedure Option (ACURLOption : CURLoption; AValue : Longint); overload;
-    procedure Option (ACURLOption : CURLoption; AValue : String); overload;
-    procedure Option (ACURLOption : CURLoption; AValue : Pointer); overload;
-    procedure Option (ACURLOption : CURLoption; AValue : Int64); overload;
-    procedure Option (ACURLOption : CURLoption; AValue : Boolean); overload;
-  end;
+    { Get Content-Type }
+    function GetContentType : String;
+  public
+    { Get Content-Type
+      This is the value read from the Content-Type: field. If you get empty,
+      it means that the server didn't send a valid Content-Type header. }
+    property ContentType : String read GetContentType;
+  end;  
 
 implementation
 
-{ TPropertyModule }
+{ TModuleContent }
 
-constructor TPropertyModule.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack);
+function TModuleContent.GetContentType : String;
 begin
-  FCURL := ACURL;
-  FErrorsStack := AErrorsStack;
-end;
-
-procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Longint);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : String);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, PChar(AValue)));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Pointer);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Int64);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, AValue));
-end;
-
-procedure TPropertyModule.Option (ACURLOption : CURLoption; AValue : Boolean);
-begin
-  FErrorsStack^.Push(curl_easy_setopt(FCURL, ACURLOption, Longint(AValue)));
+  Result := GetStringValue(CURLINFO_CONTENT_TYPE);
 end;
 
 end.
