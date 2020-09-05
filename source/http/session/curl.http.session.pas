@@ -34,7 +34,7 @@ unit curl.http.session;
 interface
 
 uses
-  libpascurl, curl.session, curl.http.response,
+  SysUtils, curl.session, curl.http.response,
   curl.http.session.property_modules.protocols, 
   curl.http.session.property_modules.writer,
   curl.http.session.property_modules.request,
@@ -44,6 +44,7 @@ type
   THTTP = class
   public
     type
+      TResponse = class(curl.http.response.TResponse);
       TSession = class(curl.session.TSession)
       protected
         FWriter : TModuleWriter;
@@ -74,7 +75,7 @@ type
 implementation
 
 uses
-  curl.http.request.method;
+  curl.protocol, curl.http.request.method;
 
 { THTTP.TSession }
 

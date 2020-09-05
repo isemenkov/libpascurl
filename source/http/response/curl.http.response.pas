@@ -40,7 +40,7 @@ type
   TResponse = class(curl.response.TResponse)
   protected
   public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
     destructor Destroy; override;
     
     { Provide access to CURL error messages storage. }
@@ -52,7 +52,8 @@ implementation
 
 { TResponse }
 
-constructor TResponse.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
 end;

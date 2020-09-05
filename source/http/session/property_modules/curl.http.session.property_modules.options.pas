@@ -34,7 +34,7 @@ unit curl.http.session.property_modules.options;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack,
+  SysUtils, libpascurl, curl.utils.errors_stack,
   curl.session.property_modules.options,
   curl.http.session.property_modules.socket;
 
@@ -43,7 +43,7 @@ type
   protected
     FSocket : TModuleSocket;  
   public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
     destructor Destroy;
 
     { Do not handle dot dot sequences. }
@@ -57,7 +57,8 @@ implementation
 
 { TModuleOptions }
 
-constructor TModuleOptions.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TModuleOptions.Create (ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
   FSocket := TModuleSocket.Create(ACURL, AErrorsStack);

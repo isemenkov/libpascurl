@@ -34,7 +34,8 @@ unit curl.session.property_modules.writer;
 interface
 
 uses
-  libpascurl, container.memorybuffer, curl.session.property_module;
+  SysUtils, libpascurl, curl.utils.errors_stack, container.memorybuffer,
+  curl.session.property_module;
 
 type
   TModuleWriter = class(TPropertyModule)
@@ -44,7 +45,7 @@ type
       TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
         LongWord  of object;
   public
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
     destructor Destroy; override;
   protected
     FBuffer : TMemoryBuffer;
@@ -66,27 +67,28 @@ type
 
 implementation
 
-{ TWriter }
+{ TModuleWriter }
 
 class function TModuleWriter.DownloadFunctionCallback (APtr : PChar; ASize : 
   LongWord; ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
 begin
-  if Assigned(TWriter(AData).FDownloadFunction) then
+  if Assigned(TModuleWriter(AData).FDownloadFunction) then
   begin
-    Result := TWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
+    Result := TModuleWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
   end else
   begin
-    Result := TWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
+    Result := TModuleWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
   end;
 end;
 
-constructor TModuleWriter.Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TModuleWriter.Create (ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack);
 begin
   inherited Create(ACURL, AErrorsStack);
   FBuffer := TMemoryBuffer.Create;
 
   Option(CURLOPT_WRITEDATA, Pointer(Self));
-  Option(CURLOPT_WRITEFUNCTION, @TWriter.DownloadFunctionCallback);
+  Option(CURLOPT_WRITEFUNCTION, @TModuleWriter.DownloadFunctionCallback);
 end;
 
 destructor TModuleWriter.Destroy;

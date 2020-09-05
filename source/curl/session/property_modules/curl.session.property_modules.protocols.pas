@@ -136,7 +136,7 @@ procedure TModuleProtocols.SetDefault (AProtocol : curl.protocol.TProtocol);
 var
   protocol : String;
 begin
-  case ADefaultProtocol of
+  case AProtocol of
     PROTOCOL_DICT   : begin protocol := 'dict';   end;
     PROTOCOL_FILE   : begin protocol := 'file';   end;
     PROTOCOL_FTP    : begin protocol := 'ftp';    end;

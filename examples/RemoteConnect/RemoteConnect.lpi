@@ -24,7 +24,7 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="4">
+    <Units Count="18">
       <Unit0>
         <Filename Value="RemoteConnect.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -34,13 +34,69 @@
         <IsPartOfProject Value="True"/>
       </Unit1>
       <Unit2>
-        <Filename Value="../../source/pascurl.pas"/>
+        <Filename Value="../../source/http/session/curl.http.session.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="../../source/http/http.pas"/>
+        <Filename Value="../../source/curl/session/curl.session.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="../../source/curl/curl.easy.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="../../source/curl/utils/curl.utils.errors_stack.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="../../pascalutils/source/utils.errorsstack.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="../../source/curl/response/curl.response.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.options.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.protocols.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.request.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.socket.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.writer.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="../../source/curl/session/property_modules/curl.session.property_modules.options.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="../../source/curl/session/property_modules/curl.session.property_modules.protocols.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="../../source/curl/session/property_modules/curl.session.property_modules.socket.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="../../source/curl/session/property_modules/curl.session.property_modules.writer.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="../../libpasc-algorithms/source/container.memorybuffer.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit17>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -50,7 +106,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../../source;../../source/http"/>
+      <OtherUnitFiles Value="../../source/http/session;../../source/http/response;../../source;../../source/curl/session;../../source/curl;../../source/curl/utils;../../pascalutils/source;../../source/curl/response;../../source/http/session/property_modules;../../source/curl/session/property_modules;../../libpasc-algorithms/source"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>

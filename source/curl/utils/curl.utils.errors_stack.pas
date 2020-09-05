@@ -38,8 +38,8 @@ uses
 
 type
   { Collect CURL errors. }
-  PErrorsStack = ^TErrorStack;
-  TErrorsStack = class(utils.errorsstack.TListErrorsStack<String>)
+  PErrorsStack = ^TErrorsStack;
+  TErrorsStack = class(specialize TListErrorsStack<String>)
   private
     FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
   
@@ -47,7 +47,7 @@ type
     function GetErrorBuffer : PChar;
   public
     { Add error to stack }
-    procedure Push (AError : CURLcode);
+    procedure Push (AError : CURLcode); overload;
   
     { Get internal additional error buffer }
     property ErrorBuffer : PChar read GetErrorBuffer;

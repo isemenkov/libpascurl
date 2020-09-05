@@ -40,7 +40,7 @@ type
   TResponse = class
   protected
     { CURL library handle. }
-    FCURL : CURL;
+    FCURL : libpascurl.CURL;
 
     { Store CURL library errors messages. }
     FErrorsStack : PErrorsStack;
@@ -52,7 +52,7 @@ type
     function GetErrorsStorage : PErrorsStack;
   
     { Provide access to CURL handle. }
-    property Handle : CURL read FCURL;
+    property Handle : libpascurl.CURL read FCURL;
 
     { Provide access to CURL error messages storage. }
     property Errors : TErrorsStack read GetErrors;
@@ -61,14 +61,15 @@ type
     property ErrorsStorage : PErrorsStack read GetErrorsStorage;
   public
     { Initialize new curl easy session. }
-    constructor Create (ACURL : CURL; AErrorsStack : PErrorsStack);
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
   end;
 
 implementation
 
 { TResponse }
 
-constructor TResponse.Create(ACURL : CURL; AErrorsStack : PErrorsStack);
+constructor TResponse.Create(ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack);
 begin
   FCURL := ACURL;
   FErrorsStack := AErrorsStack;

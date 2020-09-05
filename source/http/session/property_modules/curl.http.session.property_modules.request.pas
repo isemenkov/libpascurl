@@ -44,7 +44,7 @@ type
 
     { Set custom request method. }
     procedure SetCustomMethod (AMethod : String);
-  protected
+  public
     { Set request method. }
     property Method : TMethod write SetMethod;
 
@@ -58,21 +58,21 @@ implementation
 
 procedure TModuleRequest.SetMethod (AMethod : TMethod);
 var
-  method : String;
+  method_str : String;
 begin
   case AMethod of
-    GET     : begin method := 'GET';     end;
-    HEAD    : begin method := 'HEAD';    end;
-    POST    : begin method := 'POST';    end;
-    PUT     : begin method := 'PUT';     end;
-    DELETE  : begin method := 'DELETE';  end;
-    CONNECT : begin method := 'CONNECT'; end;
-    OPTIONS : begin method := 'OPTIONS'; end;
-    TRACE   : begin method := 'TRACE';   end;
-    PATCH   : begin method := 'PATCH';   end; 
+    GET     : begin method_str := 'GET';     end;
+    HEAD    : begin method_str := 'HEAD';    end;
+    POST    : begin method_str := 'POST';    end;
+    PUT     : begin method_str := 'PUT';     end;
+    DELETE  : begin method_str := 'DELETE';  end;
+    CONNECT : begin method_str := 'CONNECT'; end;
+    OPTIONS : begin method_str := 'OPTIONS'; end;
+    TRACE   : begin method_str := 'TRACE';   end;
+    PATCH   : begin method_str := 'PATCH';   end;
   end;
 
-  Option(CURLOPT_CUSTOMREQUEST, method);
+  Option(CURLOPT_CUSTOMREQUEST, method_str);
 end;
 
 procedure TModuleRequest.SetCustomMethod (AMethod : String);

@@ -8,12 +8,6 @@
 (*                                                          Ukraine           *)
 (******************************************************************************)
 (*                                                                            *)
-(* Project:         'RemoteConnect'                                           *)
-(* Functionality:   Simple  example for  use THTTPSessionPlain  and TResponse *)
-(*                  classes for connect to remote host                        *)
-(*                                                                            *)
-(******************************************************************************)
-(*                                                                            *)
 (* This source  is free software;  you can redistribute  it and/or modify  it *)
 (* under the terms of the GNU General Public License as published by the Free *)
 (* Software Foundation; either version 3 of the License.                      *)
@@ -38,7 +32,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, http;
+  Classes, SysUtils, CustApp, curl.http.session, libpascurl;
 
 type
 
@@ -46,8 +40,8 @@ type
 
   TApplication = class(TCustomApplication)
   protected
-    FSession : THTTPSessionPlain;
-    FResponse : THTTPSessionPlain.THTTPResponseResult;
+    FSession : THTTP.TSession;
+    FResponse : THTTP.TResponse;
 
     procedure DoRun; override;
     procedure PrintHeader;
@@ -60,8 +54,6 @@ type
 { TApplication }
 
 procedure TApplication.DoRun;
-const
-  COLUMN_SIZE = 31;
 var
   ErrorMsg: String;
   NonOptions : TStringList;
@@ -95,9 +87,10 @@ begin
     Exit;
   end;
 
-  FSession.Url(NonOptions[0]);
+  FSession.Url := NonOptions[0];
   FResponse := FSession.Get;
 
+  {
   if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
     if HasOption('a', 'all') or HasOption('effective-url') then
@@ -186,7 +179,7 @@ begin
     end;
   end else
     writeln(FResponse.Value.ErrorMessage);
-
+  }
   FreeAndNil(NonOptions);
   Terminate;
 end;
@@ -195,7 +188,7 @@ constructor TApplication.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
   StopOnException := True;
-  FSession := THTTPSessionPlain.Create;
+  FSession := THTTP.TSession.Create;
 end;
 
 destructor TApplication.Destroy;

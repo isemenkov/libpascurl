@@ -34,14 +34,14 @@ unit curl.easy;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack;
+  SysUtils, libpascurl, curl.utils.errors_stack;
 
 type
   { Base class for all curl classes. }
   TCURLEasy = class
   protected
     { CURL library handle. }
-    FCURL : CURL;
+    FCURL : libpascurl.CURL;
 
     { Store CURL library errors messages. }
     FErrorsStack : TErrorsStack;
@@ -53,7 +53,7 @@ type
     function GetErrorsStorage : PErrorsStack;
   
     { Provide access to CURL handle. }
-    property Handle : CURL read FCURL;
+    property Handle : libpascurl.CURL read FCURL;
 
     { Provide access to CURL error messages storage. }
     property Errors : TErrorsStack read GetErrors;
