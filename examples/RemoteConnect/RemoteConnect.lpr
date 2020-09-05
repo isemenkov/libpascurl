@@ -100,7 +100,20 @@ begin
       writeln('Content type: ':COLUMN_SIZE, FResponse.Content.ContentType);
 
     if HasOption('a', 'all') or HasOption('content-size') then
-      writeln('Content size: ':COLUMN_SIZE, FResponse.Content.Length.ToString);
+    begin
+      if FResponse.Content.Length.Bytes = 0 then
+      begin
+        writeln('Content size: ':COLUMN_SIZE, 'Unknown');
+      end else
+      begin
+        writeln('Content size: ':COLUMN_SIZE,
+        FResponse.Content.Length.ToString);
+      end;
+    end;
+
+    if HasOption('a', 'all') or HasOption('content-buffer-size') then
+      writeln('Content buffer size: ':COLUMN_SIZE,
+      FResponse.Content.BufferLength.ToString);
 
     if HasOption('e', 'echo') then
     begin

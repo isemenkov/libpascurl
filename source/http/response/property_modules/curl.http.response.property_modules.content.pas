@@ -48,6 +48,9 @@ type
     { Get content length. }
     function GetLength : TDataSize;
 
+    { Get content buffer length. }
+    function GetBufferLength : TDataSize;
+
     { Get content as string. }
     function GetString : String;
   public
@@ -58,6 +61,9 @@ type
 
     { Get content-length of content data. }
     property Length : TDataSize read GetLength;
+
+    { Get content buffer length. }
+    property BufferLength : TDataSize read GetBufferLength;
 
     { Get content as string value. }
     property ToString : String read GetString;
@@ -77,6 +83,12 @@ begin
   Result := TDataSize.Create;
   Result.Bytes := GetInt64Value(CURLINFO_CONTENT_LENGTH_DOWNLOAD,
     CURLINFO_CONTENT_LENGTH_DOWNLOAD_T);
+end;
+
+function TModuleContent.GetBufferLength : TDataSize;
+begin
+  Result := TDataSize.Create;
+  Result.Bytes := FBuffer^.GetBufferDataSize;
 end;
 
 function TModuleContent.GetString : String;
