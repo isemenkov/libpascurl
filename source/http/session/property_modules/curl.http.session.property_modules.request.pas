@@ -34,18 +34,50 @@ unit curl.http.session.property_modules.request;
 interface
 
 uses
-  curl.session.property_modules.request;
+  libpascurl, curl.session.property_module, curl.http.request.method;
 
 type
-  TModuleRequest = class(curl.session.property_modules.request.TModuleRequest)
-  public
+  TModuleRequest = class(TPropertyModule)
+  protected
     { Set request method. }
-    property Method;
+    procedure SetMethod (AMethod : TMethod);
 
-    { Set custom request method. }  
-    property CustomMethod;
+    { Set custom request method. }
+    procedure SetCustomMethod (AMethod : String);
+  protected
+    { Set request method. }
+    property Method : TMethod write SetMethod;
+
+    { Set custom request method. }
+    property CustomMethod : String write SetCustomMethod;
   end;
 
 implementation
+
+{ TModuleRequest }
+
+procedure TModuleRequest.SetMethod (AMethod : TMethod);
+var
+  method : String;
+begin
+  case AMethod of
+    GET     : begin method := 'GET';     end;
+    HEAD    : begin method := 'HEAD';    end;
+    POST    : begin method := 'POST';    end;
+    PUT     : begin method := 'PUT';     end;
+    DELETE  : begin method := 'DELETE';  end;
+    CONNECT : begin method := 'CONNECT'; end;
+    OPTIONS : begin method := 'OPTIONS'; end;
+    TRACE   : begin method := 'TRACE';   end;
+    PATCH   : begin method := 'PATCH';   end; 
+  end;
+
+  Option(CURLOPT_CUSTOMREQUEST, method);
+end;
+
+procedure TModuleRequest.SetCustomMethod (AMethod : String);
+begin
+  Option(CURLOPT_CUSTOMREQUEST, AMethod);
+end;
 
 end.

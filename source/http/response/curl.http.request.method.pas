@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.property_modules.request;
+unit curl.http.request.method;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -33,51 +33,47 @@ unit curl.session.property_modules.request;
 
 interface
 
-uses
-  libpascurl, curl.session.property_module, curl.request.method;
-
 type
-  TModuleRequest = class(TPropertyModule)
-  protected
-    { Set request method. }
-    procedure SetMethod (AMethod : TMethod);
+  TMethod = (
+    { The GET method is used to retrieve information from the given server using 
+      a given URI. Requests using GET should only retrieve data and should have 
+      no other effect on the data. }    
+    GET,
 
-    { Set custom request method. }
-    procedure SetCustomMethod (AMethod : String);
-  protected
-    { Set request method. }
-    property Method : TMethod write SetMethod;
+    { The HEAD method is functionally similar to GET, except that the server 
+      replies with a response line and headers, but no entity-body. }
+    HEAD,
 
-    { Set custom request method. }
-    property CustomMethod : String write SetCustomMethod;
-  end;
+    { A POST request is used to send data to the server, for example, customer 
+      information, file upload, etc. using HTML forms. }
+    POST,
+
+    { The PUT method is used to request the server to store the included 
+      entity-body at a location specified by the given URL. }
+    PUT,
+
+    { The DELETE method is used to request the server to delete a file at a 
+      location specified by the given URL. }
+    DELETE,
+
+    { Establishes a tunnel to the server identified by a given URI. }
+    CONNECT,
+
+    { Describes the communication options for the target resource. }
+    OPTIONS,
+
+    { Performs a message loop-back test along the path to the target resource. }
+    TRACE,
+
+    { A PATCH request is considered a set of instructions on how to modify a 
+      resource. Contrast this with PUT; which is a complete representation of a 
+      resource. }
+    PATCH,
+
+    { Custom request method. }
+    CUSTOM
+  );
 
 implementation
-
-{ TModuleRequest }
-
-procedure TModuleRequest.SetMethod (AMethod : TMethod);
-var
-  method : String;
-begin
-  case AMethod of
-    GET     : begin method := 'GET';     end;
-    HEAD    : begin method := 'HEAD';    end;
-    POST    : begin method := 'POST';    end;
-    PUT     : begin method := 'PUT';     end;
-    DELETE  : begin method := 'DELETE';  end;
-    CONNECT : begin method := 'CONNECT'; end;
-    OPTIONS : begin method := 'OPTIONS'; end;
-    TRACE   : begin method := 'TRACE';   end;
-    PATCH   : begin method := 'PATCH';   end; 
-  end;
-
-  Option(CURLOPT_CUSTOMREQUEST, method);
-end;
-
-procedure TModuleRequest.SetCustomMethod (AMethod : String);
-begin
-  Option(CURLOPT_CUSTOMREQUEST, AMethod);
-end;
 
 end.

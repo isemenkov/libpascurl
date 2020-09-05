@@ -36,8 +36,7 @@ interface
 uses
   libpascurl, curl.session, curl.http.response,
   curl.http.session.property_modules.protocols, 
-  curl.http.session.property_modules.writer, 
-  curl.request.method,
+  curl.http.session.property_modules.writer,
   curl.http.session.property_modules.request,
   curl.http.session.property_modules.options;
 
@@ -73,6 +72,9 @@ type
   end;    
 
 implementation
+
+uses
+  curl.http.request.method;
 
 { THTTP.TSession }
 
