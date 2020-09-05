@@ -34,7 +34,7 @@ unit curl.session.property_modules.socket;
 interface
 
 uses
-  libpascurl, curl.session.property_module;
+  libpascurl, curl.property_module;
 
 type
   TModuleSocket = class(TPropertyModule)

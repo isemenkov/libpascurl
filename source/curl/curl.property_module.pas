@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.property_module;
+unit curl.property_module;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}

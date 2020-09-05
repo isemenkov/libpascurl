@@ -34,7 +34,7 @@ unit curl.http.session.property_modules.request;
 interface
 
 uses
-  libpascurl, curl.session.property_module, curl.http.request.method;
+  libpascurl, curl.property_module, curl.http.request.method;
 
 type
   TModuleRequest = class(TPropertyModule)

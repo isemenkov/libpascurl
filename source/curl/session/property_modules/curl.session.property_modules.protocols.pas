@@ -34,23 +34,23 @@ unit curl.session.property_modules.protocols;
 interface
 
 uses
-  libpascurl, curl.session.property_module, curl.protocol;
+  libpascurl, curl.property_module, curl.protocol;
 
 type
-  TModuleProtocols = class(curl.session.property_module.TPropertyModule)
+  TModuleProtocols = class(TPropertyModule)
   protected  
     { Get CURL library protocols bitmask. }
-    function GetCURLProtocolsBitmask (AProtocols : curl.protocol.TProtocols) : 
+    function GetCURLProtocolsBitmask (AProtocols : TProtocols) : 
       Longint;
 
     { Set allowed protocols. }
-    procedure SetAllowed (AProtocols : curl.protocol.TProtocols);
+    procedure SetAllowed (AProtocols : TProtocols);
 
     { Set protocols allowed to redirect to. }
-    procedure SetAllowedRedirects (AProtocols : curl.protocol.TProtocols);
+    procedure SetAllowedRedirects (AProtocols : TProtocols);
 
     { Default protocol to use if the URL is missing a scheme name. }
-    procedure SetDefault (AProtocol : curl.protocol.TProtocol);
+    procedure SetDefault (AProtocol : TProtocol);
   protected
     { Set allowed protocols. 
       Pass a bitmask of TProtocol defines. If used, this bitmask limits what 
@@ -86,8 +86,8 @@ implementation
 
 { TModuleProtocols }
 
-function TModuleProtocols.GetCURLProtocolsBitmask (AProtocols : 
-  curl.protocol.TProtocols) : Longint;
+function TModuleProtocols.GetCURLProtocolsBitmask (AProtocols : TProtocols) :
+  Longint;
 begin
   Result := 0;
 
@@ -121,18 +121,17 @@ begin
   if PROTOCOL_TFTP   in AProtocols then Result := (Result or CURLPROTO_TFTP);
 end;
 
-procedure TModuleProtocols.SetAllowed (AProtocols : curl.protocol.TProtocols);
+procedure TModuleProtocols.SetAllowed (AProtocols : TProtocols);
 begin
   Option(CURLOPT_PROTOCOLS, GetCURLProtocolsBitmask(AProtocols));
 end;
 
-procedure TModuleProtocols.SetAllowedRedirects (AProtocols : 
-  curl.protocol.TProtocols);
+procedure TModuleProtocols.SetAllowedRedirects (AProtocols : TProtocols);
 begin
   Option(CURLOPT_REDIR_PROTOCOLS, GetCURLProtocolsBitmask(AProtocols));
 end;
 
-procedure TModuleProtocols.SetDefault (AProtocol : curl.protocol.TProtocol);
+procedure TModuleProtocols.SetDefault (AProtocol : TProtocol);
 var
   protocol : String;
 begin
