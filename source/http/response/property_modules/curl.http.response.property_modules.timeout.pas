@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.http.response.property_modules.timeout;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,47 +34,30 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout;
+  curl.response.property_modules.timeout;
 
 type
-  TResponse = class(curl.response.TResponse)
-  protected
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
+  TModuleTimeout = class(curl.response.property_modules.timeout.TModuleTimeout)
   public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
-    destructor Destroy; override;
+    { Get transfer total time. }
+    property Total;
+
+    { Get the name lookup time. }
+    property NameLookup;
     
-    { Provide access to CURL error messages storage. }
-    property Errors;
+    { Get the time until connect. }
+    property Connect;
 
-    { Get content data. }
-    property Content : TModuleContent read FContent;
+    { Get the time until the SSL/SSH handshake is completed. }
+    property AppConnect;
 
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
+    { Get the time until the file transfer start. }
+    property PreTransfer;
+
+    { Get time until the first byte is received. }
+    property StartTransfer;
   end;
 
 implementation
-
-{ TResponse }
-
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
-begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-end;
-
-destructor TResponse.Destroy;
-begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  inherited Destroy;
-end;
 
 end.
