@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.utils.headers_list;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,58 +34,93 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  container.avltree, utils.functor,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout,
-  curl.http.response.property_modules.redirect;
+  SysUtils, container.arraylist, utils.functor, utils.pair;
 
 type
-  TResponse = class(curl.response.TResponse)
+  THeadersList = class
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    { Append a header to the list. }
+    procedure Append (AHeader : String);
+
+    { Remove all headers from list. }
+    procedure Clear;
+
+    { Return TRUE if header contains in list. }
+    function Has (AHeader : String) : Boolean;
+
+    { Return header value. }
+    function Value (AHeaderKey : String) : String;
   protected
     type
-      THeadersList = specialize TAvlTree<String, String, TCompareFunctorString>;
+      THeaders = specialize TArrayList<String, TCompareFunctorString>;
+      THeaderKeyValue = specialize TPair<String, String>;
   protected
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
-    FRedirect : TModuleRedirect;
-  public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
-    destructor Destroy; override;
-    
-    { Provide access to CURL error messages storage. }
-    property Errors;
-
-    { Get content data. }
-    property Content : TModuleContent read FContent;
-
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
-
-    { Get redirects info. }
-    property Redirect : TModuleRedirect read FRedirect;
+    function Search (AHeaderKey : String) : String;
+    function Parse (AHeader : String) : THeaderKeyValue; 
+  protected
+    FHeaders : THeaders;
   end;
 
 implementation
 
-{ TResponse }
-
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
+constructor THeadersList.Create;
 begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
+  FHeaders := THeaders.Create;
 end;
 
-destructor TResponse.Destroy;
+destructor THeadersList.Destroy;
 begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  FreeAndNil(FRedirect);
+  FreeAndNil(FHeaders);
   inherited Destroy;
+end;
+
+function THeadersList.Parse (AHeader : String) : THeaderKeyValue;
+var
+  pos : Integer;
+begin
+  pos := Pos(':', AHeader);
+  Result := THeaderKeyValue.Create(Trim(Copy(AHeader, 0, pos)), 
+    Trim(Copy(AHeader, pos, Length(AHeader) - pos)));  
+end;
+
+function THeadersList.Search (AHeaderKey : String) : String;
+var
+  Iterator : THeaders.TIterator;
+  pair : THeaderKeyValue;
+begin
+  for Iterator in FHeaders do
+  begin
+    pair := Parse(Iterator.Value);
+    if pair.First = AHeaderKey then
+    begin
+      Exit(pair.Second);
+    end;
+  end; 
+
+  Result := '';  
+end;
+
+procedure THeadersList.Append (AHeader : String);
+begin
+  FHeaders.Append(AHeader);
+end;
+
+procedure THeadersList.Clear;
+begin
+  FHeaders.Clear;
+end;
+
+function THeadersList.Has (AHeader : String) : Boolean;
+begin
+  Result := Search(AHeader) <> '';
+end;
+
+function THeadersList.Value (AHeaderKey : String) : String;
+begin
+  Result := Search(AHeaderKey);
 end;
 
 end.

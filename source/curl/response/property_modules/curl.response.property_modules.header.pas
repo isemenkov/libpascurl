@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.response.property_modules.header;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,58 +34,16 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  container.avltree, utils.functor,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout,
-  curl.http.response.property_modules.redirect;
+  libpascurl, container.memorybuffer,
+  curl.response.property_module;
 
 type
-  TResponse = class(curl.response.TResponse)
+  TModuleHeader = class(TPropertyModule)
   protected
-    type
-      THeadersList = specialize TAvlTree<String, String, TCompareFunctorString>;
-  protected
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
-    FRedirect : TModuleRedirect;
-  public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
-    destructor Destroy; override;
     
-    { Provide access to CURL error messages storage. }
-    property Errors;
 
-    { Get content data. }
-    property Content : TModuleContent read FContent;
-
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
-
-    { Get redirects info. }
-    property Redirect : TModuleRedirect read FRedirect;
-  end;
+  end;    
 
 implementation
-
-{ TResponse }
-
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
-begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
-end;
-
-destructor TResponse.Destroy;
-begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  FreeAndNil(FRedirect);
-  inherited Destroy;
-end;
 
 end.
