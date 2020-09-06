@@ -101,13 +101,13 @@ begin
 
     if HasOption('a', 'all') or HasOption('content-size') then
     begin
-      if FResponse.Content.Length.Bytes = 0 then
+      if FResponse.Content.ContentLength.Bytes = 0 then
       begin
         writeln('Content size: ':COLUMN_SIZE, 'Unknown');
       end else
       begin
         writeln('Content size: ':COLUMN_SIZE,
-        FResponse.Content.Length.ToString);
+        FResponse.Content.ContentLength.ToString);
       end;
     end;
 

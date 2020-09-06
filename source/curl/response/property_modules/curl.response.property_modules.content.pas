@@ -34,7 +34,7 @@ unit curl.response.property_modules.content;
 interface
 
 uses
-  libpascurl, container.memorybuffer, curl.utils.errors_stack,
+  libpascurl, container.memorybuffer, curl.utils.errors_stack, utils.datasize,
   curl.response.property_module;
 
 type
@@ -44,6 +44,24 @@ type
       PMemoryBuffer = ^TMemoryBuffer;
   protected
     FBuffer : PMemoryBuffer;
+
+    { Get content buffer length. }
+    function GetBufferLength : TDataSize;
+
+    { Get the number of downloaded bytes. }
+    function GetDownloadedSize : TDataSize;
+
+    { Get content as memory buffer. }
+    function GetBuffer : TMemoryBuffer;
+  protected
+    { Get content as memory buffer. }
+    property Buffer : TMemoryBuffer read GetBuffer;
+
+    { Get content buffer length. }
+    property BufferLength : TDataSize read GetBufferLength;
+
+    { Get the number of downloaded bytes. }
+    property DownloadedSize : TDataSize read GetDownloadedSize;
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
       ABuffer : PMemoryBuffer);
@@ -58,6 +76,24 @@ constructor TModuleContent.Create(ACURL : libpascurl.CURL; AErrorsStack :
 begin
   inherited Create(ACURL, AErrorsStack);
   FBuffer := ABuffer;
+end;
+
+function TModuleContent.GetBuffer : TMemoryBuffer;
+begin
+  Result := FBuffer^;
+end;
+
+function TModuleContent.GetBufferLength : TDataSize;
+begin
+  Result := TDataSize.Create;
+  Result.Bytes := FBuffer^.GetBufferDataSize;
+end;
+
+function TModuleContent.GetDownloadedSize : TDataSize;
+begin
+  Result := TDataSize.Create;
+  Result.Bytes := GetInt64Value(CURLINFO_SIZE_DOWNLOAD, 
+    CURLINFO_SIZE_DOWNLOAD_T);
 end;
 
 end.

@@ -34,7 +34,7 @@ unit curl.http.response.property_modules.content;
 interface
 
 uses
-  SysUtils, libpascurl, utils.datasize, 
+  SysUtils, libpascurl, utils.datasize, container.memorybuffer, 
   curl.response.property_modules.content;
 
 type
@@ -46,27 +46,30 @@ type
     function GetContentType : String;
 
     { Get content length. }
-    function GetLength : TDataSize;
-
-    { Get content buffer length. }
-    function GetBufferLength : TDataSize;
+    function GetContentLength : TDataSize;
 
     { Get content as string. }
     function GetString : String;
   public
+    { Get content buffer length. }
+    property BufferLength;
+
+    { Get the number of downloaded bytes. }
+    property DownloadedSize;
+
     { Get Content-Type
       This is the value read from the Content-Type: field. If you get empty,
       it means that the server didn't send a valid Content-Type header. }
     property ContentType : String read GetContentType;
 
     { Get content-length of content data. }
-    property Length : TDataSize read GetLength;
-
-    { Get content buffer length. }
-    property BufferLength : TDataSize read GetBufferLength;
+    property ContentLength : TDataSize read GetContentLength;
 
     { Get content as string value. }
     property ToString : String read GetString;
+
+    { Get content as memory buffer. }
+    property ToBytes : TMemoryBuffer read GetBuffer;
   end;  
 
 implementation
@@ -78,17 +81,11 @@ begin
   Result := GetStringValue(CURLINFO_CONTENT_TYPE);
 end;
 
-function TModuleContent.GetLength : TDataSize;
+function TModuleContent.GetContentLength : TDataSize;
 begin
   Result := TDataSize.Create;
   Result.Bytes := GetInt64Value(CURLINFO_CONTENT_LENGTH_DOWNLOAD,
     CURLINFO_CONTENT_LENGTH_DOWNLOAD_T);
-end;
-
-function TModuleContent.GetBufferLength : TDataSize;
-begin
-  Result := TDataSize.Create;
-  Result.Bytes := FBuffer^.GetBufferDataSize;
 end;
 
 function TModuleContent.GetString : String;
