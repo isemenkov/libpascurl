@@ -115,6 +115,25 @@ begin
       writeln('Content buffer size: ':COLUMN_SIZE,
       FResponse.Content.BufferLength.ToString);
 
+    if HasOption('a', 'all') or HasOption('total-time') then
+      writeln('Total time: ':COLUMN_SIZE, FResponse.Timeout.Total.ToString);
+
+    if HasOption('a', 'all') or HasOption('name-lookup-time') then
+      writeln('Name lookup time: ':COLUMN_SIZE,
+        FResponse.Timeout.NameLookup.ToString);
+
+    if HasOption('a', 'all') or HasOption('connect-time') then
+      writeln('Connect time: ':COLUMN_SIZE,
+        FResponse.Timeout.Connect.ToString);
+
+    if HasOption('a', 'all') or HasOption('pretransfer-time') then
+      writeln('Time until the transfer start: ':COLUMN_SIZE,
+        FResponse.Timeout.PreTransfer.ToString);
+
+    if HasOption('a', 'all') or HasOption('start-transfer-time') then
+      writeln('Start transfer time: ':COLUMN_SIZE,
+        FResponse.Timeout.StartTransfer.ToString);
+
     if HasOption('e', 'echo') then
     begin
       writeln();
@@ -166,27 +185,6 @@ begin
 
     if HasOption('a', 'all') or HasOption('header-size') then
       writeln('Header size: ':COLUMN_SIZE, FResponse.Value.HeaderSize.ToString);
-
-
-
-    if HasOption('a', 'all') or HasOption('total-time') then
-      writeln('Total time: ':COLUMN_SIZE, FResponse.Value.TotalTime.ToString);
-
-    if HasOption('a', 'all') or HasOption('name-lookup-time') then
-      writeln('Name lookup time: ':COLUMN_SIZE,
-        FResponse.Value.NameLookup.ToString);
-
-    if HasOption('a', 'all') or HasOption('connect-time') then
-      writeln('Connect time: ':COLUMN_SIZE,
-        FResponse.Value.ConnectTime.ToString);
-
-    if HasOption('a', 'all') or HasOption('pretransfer-time') then
-      writeln('Time until the transfer start: ':COLUMN_SIZE,
-        FResponse.Value.PretransferTime.ToString);
-
-    if HasOption('a', 'all') or HasOption('start-transfer-time') then
-      writeln('Start transfer time: ':COLUMN_SIZE,
-        FResponse.Value.StartTransferTime.ToString);
 
     if HasOption('a', 'all') or HasOption('redirect-time') then
       writeln('Redirect time: ':COLUMN_SIZE,
