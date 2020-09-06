@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.redirect;
+unit curl.response.property_modules.redirect;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,83 +34,60 @@ unit curl.response.redirect;
 interface
 
 uses
-  curl.utils.errorstack, utils.timeinterval, libpascurl;
+  libpascurl, utils.timeinterval, curl.response.property_module;
 
 type
-  { Response redirected options }
-  TRedirect = class
-  public
-    { Return true if request is redirected }
-    function IsRedirected : Boolean;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+  TModuleRedirect = class(TPropertyModule)
+  protected
+    { Return true if request is redirected. }
+    function GetIsRedirected : Boolean;
 
-    { Return redirect count times }
-    function Count : Longint;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    { Return redirect count times. }
+    function GetCount : LongWord;
 
-    { Return redirected URL }
-    function Url : String;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    { Return redirected URL. }
+    function GetUrl : String;
 
-    { Return the time for all redirection steps }
-    function TotalTime : TTimeInterval;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
-  private
-    constructor Create(ACurl : CURL; AErrors : PErrorStack);
-  private
-    FCurl : CURL;
-    FErrors : PErrorStack;
+    { Return the time for all redirection steps. }
+    function GetTotalTime : TTimeInterval;
+  protected
+    { Return true if request is redirected. }
+    property IsRedirected : Boolean read GetIsRedirected;
+
+    { Return redirect count times. }
+    property Count : LongWord read GetCount;
+
+    { Return redirected URL. }
+    property Url : String read GetUrl;
+
+    { Return the time for all redirection steps. }
+    property TotalTime : TTimeInterval read GetTotalTime;
   end;
 
 implementation
 
-{ TRedirect }
+{ TModuleRedirect }
 
-constructor TRedirect.Create (ACurl : CURL;
-  AErrors : PErrorStack);
+function TModuleRedirect.GetCount : LongWord;
 begin
-  FCurl := ACurl;
-  FErrors := AErorrs;
+  Result := GetLongintValue(CURLINFO_REDIRECT_COUNT);
 end;
 
-function TRedirect.IsRedirected : Boolean;
+function TModuleRedirect.GetIsRedirected : Boolean;
 begin
   Result := Count > 0;
 end;
 
-function TRedirect.Count : Longint;
+function TModuleRedirect.GetUrl : String;
 begin
-  Result := 0;
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_COUNT, @Result));
+  Result := GetStringValue(CURLINFO_REDIRECT_URL);
 end;
 
-function TRedirect.Url : String;
-var
-  url : PChar;
+function TModuleRedirect.GetTotalTime : TTimeInterval;
 begin
-  New(url);
-  url := '';
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_URL, @url));
-  Result := url;
-end;
-
-function TRedirect.TotalTime : TTimeInterval;
-var
-  time : Longword = 0;
-  dtime : Double = 0;
-  CurlResult : CURLcode;
-begin
-  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME_T, @time);
   Result := TTimeInterval.Create;
-  Result.Milliseconds := time;
-
-  if CurlResult <> CURLE_OK then
-  begin
-    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_REDIRECT_TIME, @dtime);
-    Result.Milliseconds := ceil(dtime);
-  end;
-
-  FErrors^.Push(CurlResult);
+  Result.Milliseconds := GetInt64Value(CURLINFO_REDIRECT_TIME, 
+    CURLINFO_REDIRECT_TIME_T);
 end;
 
 end.

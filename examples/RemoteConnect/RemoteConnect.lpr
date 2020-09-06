@@ -96,6 +96,16 @@ begin
 
   //if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
+    if HasOption('a', 'all') or HasOption('redirect-count') then
+      writeln('Redirect count: ':COLUMN_SIZE,
+      IntToStr(FResponse.Redirect.Count));
+
+    if FResponse.Redirect.IsRedirected then
+    begin
+      if HasOption('a', 'all') or HasOption('redirect-url') then
+        writeln('Redirect url: ':COLUMN_SIZE, FResponse.Redirect.Url);
+    end;
+
     if HasOption('a', 'all') or HasOption('content-type') then
       writeln('Content type: ':COLUMN_SIZE, FResponse.Content.ContentType);
 
@@ -134,6 +144,13 @@ begin
       writeln('Start transfer time: ':COLUMN_SIZE,
         FResponse.Timeout.StartTransfer.ToString);
 
+    if FResponse.Redirect.IsRedirected then
+    begin
+      if HasOption('a', 'all') or HasOption('redirect-time') then
+        writeln('Redirect time: ':COLUMN_SIZE,
+        FResponse.Redirect.TotalTime.ToString);
+    end;
+
     if HasOption('e', 'echo') then
     begin
       writeln();
@@ -144,12 +161,6 @@ begin
   {
     if HasOption('a', 'all') or HasOption('effective-url') then
       writeln('Url: ':COLUMN_SIZE, FResponse.Value.EffectiveUrl);
-
-    if HasOption('a', 'all') or HasOption('redirect-url') then
-      writeln('Redirect url: ':COLUMN_SIZE, FResponse.Value.RedirectUrl);
-
-    if HasOption('a', 'all') or HasOption('redirect-count') then
-      writeln('Redirect count: ':COLUMN_SIZE, FResponse.Value.RedirectCount);
 
     if HasOption('a', 'all') or HasOption('primary-ip') then
       writeln('Primary IP: ':COLUMN_SIZE, FResponse.Value.PrimaryIP);
@@ -185,10 +196,6 @@ begin
 
     if HasOption('a', 'all') or HasOption('header-size') then
       writeln('Header size: ':COLUMN_SIZE, FResponse.Value.HeaderSize.ToString);
-
-    if HasOption('a', 'all') or HasOption('redirect-time') then
-      writeln('Redirect time: ':COLUMN_SIZE,
-        FResponse.Value.RedirectTime.ToString);
 
     if HasOption('a', 'all') or HasOption('download-speed') then
       writeln('Download speed: ':COLUMN_SIZE,

@@ -69,8 +69,11 @@ begin
 end;
 
 function TPropertyModule.GetLongintValue (ACURLInfo : CURLINFO) : Longint;
+var
+  res : Longint = 0;
 begin
-  FErrorsStack^.Push(curl_easy_getinfo(FCURL, ACURLInfo, @Result));
+  FErrorsStack^.Push(curl_easy_getinfo(FCURL, ACURLInfo, @Res));
+  Result := res;
 end;
 
 function TPropertyModule.GetBooleanValue (ACURLInfo : CURLINFO) : Boolean;

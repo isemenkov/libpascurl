@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.http.response.property_modules.redirect;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,54 +34,25 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout,
-  curl.http.response.property_modules.redirect;
+  curl.response.property_modules.redirect;
 
 type
-  TResponse = class(curl.response.TResponse)
-  protected
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
-    FRedirect : TModuleRedirect;
+  TModuleRedirect 
+    = class(curl.response.property_modules.redirect.TModuleRedirect)
   public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
-    destructor Destroy; override;
-    
-    { Provide access to CURL error messages storage. }
-    property Errors;
+    { Return true if request is redirected. }
+    property IsRedirected;
 
-    { Get content data. }
-    property Content : TModuleContent read FContent;
+    { Return redirect count times. }
+    property Count;
 
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
+    { Return redirected URL. }
+    property Url;
 
-    { Get redirects info. }
-    property Redirect : TModuleRedirect read FRedirect;
+    { Return the time for all redirection steps. }
+    property TotalTime;
   end;
 
 implementation
-
-{ TResponse }
-
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
-begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
-end;
-
-destructor TResponse.Destroy;
-begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  FreeAndNil(FRedirect);
-  inherited Destroy;
-end;
 
 end.
