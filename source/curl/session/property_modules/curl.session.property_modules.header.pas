@@ -109,7 +109,8 @@ begin
     end;
   end;
 
-  FHeaders^.Append(HeaderStr);
+  if HeaderStr <> '' then
+    FHeaders^.Append(HeaderStr);
   Result := ASize;
 end;
 

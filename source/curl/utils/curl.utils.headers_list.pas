@@ -92,6 +92,11 @@ var
   position : Integer;
 begin
   position := Pos(':', AHeader);
+  if position = 0 then
+  begin
+    position := Pos(' ', AHeader);
+  end;
+
   Result := THeaderKeyValue.Create(Trim(Copy(AHeader, 0, position - 1)),
     Trim(Copy(AHeader, position + 1, Length(AHeader) - position)));
 end;
@@ -104,7 +109,7 @@ begin
   for StrValue in FHeaders do
   begin
     pair := Parse(StrValue);
-    if pair.First = AHeaderKey then
+    if LowerCase(pair.First) = LowerCase(AHeaderKey) then
     begin
       Exit(pair.Second);
     end;
@@ -115,8 +120,7 @@ end;
 
 procedure THeadersList.Append (AHeader : String);
 begin
-  if AHeader <> '' then
-    FHeaders.Append(AHeader);
+  FHeaders.Append(AHeader);
 end;
 
 procedure THeadersList.Clear;
