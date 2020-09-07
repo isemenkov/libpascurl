@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.property_modules.header;
+unit curl.http.session.property_modules.header;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,15 +34,14 @@ unit curl.response.property_modules.header;
 interface
 
 uses
-  libpascurl, container.memorybuffer,
-  curl.response.property_module;
+  curl.session.property_modules.header;
 
 type
-  TModuleHeader = class(TPropertyModule)
-  protected
-    
-
-  end;    
+  TModuleHeader = class(curl.session.property_modules.header.TModuleHeader)
+  public
+    { Set callback that receives header data. }
+    property HeaderCallback;   
+  end;
 
 implementation
 

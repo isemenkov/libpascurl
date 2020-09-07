@@ -39,6 +39,9 @@ uses
 type
   THeadersList = class
   public
+    type
+      THeaderKeyValue = specialize TPair<String, String>;
+  public
     constructor Create;
     destructor Destroy; override;
 
@@ -49,19 +52,21 @@ type
     procedure Clear;
 
     { Return TRUE if header contains in list. }
-    function Has (AHeader : String) : Boolean;
+    function Has (AHeaderKey : String) : Boolean;
 
     { Return header value. }
     function Value (AHeaderKey : String) : String;
   protected
     type
       THeaders = specialize TArrayList<String, TCompareFunctorString>;
-      THeaderKeyValue = specialize TPair<String, String>;
   protected
     function Search (AHeaderKey : String) : String;
     function Parse (AHeader : String) : THeaderKeyValue; 
   protected
     FHeaders : THeaders;
+  public
+    { Return enumerator for in operator. }
+    function GetEnumerator : THeaders.TIterator;
   end;
 
 implementation
@@ -77,23 +82,28 @@ begin
   inherited Destroy;
 end;
 
+function THeadersList.GetEnumerator : THeaders.TIterator;
+begin
+  Result := FHeaders.GetEnumerator;
+end;
+
 function THeadersList.Parse (AHeader : String) : THeaderKeyValue;
 var
-  pos : Integer;
+  position : Integer;
 begin
-  pos := Pos(':', AHeader);
-  Result := THeaderKeyValue.Create(Trim(Copy(AHeader, 0, pos)), 
-    Trim(Copy(AHeader, pos, Length(AHeader) - pos)));  
+  position := Pos(':', AHeader);
+  Result := THeaderKeyValue.Create(Trim(Copy(AHeader, 0, position - 1)),
+    Trim(Copy(AHeader, position + 1, Length(AHeader) - position)));
 end;
 
 function THeadersList.Search (AHeaderKey : String) : String;
 var
-  Iterator : THeaders.TIterator;
+  StrValue : String;
   pair : THeaderKeyValue;
 begin
-  for Iterator in FHeaders do
+  for StrValue in FHeaders do
   begin
-    pair := Parse(Iterator.Value);
+    pair := Parse(StrValue);
     if pair.First = AHeaderKey then
     begin
       Exit(pair.Second);
@@ -105,7 +115,8 @@ end;
 
 procedure THeadersList.Append (AHeader : String);
 begin
-  FHeaders.Append(AHeader);
+  if AHeader <> '' then
+    FHeaders.Append(AHeader);
 end;
 
 procedure THeadersList.Clear;
@@ -113,9 +124,9 @@ begin
   FHeaders.Clear;
 end;
 
-function THeadersList.Has (AHeader : String) : Boolean;
+function THeadersList.Has (AHeaderKey : String) : Boolean;
 begin
-  Result := Search(AHeader) <> '';
+  Result := Search(AHeaderKey) <> '';
 end;
 
 function THeadersList.Value (AHeaderKey : String) : String;

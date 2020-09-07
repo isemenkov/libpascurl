@@ -34,11 +34,12 @@ unit curl.http.session;
 interface
 
 uses
-  SysUtils, curl.session, curl.http.response,
+  SysUtils, curl.session, curl.http.response, curl.utils.headers_list,
   curl.http.session.property_modules.protocols, 
   curl.http.session.property_modules.writer,
   curl.http.session.property_modules.request,
-  curl.http.session.property_modules.options;
+  curl.http.session.property_modules.options,
+  curl.http.session.property_modules.header;
 
 type
   THTTP = class
@@ -47,7 +48,10 @@ type
       TResponse = class(curl.http.response.TResponse);
       TSession = class(curl.session.TSession)
       protected
+        FHeadersList : THeadersList;
+
         FWriter : TModuleWriter;
+        FHeader : TModuleHeader;
         FProtocols : TModuleProtocols; 
         FRequest : TModuleRequest;
         FOptions : TModuleOptions;
@@ -82,8 +86,11 @@ uses
 constructor THTTP.TSession.Create;
 begin
   inherited Create;
+  FHeadersList := THeadersList.Create;
+
   FProtocols := TModuleProtocols.Create(Handle, ErrorsStorage);
   FWriter := TModuleWriter.Create(Handle, ErrorsStorage, MemoryBuffer);
+  FHeader := TModuleHeader.Create(Handle, ErrorsStorage, @FHeadersList);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
   FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
   
@@ -94,6 +101,8 @@ end;
 
 destructor THTTP.TSession.Destroy;
 begin
+  FreeAndNil(FHeadersList);
+
   FreeAndNil(FProtocols);
   FreeAndNil(FWriter);
   FreeAndNil(FRequest);
@@ -104,7 +113,8 @@ end;
 function THTTP.TSession.Get : TResponse;
 begin
   FRequest.Method := TMethod.GET;
-  Result := TResponse.Create(Handle, ErrorsStorage, MemoryBuffer);
+  Result := TResponse.Create(Handle, ErrorsStorage, MemoryBuffer, 
+    @FHeadersList);
 end;
 
 end.

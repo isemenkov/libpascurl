@@ -35,27 +35,35 @@ interface
 
 uses
   SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  container.avltree, utils.functor,
+  curl.utils.headers_list,
   curl.http.response.property_modules.content,
   curl.http.response.property_modules.timeout,
   curl.http.response.property_modules.redirect;
 
 type
   TResponse = class(curl.response.TResponse)
-  protected
+  public
     type
-      THeadersList = specialize TAvlTree<String, String, TCompareFunctorString>;
+      PHeadersList = ^THeadersList;
   protected
+    FHeadersList : PHeadersList;
+
     FContent : TModuleContent;
     FTimeout : TModuleTimeout;
     FRedirect : TModuleRedirect;
+
+    { Get headers list. }
+    function GetHeaders : THeadersList;
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
+      ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
     destructor Destroy; override;
     
     { Provide access to CURL error messages storage. }
     property Errors;
+
+    { Get headers list. }
+    property Headers : THeadersList read GetHeaders;
 
     { Get content data. }
     property Content : TModuleContent read FContent;
@@ -72,9 +80,11 @@ implementation
 { TResponse }
 
 constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
+  PErrorsStack; ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
 begin
   inherited Create(ACURL, AErrorsStack, ABuffer);
+  FHeadersList := AHeadersList;
+
   FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
   FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
   FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
@@ -86,6 +96,11 @@ begin
   FreeAndNil(FTimeout);
   FreeAndNil(FRedirect);
   inherited Destroy;
+end;
+
+function TResponse.GetHeaders : THeadersList;
+begin
+  Result := FHeadersList^;
 end;
 
 end.

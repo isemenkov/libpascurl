@@ -33,6 +33,9 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, CustApp, curl.http.session, libpascurl,
+  curl.utils.headers_list, curl.session.property_modules.header,
+  curl.http.response, curl.http.response.property_modules.redirect,
+  curl.http.response.property_modules.timeout,
   curl.response.property_modules.content;
 
 type
@@ -59,13 +62,14 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'eah';
-  LongOptions : array [1..25] of string = ('help', 'echo', 'all',
+  LongOptions : array [1..26] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
-    'redirect-time');
+    'redirect-time', 'headers');
+  StrValue : String;
 const
   COLUMN_SIZE = 31;
 begin
@@ -149,6 +153,17 @@ begin
       if HasOption('a', 'all') or HasOption('redirect-time') then
         writeln('Redirect time: ':COLUMN_SIZE,
         FResponse.Redirect.TotalTime.ToString);
+    end;
+
+    if HasOption('headers') then
+    begin
+      writeln;
+      writeln('-=== Headers ===-');
+
+      for StrValue in FResponse.Headers do
+      begin
+        writeln(StrValue);
+      end;
     end;
 
     if HasOption('e', 'echo') then
@@ -274,6 +289,8 @@ begin
 '(*                                     received                               *)'+ sLineBreak +
 '(*            --redirect-time          write time for all redirection steps   *)'+ sLineBreak +
 '(*            --download-speed         write download speed                   *)'+ sLineBreak +
+'(*                                                                            *)'+ sLineBreak +
+'(*            --headers                write all headers                      *)'+ sLineBreak +
 '(*                                                                            *)'+ sLineBreak +
 '(******************************************************************************)'
   );

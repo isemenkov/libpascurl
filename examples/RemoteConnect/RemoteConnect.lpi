@@ -24,7 +24,7 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="22">
+    <Units Count="30">
       <Unit0>
         <Filename Value="RemoteConnect.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -113,6 +113,38 @@
         <Filename Value="../../source/curl/response/curl.response.property_module.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit21>
+      <Unit22>
+        <Filename Value="../../source/http/response/curl.http.response.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="../../source/http/response/property_modules/curl.http.response.property_modules.timeout.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="../../source/http/response/property_modules/curl.http.response.property_modules.redirect.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="../../source/curl/utils/curl.utils.headers_list.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="../../source/curl/session/property_modules/curl.session.property_modules.header.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="../../source/http/response/curl.http.request.method.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="../../source/http/response/curl.http.response.statuscode.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="../../source/http/session/property_modules/curl.http.session.property_modules.header.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit29>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

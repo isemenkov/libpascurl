@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.session.property_modules.writer;
+unit curl.session.property_modules.header;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,71 +34,82 @@ unit curl.session.property_modules.writer;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack, container.memorybuffer,
+  libpascurl, curl.utils.headers_list, curl.utils.errors_stack,
   curl.session.property_module;
 
 type
-  TModuleWriter = class(TPropertyModule)
+  TModuleHeader = class(TPropertyModule)
   public
     type
-      PMemoryBuffer = ^TMemoryBuffer;
+      PHeadersList = ^THeadersList;
 
-      { Set callback for writing received data. }
-      TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
-        LongWord  of object;
-  public
+      { Set callback that receives header data. }
+      THeaderCallbackFunction = function (ABuffer : PByte; ASize : LongWord) :
+        LongWord of object;
+  public  
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer);
+      AHeadersList : PHeadersList);
   protected
-    FBuffer : PMemoryBuffer;
-    FDownloadFunction : TDownloadFunction;
+    FHeaders : PHeadersList;
+    FHeaderCallbackFunction : THeaderCallbackFunction;
   protected
-    { Set callback for writing received data. 
-      This callback function gets called by libcurl as soon as there is data 
-      received that needs to be saved. For most transfers, this callback gets 
-      called many times and each invoke delivers another chunk of data. }
-    property DownloadCallback : TDownloadFunction read FDownloadFunction
-      write FDownloadFunction;
+    { Set callback that receives header data.
+      This function gets called by libcurl as soon as it has received header 
+      data. The header callback will be called once for each header and only 
+      complete header lines are passed on to the callback. Parsing headers is 
+      very easy using this. }
+    property HeaderCallback : THeaderCallbackFunction 
+      read FHeaderCallbackFunction write FHeaderCallbackFunction;
   private
-    class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
-      ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
-    function DownloadFunction (APtr : PChar; ASize : LongWord) : LongWord;
-  end;
+    class function HeaderFunctionCallback (ABuffer : PByte; ASize : LongWord;
+      ANitems : LongWord; AData : Pointer) : LongWord; static; cdecl;
+    function HeaderFunction (ABuffer : PByte; ASize : LongWord) : LongWord;
+  end;    
 
 implementation
 
-{ TModuleWriter }
+{ TModuleHeader }
 
-class function TModuleWriter.DownloadFunctionCallback (APtr : PChar; ASize : 
-  LongWord; ANmemb : LongWord; AData : Pointer) : LongWord; cdecl;
+class function TModuleHeader.HeaderFunctionCallback (ABuffer : PByte; ASize :
+  LongWord; ANitems : LongWord; AData : Pointer) : LongWord; cdecl;
 begin
-  if Assigned(TModuleWriter(AData).FDownloadFunction) then
+  if Assigned(TModuleHeader(AData).FHeaderCallbackFunction) then
   begin
-    Result := TModuleWriter(AData).FDownloadFunction(APtr, ASize * ANmemb);
+    Result := TModuleHeader(AData).FHeaderCallbackFunction(ABuffer,
+      ASize * ANitems);
   end else
   begin
-    Result := TModuleWriter(AData).DownloadFunction(APtr, ASize * ANmemb);
+    Result := TModuleHeader(AData).HeaderFunction(ABuffer, ASize * ANitems);
   end;
 end;
 
-constructor TModuleWriter.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer);
+constructor TModuleHeader.Create (ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack; AHeadersList : PHeadersList);
 begin
   inherited Create(ACURL, AErrorsStack);
-  FBuffer := ABuffer;
+  FHeaders := AHeadersList;
 
-  Option(CURLOPT_WRITEDATA, Pointer(Self));
-  Option(CURLOPT_WRITEFUNCTION, @TModuleWriter.DownloadFunctionCallback);
+  Option(CURLOPT_HEADERDATA, Pointer(Self));
+  Option(CURLOPT_HEADERFUNCTION, @TModuleHeader.HeaderFunctionCallback);
 end;
 
-function TModuleWriter.DownloadFunction (APtr : PChar; ASize : LongWord) : 
+function TModuleHeader.HeaderFunction (ABuffer : PByte; ASize : LongWord) :
   LongWord;
 var
-  size : Cardinal;
+  Index : Integer;
+  Letter : Char;
+  HeaderStr : String = '';
 begin
-  size := FBuffer^.GetBufferDataSize;
-  Move(APtr^, FBuffer^.GetAppendBuffer(ASize)^, ASize);
-  FBuffer^.SetBufferDataSize(size + ASize);
+  for index := 0 to ASize do
+  begin
+    if (ABuffer[index] >= 32) and (ABuffer[index] <= 127) then
+    begin
+      Letter := Chr(ABuffer[index]);
+      HeaderStr := HeaderStr + Letter;
+    end;
+  end;
+
+  FHeaders^.Append(HeaderStr);
   Result := ASize;
 end;
 
