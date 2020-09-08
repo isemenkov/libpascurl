@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.response.property_modules.header;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,80 +34,54 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.utils.headers_list,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout,
-  curl.http.response.property_modules.redirect,
-  curl.http.response.property_modules.header;
+  libpascurl, utils.datasize, curl.response.property_module;
 
 type
-  TResponse = class(curl.response.TResponse)
-  public
-    type
-      PHeadersList = ^THeadersList;
+  TModuleHeader = class(TPropertyModule)
   protected
-    FHeadersList : PHeadersList;
+    { Get the response code. }
+    function GetResponseCode : Longint;
 
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
-    FRedirect : TModuleRedirect;
-    FHeader : TModuleHeader;
+    { Get size of retrieved headers. }
+    function GetLength : TDataSize;
 
-    { Get headers list. }
-    function GetHeaders : THeadersList;
-  public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
-    destructor Destroy; override;
-    
-    { Provide access to CURL error messages storage. }
-    property Errors;
+    { Get Content-Type. }
+    function GetContentType : String;
+  protected
+    { Get the response code. 
+      The stored value will be zero if no server response code has been 
+      received. }
+    property ResponseCode : Longint read GetResponseCode;
 
-    { Get headers list. }
-    property HeadersList : THeadersList read GetHeaders;
+    { Get size of retrieved headers. 
+      Measured in number of bytes. }
+    property Length : TDataSize read GetLength;
 
-    { Get headers info. }
-    property Header : TModuleHeader read FHeader;
-
-    { Get content data. }
-    property Content : TModuleContent read FContent;
-
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
-
-    { Get redirects info. }
-    property Redirect : TModuleRedirect read FRedirect;
+    { Get Content-Type.
+      This is the value read from the Content-Type: field. If you get NULL, it 
+      means that the server didn't send a valid Content-Type header or that the 
+      protocol used doesn't support this. }
+    property ContentType : String read GetContentType;
   end;
 
 implementation
 
-{ TResponse }
+{ TModuleHeader }
 
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
+function TModuleHeader.GetResponseCode : Longint;
 begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FHeadersList := AHeadersList;
-
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
-  FHeader := TModuleHeader.Create(Handle, ErrorsStorage);
+  Result := GetLongintValue(CURLINFO_RESPONSE_CODE);
 end;
 
-destructor TResponse.Destroy;
+function TModuleHeader.GetLength : TDataSize;
 begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  FreeAndNil(FRedirect);
-  FreeAndNil(FHeader);
-  inherited Destroy;
+  Result := TDataSize.Create;
+  Result.Bytes := GetLongintValue(CURLINFO_HEADER_SIZE);
 end;
 
-function TResponse.GetHeaders : THeadersList;
+function TModuleHeader.GetContentType : String;
 begin
-  Result := FHeadersList^;
+  Result := GetStringValue(CURLINFO_CONTENT_TYPE);
 end;
 
 end.

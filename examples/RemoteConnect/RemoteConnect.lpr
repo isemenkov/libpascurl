@@ -155,12 +155,21 @@ begin
         FResponse.Redirect.TotalTime.ToString);
     end;
 
+    if HasOption('a', 'all') or HasOption('http-version') then
+      writeln('HTTP version: ':COLUMN_SIZE, FResponse.Header.HTTPVersion);
+
+    if HasOption('a', 'all') or HasOption('response-code') then
+      writeln('Response code: ':COLUMN_SIZE, FResponse.Header.ResponseCode);
+
+    if HasOption('a', 'all') or HasOption('header-size') then
+      writeln('Header size: ':COLUMN_SIZE, FResponse.Header.Length.ToString);
+
     if HasOption('headers') then
     begin
       writeln;
       writeln('-=== Headers ===-');
 
-      for StrValue in FResponse.Headers do
+      for StrValue in FResponse.HeadersList do
       begin
         writeln(StrValue);
       end;
@@ -189,12 +198,6 @@ begin
     if HasOption('a', 'all') or HasOption('local-ip') then
       writeln('Local IP: ':COLUMN_SIZE, FResponse.Value.LocalIP);
 
-    if HasOption('a', 'all') or HasOption('http-version') then
-      writeln('HTTP version: ':COLUMN_SIZE, FResponse.Value.HttpVersion);
-
-    if HasOption('a', 'all') or HasOption('response-code') then
-      writeln('Response code: ':COLUMN_SIZE, FResponse.Value.ResponseCode);
-
     if HasOption('a', 'all') or HasOption('num-connects') then
       writeln('Number of created connections: ':COLUMN_SIZE,
         FResponse.Value.NumConnects);
@@ -208,9 +211,6 @@ begin
     if HasOption('a', 'all') or HasOption('request-size') then
       writeln('Request size: ':COLUMN_SIZE,
         FResponse.Value.RequestSize.ToString);
-
-    if HasOption('a', 'all') or HasOption('header-size') then
-      writeln('Header size: ':COLUMN_SIZE, FResponse.Value.HeaderSize.ToString);
 
     if HasOption('a', 'all') or HasOption('download-speed') then
       writeln('Download speed: ':COLUMN_SIZE,

@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.response;
+unit curl.http.response.property_modules.header;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,80 +34,55 @@ unit curl.http.response;
 interface
 
 uses
-  SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.utils.headers_list,
-  curl.http.response.property_modules.content,
-  curl.http.response.property_modules.timeout,
-  curl.http.response.property_modules.redirect,
-  curl.http.response.property_modules.header;
+  libpascurl, curl.response.property_modules.header,
+  curl.http.response.http_version, curl.http.response.status_code;
 
 type
-  TResponse = class(curl.response.TResponse)
-  public
-    type
-      PHeadersList = ^THeadersList;
+  TModuleHeader = class(curl.response.property_modules.header.TModuleHeader)
   protected
-    FHeadersList : PHeadersList;
+    { Get the response code. }
+    function GetResponseCode : THTTPStatusCode;
 
-    FContent : TModuleContent;
-    FTimeout : TModuleTimeout;
-    FRedirect : TModuleRedirect;
-    FHeader : TModuleHeader;
+    { Get the CONNECT response code. }
+    function GetConnectResponseCode : THTTPStatusCode;
 
-    { Get headers list. }
-    function GetHeaders : THeadersList;
+    { Get the http version used in the connection. }
+    function GetHttpVersion : THTTPVersion;
   public
-    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
-      ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
-    destructor Destroy; override;
-    
-    { Provide access to CURL error messages storage. }
-    property Errors;
+    { Get the response code. }
+    property ResponseCode : THTTPStatusCode read GetResponseCode;
 
-    { Get headers list. }
-    property HeadersList : THeadersList read GetHeaders;
+    { Get the CONNECT response code.
+      Receive the last received HTTP proxy response code to a CONNECT request. }
+    property ConnectResponseCode : THTTPStatusCode read GetConnectResponseCode;
 
-    { Get headers info. }
-    property Header : TModuleHeader read FHeader;
+    { Get the http version used in the connection. }
+    property HTTPVersion : THTTPVersion read GetHttpVersion;
 
-    { Get content data. }
-    property Content : TModuleContent read FContent;
+    { Get size of retrieved headers. }
+    property Length;
 
-    { Get timeouts info. }
-    property Timeout : TModuleTimeout read FTimeout;
-
-    { Get redirects info. }
-    property Redirect : TModuleRedirect read FRedirect;
+    { Get Content-Type. }
+    property ContentType;
   end;
 
 implementation
 
-{ TResponse }
+{ TModuleHeader }
 
-constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
-  PErrorsStack; ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
+function TModuleHeader.GetResponseCode : THTTPStatusCode;
 begin
-  inherited Create(ACURL, AErrorsStack, ABuffer);
-  FHeadersList := AHeadersList;
-
-  FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
-  FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
-  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
-  FHeader := TModuleHeader.Create(Handle, ErrorsStorage);
+  Result := THTTPStatusCode(inherited GetResponseCode);
 end;
 
-destructor TResponse.Destroy;
+function TModuleHeader.GetConnectResponseCode : THTTPStatusCode;
 begin
-  FreeAndNil(FContent);
-  FreeAndNil(FTimeout);
-  FreeAndNil(FRedirect);
-  FreeAndNil(FHeader);
-  inherited Destroy;
+  Result := THTTPStatusCode(GetLongintValue(CURLINFO_HTTP_CONNECTCODE));
 end;
 
-function TResponse.GetHeaders : THeadersList;
+function TModuleHeader.GetHttpVersion : THTTPVersion;
 begin
-  Result := FHeadersList^;
+  Result := THTTPVersion(GetLongintValue(CURLINFO_HTTP_VERSION));
 end;
 
 end.
