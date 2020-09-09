@@ -164,6 +164,10 @@ begin
     if HasOption('a', 'all') or HasOption('header-size') then
       writeln('Header size: ':COLUMN_SIZE, FResponse.Header.Length.ToString);
 
+    if HasOption('a', 'all') or HasOption('download-speed') then
+      writeln('Download speed: ':COLUMN_SIZE,
+      FResponse.Speed.Download.ToString('/s'));
+
     if HasOption('headers') then
     begin
       writeln;
@@ -211,11 +215,6 @@ begin
     if HasOption('a', 'all') or HasOption('request-size') then
       writeln('Request size: ':COLUMN_SIZE,
         FResponse.Value.RequestSize.ToString);
-
-    if HasOption('a', 'all') or HasOption('download-speed') then
-      writeln('Download speed: ':COLUMN_SIZE,
-        FResponse.Value.DownloadSpeed.ToString('/s'));
-
 
   end else
     writeln(FResponse.Value.ErrorMessage);

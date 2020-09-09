@@ -39,7 +39,8 @@ uses
   curl.http.response.property_modules.content,
   curl.http.response.property_modules.timeout,
   curl.http.response.property_modules.redirect,
-  curl.http.response.property_modules.header;
+  curl.http.response.property_modules.header,
+  curl.http.response.property_modules.speed;
 
 type
   TResponse = class(curl.response.TResponse)
@@ -53,6 +54,7 @@ type
     FTimeout : TModuleTimeout;
     FRedirect : TModuleRedirect;
     FHeader : TModuleHeader;
+    FSpeed : TModuleSpeed;
 
     { Get headers list. }
     function GetHeaders : THeadersList;
@@ -78,6 +80,9 @@ type
 
     { Get redirects info. }
     property Redirect : TModuleRedirect read FRedirect;
+
+    { Get speed info. }
+    property Speed : TModuleSpeed read FSpeed;
   end;
 
 implementation
@@ -94,6 +99,7 @@ begin
   FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
   FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
   FHeader := TModuleHeader.Create(Handle, ErrorsStorage);
+  FSpeed := TModuleSpeed.Create(Handle, ErrorsStorage);
 end;
 
 destructor TResponse.Destroy;
