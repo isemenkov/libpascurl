@@ -2140,8 +2140,10 @@ type
     CURLINFO_REDIRECT_TIME_T                 = CURLINFO_OFF_T             + 55,
     CURLINFO_APPCONNECT_TIME_T               = CURLINFO_OFF_T             + 56,
     CURLINFO_RETRY_AFTER                     = CURLINFO_OFF_T             + 57,
+    CURLINFO_EFFECTIVE_METHOD                = CURLINFO_STRING            + 58,
+    CURLINFO_PROXY_ERROR                     = CURLINFO_LONG              + 59,
 
-    CURLINFO_LASTONE                                                      = 57
+    CURLINFO_LASTONE                                                      = 59
   );
 
   curl_closepolicy = (

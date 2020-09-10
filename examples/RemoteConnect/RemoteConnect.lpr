@@ -34,7 +34,8 @@ uses
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, CustApp, curl.http.session, libpascurl,
   curl.utils.headers_list, curl.session.property_modules.header,
-  curl.http.response, curl.http.response.property_modules.redirect,
+  curl.http.response, curl.http.request.method,
+  curl.http.response.property_modules.redirect,
   curl.http.response.property_modules.timeout,
   curl.response.property_modules.content;
 
@@ -62,16 +63,16 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'eah';
-  LongOptions : array [1..26] of string = ('help', 'echo', 'all',
+  LongOptions : array [1..27] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
-    'redirect-time', 'headers');
+    'redirect-time', 'headers', 'request-method');
   StrValue : String;
 const
-  COLUMN_SIZE = 31;
+  COLUMN_SIZE = 40;
 begin
   ErrorMsg := CheckOptions(ShortOptions, LongOptions);
   if ErrorMsg <> '' then
@@ -168,6 +169,22 @@ begin
       writeln('Download speed: ':COLUMN_SIZE,
       FResponse.Speed.Download.ToString('/s'));
 
+    if HasOption('a', 'all') or HasOption('request-size') then
+      writeln('Request size: ':COLUMN_SIZE,
+        FResponse.Request.Length.ToString);
+
+
+    if HasOption('a', 'all') or HasOption('request-method') then
+    begin
+      if FResponse.Request.Method = TMethod.CUSTOM then
+      begin
+        writeln('Request method: ':COLUMN_SIZE, 'UNKNOWN');
+      end else
+      begin
+        writeln('Request method: ':COLUMN_SIZE, FResponse.Request.Method);
+      end;
+    end;
+
     if HasOption('headers') then
     begin
       writeln;
@@ -211,11 +228,6 @@ begin
         writeln('Verify SSL: ':COLUMN_SIZE, 'Good! All Ok.')
       else
         writeln('Verify SSL: ', COLUMN_SIZE, 'Something wrong :(');
-
-    if HasOption('a', 'all') or HasOption('request-size') then
-      writeln('Request size: ':COLUMN_SIZE,
-        FResponse.Value.RequestSize.ToString);
-
   end else
     writeln(FResponse.Value.ErrorMessage);
   }

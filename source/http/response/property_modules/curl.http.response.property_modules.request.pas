@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.request;
+unit curl.http.response.property_modules.request;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,38 +34,54 @@ unit curl.response.request;
 interface
 
 uses
-  libpascurl, curl.utils.errorstack;
+  SysUtils, libpascurl, utils.datasize, curl.http.request.method,
+  curl.response.property_module;
 
 type
-  { Request info }
-  TRequest = class
+  TModuleRequest = class(TPropertyModule)
+  protected
+    { Get size of sent request. }
+    function GetLength : TDataSize;
+
+    { Get the last used HTTP method. }
+    function GetMethod : TMethod;
   public
-    { Get size of sent request }
-    function Length : TDataSize;
-  private
-    constructor Create(ACurl : CURL; AErrors : PErrorStack);
-  private
-    FCurl : CURL;
-    FErrors : PErrorStack;
+    { Get size of sent request.
+      The total size of the issued requests. }
+    property Length : TDataSize read GetLength;
+
+    { Get the last used HTTP method. }
+    property Method : TMethod read GetMethod;
   end;
 
 implementation
 
-{ TRequest }
+{ TModuleRequest }
 
-constructor TRequest.Create(ACurl : CURL; AErrors : PErrorStack);
+function TModuleRequest.GetLength : TDataSize;
 begin
-  FCurl := ACurl;
-  FErrors := AErrors;
+  Result := TDataSize.Create;
+  Result.Bytes := GetLongintValue(CURLINFO_REQUEST_SIZE);
 end;
 
-function TRequest.Length : TDataSize;
+function TModuleRequest.GetMethod : TMethod;
 var
-  bytes : Longint = 0;
+  method_str : String;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_REQUEST_SIZE, @bytes));
-  Result := TDataSize.Create;
-  Result.Bytes := bytes;
+  method_str := GetStringValue(CURLINFO_EFFECTIVE_METHOD);
+  case UpperCase(method_str) of
+    'GET'     : begin Result := TMethod.GET;     end;
+    'HEAD'    : begin Result := TMethod.HEAD;    end;
+    'POST'    : begin Result := TMethod.POST;    end;
+    'PUT'     : begin Result := TMethod.PUT;     end;
+    'DELETE'  : begin Result := TMethod.DELETE;  end;
+    'CONNECT' : begin Result := TMethod.CONNECT; end;
+    'OPTIONS' : begin Result := TMethod.OPTIONS; end;
+    'TRACE'   : begin Result := TMethod.TRACE;   end;
+    'PATCH'   : begin Result := TMethod.PATCH;   end;
+  else
+    Result := TMethod.CUSTOM;
+  end; 
 end;
 
 end.
