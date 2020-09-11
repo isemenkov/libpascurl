@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.speed;
+unit curl.http.session.property_modules.redirect;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,72 +34,29 @@ unit curl.response.speed;
 interface
 
 uses
-  curl.utils.errorstack, utils.datasize, libpascurl;
+  libpascurl,
+  curl.session.property_module;
 
 type
-  { Response speed data }
-  TSpeed = class
+  TModuleRedirect = class(TPropertyModule)
+  protected
+    { Follow HTTP 3xx redirects. }
+    procedure SetFollowRedirects (AFollow : Boolean);
   public
-    { Get download speed per second }
-    function Download : TDataSize;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    { Follow HTTP 3xx redirects.
+      Tells the library to follow any Location: header that the server sends as 
+      part of an HTTP header in a 3xx response. }
+    property FollowRedirects : Boolean write SetFollowRedirects;
 
-    { Get upload speed per second }
-    function Upload : TDataSize;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
-  private
-    constructor Create (ACurl : CURL; AErrors : PErrorStack);
-  private
-    FCurl : CURL;
-    FErrors : PErrorStack;
-  end;  
+  end;
 
 implementation
 
-{ TSpeed }
+{ TModuleRedirect }
 
-constructor TSpeed.Create (ACurl : CURL; AErrors : PErrorStack);
+procedure TModuleRedirect.SetFollowRedirects (AFollow : Boolean);
 begin
-  FCurl := ACurl;
-  FErrors := AErrors;
-end;
-
-function TSpeed.Download : TDataSize;
-var
-  bytes : LongWord = 0;
-  dbytes : Double = 0;
-  CurlResult : CURLcode;
-begin
-  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_DOWNLOAD_T, @bytes);
-  Result := TDataSize.Create;
-  Result.Bytes := bytes;
-
-  if CurlResult <> CURLE_OK then
-  begin
-    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_DOWNLOAD, @dbytes);
-    Result.Bytes := ceil(dbytes);
-  end;
-
-  FErrors^.Push(CurlResult);
-end;
-
-function TSpeed.Upload : TDataSize;
-var
-  bytes : LongWord = 0;
-  dbytes : Double = 0;
-  CurlResult : CURLcode;
-begin
-  CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_UPLOAD_T, @bytes);
-  Result := TDataSize.Create;
-  Result.Bytes := bytes;
-
-  if CurlResult <> CURLE_OK then
-  begin
-    CurlResult := curl_easy_getinfo(FCurl, CURLINFO_SPEED_UPLOAD, @dbytes);
-    Result.Bytes := ceil(dbytes);
-  end;
-
-  FErrors^.Push(CurlResult);
+  Option(CURLOPT_FOLLOWLOCATION, AFollow);
 end;
 
 end.

@@ -45,6 +45,9 @@ type
 
     { Get the last used HTTP method. }
     function GetMethod : TMethod;
+
+    { Get the last used URL. }
+    function GetUrl : String;
   public
     { Get size of sent request.
       The total size of the issued requests. }
@@ -52,6 +55,9 @@ type
 
     { Get the last used HTTP method. }
     property Method : TMethod read GetMethod;
+
+    { Get the last used URL. }
+    property Url : String read GetUrl;
   end;
 
 implementation
@@ -82,6 +88,11 @@ begin
   else
     Result := TMethod.CUSTOM;
   end; 
+end;
+
+function TModuleRequest.GetUrl : String;
+begin
+  Result := GetStringValue(CURLINFO_EFFECTIVE_URL);
 end;
 
 end.

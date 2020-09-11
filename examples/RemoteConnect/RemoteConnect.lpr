@@ -40,7 +40,6 @@ uses
   curl.response.property_modules.content;
 
 type
-
   { TApplication }
 
   TApplication = class(TCustomApplication)
@@ -62,14 +61,14 @@ procedure TApplication.DoRun;
 var
   ErrorMsg: String;
   NonOptions : TStringList;
-  ShortOptions : string = 'eah';
-  LongOptions : array [1..27] of string = ('help', 'echo', 'all',
+  ShortOptions : string = 'eahf';
+  LongOptions : array [1..28] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
-    'redirect-time', 'headers', 'request-method');
+    'redirect-time', 'headers', 'request-method', 'follow-redirect');
   StrValue : String;
 const
   COLUMN_SIZE = 40;
@@ -96,11 +95,18 @@ begin
   end;
 
   FSession.Url := NonOptions[0];
+
+  if HasOption('f', 'follow-redirect') then
+    FSession.Redirect.FollowRedirects := True;
+
   FResponse := FSession.Get;
 
 
   //if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
+    if HasOption('a', 'all') or HasOption('effective-url') then
+      writeln('Url: ':COLUMN_SIZE, FResponse.Request.Url);
+
     if HasOption('a', 'all') or HasOption('redirect-count') then
       writeln('Redirect count: ':COLUMN_SIZE,
       IntToStr(FResponse.Redirect.Count));
@@ -173,7 +179,6 @@ begin
       writeln('Request size: ':COLUMN_SIZE,
         FResponse.Request.Length.ToString);
 
-
     if HasOption('a', 'all') or HasOption('request-method') then
     begin
       if FResponse.Request.Method = TMethod.CUSTOM then
@@ -204,9 +209,6 @@ begin
     end;
   end;
   {
-    if HasOption('a', 'all') or HasOption('effective-url') then
-      writeln('Url: ':COLUMN_SIZE, FResponse.Value.EffectiveUrl);
-
     if HasOption('a', 'all') or HasOption('primary-ip') then
       writeln('Primary IP: ':COLUMN_SIZE, FResponse.Value.PrimaryIP);
 

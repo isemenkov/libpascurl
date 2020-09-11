@@ -39,7 +39,8 @@ uses
   curl.http.session.property_modules.writer,
   curl.http.session.property_modules.request,
   curl.http.session.property_modules.options,
-  curl.http.session.property_modules.header;
+  curl.http.session.property_modules.header,
+  curl.http.session.property_modules.redirect;
 
 type
   THTTP = class
@@ -55,6 +56,7 @@ type
         FProtocols : TModuleProtocols; 
         FRequest : TModuleRequest;
         FOptions : TModuleOptions;
+        FRedirect : TModuleRedirect;
       public
         constructor Create;
         destructor Destroy; override; 
@@ -70,6 +72,9 @@ type
 
         { Set options. }
         property Options : TModuleOptions read FOptions;
+
+        { Set redirect options. }
+        property Redirect : TModuleRedirect read FRedirect;
 
         { Send current request using GET method. }
         function Get : TResponse;
@@ -93,6 +98,7 @@ begin
   FHeader := TModuleHeader.Create(Handle, ErrorsStorage, @FHeadersList);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
   FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
+  FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -107,6 +113,7 @@ begin
   FreeAndNil(FWriter);
   FreeAndNil(FRequest);
   FreeAndNil(FOptions);
+  FreeAndNil(FRedirect);
   inherited Destroy;
 end;
 
