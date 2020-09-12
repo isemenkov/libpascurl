@@ -40,7 +40,8 @@ uses
   curl.http.session.property_modules.request,
   curl.http.session.property_modules.options,
   curl.http.session.property_modules.header,
-  curl.http.session.property_modules.redirect;
+  curl.http.session.property_modules.redirect,
+  curl.http.session.property_modules.dns;
 
 type
   THTTP = class
@@ -57,6 +58,7 @@ type
         FRequest : TModuleRequest;
         FOptions : TModuleOptions;
         FRedirect : TModuleRedirect;
+        FDNS : TModuleDNS;
       public
         constructor Create;
         destructor Destroy; override; 
@@ -75,6 +77,9 @@ type
 
         { Set redirect options. }
         property Redirect : TModuleRedirect read FRedirect;
+
+        { Set DNS property. }
+        property DNS : TModuleDNS read FDNS;
 
         { Send current request using GET method. }
         function Get : TResponse;
@@ -99,6 +104,7 @@ begin
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
   FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
   FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
+  FDNS := TModuleDNS.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -108,12 +114,14 @@ end;
 destructor THTTP.TSession.Destroy;
 begin
   FreeAndNil(FHeadersList);
-
+  
   FreeAndNil(FProtocols);
   FreeAndNil(FWriter);
   FreeAndNil(FRequest);
   FreeAndNil(FOptions);
   FreeAndNil(FRedirect);
+  FreeAndNil(FDNS);
+
   inherited Destroy;
 end;
 
