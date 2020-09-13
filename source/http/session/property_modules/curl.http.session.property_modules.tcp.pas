@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.writer;
+unit curl.http.session.property_modules.tcp;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,17 +34,26 @@ unit curl.http.session.property_modules.writer;
 interface
 
 uses
-  curl.session.property_modules.writer;
+  curl.session.property_modules.tcp;
 
 type
-  TModuleWriter = class(curl.session.property_modules.writer.TModuleWriter)
+  TModuleTCP = class(curl.session.property_modules.tcp.TModuleTCP)
   public
-    { Set callback for writing received data. }
-    property DownloadCallback;
+    { Enable TCP Fast Open. }
+    property FastOpen;
 
-    { Set preferred receive buffer size. }
-    property BufferSize;
-  end; 
+    { Set the TCP_NODELAY option. }
+    property NoDelay;
+
+    { Enable TCP keep-alive probing. }
+    property KeepAlive;
+
+    { Set TCP keep-alive idle time wait. }
+    property KeepAliveIdle;
+
+    { Set TCP keep-alive interval. }
+    property KeepAliveInterval;
+  end;
 
 implementation
 

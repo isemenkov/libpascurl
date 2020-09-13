@@ -41,7 +41,8 @@ uses
   curl.http.session.property_modules.options,
   curl.http.session.property_modules.header,
   curl.http.session.property_modules.redirect,
-  curl.http.session.property_modules.dns;
+  curl.http.session.property_modules.dns,
+  curl.http.session.property_modules.tcp;
 
 type
   THTTP = class
@@ -59,6 +60,7 @@ type
         FOptions : TModuleOptions;
         FRedirect : TModuleRedirect;
         FDNS : TModuleDNS;
+        FTCP : TModuleTCP;
       public
         constructor Create;
         destructor Destroy; override; 
@@ -80,6 +82,9 @@ type
 
         { Set DNS property. }
         property DNS : TModuleDNS read FDNS;
+
+        { Set TCP properties. }
+        property TCP : TModuleTCP read FTCP;
 
         { Send current request using GET method. }
         function Get : TResponse;
@@ -105,6 +110,7 @@ begin
   FOptions := TModuleOptions.Create(Handle, ErrorsStorage);
   FRedirect := TModuleRedirect.Create(Handle, ErrorsStorage);
   FDNS := TModuleDNS.Create(Handle, ErrorsStorage);
+  FTCP := TModuleTCP.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -121,6 +127,7 @@ begin
   FreeAndNil(FOptions);
   FreeAndNil(FRedirect);
   FreeAndNil(FDNS);
+  FreeAndNil(FTCP);
 
   inherited Destroy;
 end;
