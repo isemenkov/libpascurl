@@ -167,14 +167,15 @@ Module class | Description
 
 This wrapper used the next modules:
 Session modules | Response modules
-----------------|-----------------
-[x] TModuleDNS | [x] TModuleContent
-[x] TModuleHeader | [x] TModuleHeader
-[x] TModuleOptions | [x] TModuleRedirect
-[x] TModuleProtocols | [x] TModuleSpeed
-[x] TModuleSocket | [x] TModuleTimeout
-[x] TModuleTCP |  
-[x] TModuleWriter |  
+----------------|:-----------------
+:heavy_check_mark: TModuleDNS | :heavy_check_mark: TModuleContent
+:heavy_check_mark: TModuleHeader | :heavy_check_mark: TModuleHeader
+:heavy_check_mark: TModuleOptions | :heavy_check_mark: TModuleRedirect
+:heavy_check_mark: TModuleProtocols | :heavy_check_mark: TModuleSpeed
+:heavy_check_mark: TModuleSocket | :heavy_check_mark: TModuleTimeout
+:heavy_check_mark: TModuleTCP |  
+:heavy_check_mark: TModuleWriter |  
+
 
 
 #### Usage example
