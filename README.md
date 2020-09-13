@@ -164,3 +164,27 @@ Module class | Description
 
 [THTTPSession](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/curl.http.session.pas) and [THTTPResponse](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/curl.http.response.pas) classes implements wrapper about HTTP(S) protocol. This classes extends the functionality of base classes and provided new one that is specific only to this protocol.
 
+#### Usage example
+
+```pascal
+uses 
+  curl.http.session, curl.http.response;
+  
+var
+  Session : THTTP.TSession;
+  Response : THHTP.TResponse;
+
+begin
+  Session.Url := 'https://github.com/isemenkov';
+  Session.Redirect.FollowRedirect := True;
+  
+  Response := Session.Get;
+  
+  writeln('Url', Response.Request.Url);
+  writeln('Response code', Response.Header.ResponseCode);
+  writeln('Content-type', Response.Content.ContentType);
+  writeln('Content-size', Response.Content.ContentSize);
+  writeln('Content', Response.Content.ToString);
+end;
+```
+
