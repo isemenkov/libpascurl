@@ -48,6 +48,12 @@ type
 
     { Default protocol to use if the URL is missing a scheme name. }
     property Default;
+
+    { Enable CRLF conversion. }
+    property CRLFConversion;
+
+    { Do the download request without getting the body. }
+    property NoBody;
   end;
 
 implementation

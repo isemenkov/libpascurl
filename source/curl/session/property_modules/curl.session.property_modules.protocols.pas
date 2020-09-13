@@ -51,6 +51,12 @@ type
 
     { Default protocol to use if the URL is missing a scheme name. }
     procedure SetDefault (AProtocol : TProtocol);
+
+    { Enable CRLF conversion. }
+    procedure SetCRLFConversion (AEnable : Boolean);
+
+    { Do the download request without getting the body. }
+    procedure SetNoBody (AEnable : Boolean);
   protected
     { Set allowed protocols. 
       Pass a bitmask of TProtocol defines. If used, this bitmask limits what 
@@ -80,6 +86,16 @@ type
       An unknown or unsupported protocol causes error CURLE_UNSUPPORTED_PROTOCOL 
       when libcurl parses a schemeless URL. }
     property Default : TProtocol write SetDefault;
+
+    { Enable CRLF conversion.
+      If the value is set, libcurl converts Unix newlines to CRLF newlines on 
+      transfers. }
+    property CRLFConversion : Boolean write SetCRLFConversion;
+
+    { Do the download request without getting the body. 
+      Tells libcurl to not include the body-part in the output when doing what 
+      would otherwise be a download. }
+    property NoBody : Boolean write SetNoBody;
   end;
 
 implementation
@@ -167,6 +183,16 @@ begin
   end;
 
   Option(CURLOPT_DEFAULT_PROTOCOL, protocol);
+end;
+
+procedure TModuleProtocols.SetCRLFConversion (AEnable : Boolean);
+begin
+  Option(CURLOPT_CRLF, AEnable);
+end;
+
+procedure TModuleProtocols.SetNoBody (AEnable : Boolean);
+begin
+  Option(CURLOPT_NOBODY, AEnable);
 end;
 
 end.
