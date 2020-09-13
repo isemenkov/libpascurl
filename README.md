@@ -5,15 +5,21 @@ supporting HTTP, HTTPS, FTP, FTPS, GOPHER, TFTP, SCP, SFTP, SMB, TELNET, DICT, L
 
 Documentation you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
 
+
+
 ### Table of contents
 
 * [Requierements](#requirements)
 * [Installation](#installation)
 * [Usage](#usage)
+* [Testing](#testing)
+* [Examples](#examples)
 * [Bindings](#bindings)
-  * [Usage example](#usage_example)
-* [Object wrapper](#object_wrapper)
-  * [Usage example](#usage_example)
+  * [Usage example](#usage-example)
+* [Object wrapper](#object-wrapper)
+  * [Usage example](#usage-example-1)
+
+
 
 ### Requirements
 
@@ -23,13 +29,34 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
 Library is tested with latest stable FreePascal Compiler (currently 3.2.0) and Lazarus IDE (currently 2.0.10).
 
 
+
 ### Installation
 
 Get the sources and add the *source* directory to the *fpc.cfg* file.
 
+
+
 ### Usage
 
+Clone the repository `git clone https://github.com/isemenkov/libpascurl`.
+
 Add the unit you want to use to the `uses` clause.
+
+
+
+### Testing
+
+A testing framework consists of the following ingredients:
+1. Test runner project located in `unit-tests` directory.
+2. Test cases (FPCUnit based) for additional helpers classes.  
+
+
+
+### Examples
+1. [RemoteConnectCStyle](https://github.com/isemenkov/libpascurl/tree/master/examples/RemoteConnectCStyle) simple example for use cURL wrapper in C-Style to connect to remote host.
+2. [RemoteConnect](https://github.com/isemenkov/libpascurl/tree/master/examples/RemoteConnect) example how to use [curl.http.session.TSession](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/curl.http.session.pas) and [curl.http.response.TResponse](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/curl.http.response.pas) classes to connect to remote host.
+
+
 
 ### Bindings
 
@@ -92,60 +119,10 @@ Add the unit you want to use to the `uses` clause.
 
 
 
-### Object wrapper
 
-[pascurl.pas](https://github.com/isemenkov/libpascurl/blob/master/source/pascurl.pas) file contains the cURL object wrapper.
 
-#### Usage example
 
-```pascal
-  uses 
-    pascurl;
 
-  var
-    FSession : TSession;
-    FResponse : TResponse;
 
-    FProtocol : TSession.TProtocolProperty.TProtocol;
 
-  begin
-    FSession := TSession.Create;
 
-    FSession.Url := 'https://example.dev';
-    
-    FResponse := TResponse.Create(FSession);
-    if FResponse.Opened and not FResponse.HasErrors then
-    begin
-      
-      FProtocol := FSession.ExtractProtocol(FResponse.EffectiveUrl);
-      if FProtocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-      begin
-        writeln('Response code :', TSession.THTTPProperty.THTTPStatusCode(FResponse.ResponseCode));
-      end else if FProtocol in [PROTOCOL_FTP, PROTOCOL_FTPS] then
-      begin
-        writeln('Response code :', TSession.TFTPProperty.TFTPStatusCode(FResponse.ResponseCode));
-      end;
-    
-      if FProtocol in [PROTOCOL_HTTP, PROTOCOL_HTTPS] then
-      begin
-        writeln('HTTP version :', FResponse.HTTPVersion);
-      end; 
-
-      writeln('Url :',            FResponse.EffectiveUrl);
-      writeln('Redirect count :', FResponse.RedirectCount);
-      writeln('Redirect url :',   FResponse.RedirectUrl);
-      writeln('Request size :',   FResponse.RequestSize.ToString);
-      writeln('Header size :',    FResponse.HeaderSize.ToString);
-      writeln('Content size :',   FResponse.Downloaded.ToString);
-      writeln('Download speed :', FResponse.DownloadSpeed.ToString('/s'));
-      writeln('Total time :',     FResponse.TotalTime.ToString);
-
-      writeln(FResponse.Content); 
-
-      FreeAndNil(FResponse);
-      FreeAndNil(FSession);
-    end else
-      writeln(FResponse.ErrorMessage);
-  end;
-
-```
