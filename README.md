@@ -22,6 +22,7 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
     * [Session modules](#session-modules)
     * [Response modules](#response-modules)
   * [HTTP](#http)
+    * [Usage example](#usage-example-1)
 
 
 
@@ -163,6 +164,18 @@ Module class | Description
 #### HTTP
 
 [THTTPSession](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/curl.http.session.pas) and [THTTPResponse](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/curl.http.response.pas) classes implements wrapper about HTTP(S) protocol. This classes extends the functionality of base classes and provided new one that is specific only to this protocol.
+
+This wrapper used the next modules:
+Session modules | Response modules
+----------------|-----------------
+[x] TModuleDNS | [x] TModuleContent
+[x] TModuleHeader | [x] TModuleHeader
+[x] TModuleOptions | [x] TModuleRedirect
+[x] TModuleProtocols | [x] TModuleSpeed
+[x] TModuleSocket | [x] TModuleTimeout
+[x] TModuleTCP |  
+[x] TModuleWriter |  
+
 
 #### Usage example
 
