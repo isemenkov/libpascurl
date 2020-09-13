@@ -35,7 +35,7 @@ interface
 
 uses
   SysUtils, libpascurl, curl.utils.errors_stack, container.memorybuffer,
-  curl.session.property_module;
+  utils.datasize, curl.session.property_module;
 
 type
   TModuleWriter = class(TPropertyModule)
@@ -49,9 +49,16 @@ type
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
       ABuffer : PMemoryBuffer);
+  public
+    const
+      MIN_BUFFER_SIZE                                      = 1024;
+      MAX_BUFFER_SIZE                                      = CURL_MAX_READ_SIZE;
   protected
     FBuffer : PMemoryBuffer;
     FDownloadFunction : TDownloadFunction;
+
+    { Set preferred receive buffer size. }
+    procedure SetBufferSize (ASize : TDataSize);
   protected
     { Set callback for writing received data. 
       This callback function gets called by libcurl as soon as there is data 
@@ -59,6 +66,12 @@ type
       called many times and each invoke delivers another chunk of data. }
     property DownloadCallback : TDownloadFunction read FDownloadFunction
       write FDownloadFunction;
+
+    { Set preferred receive buffer size.
+      Specifying your preferred size (in bytes) for the receive buffer in 
+      libcurl. The maximum buffer size allowed to be set is MAX_BUFFER_SIZE. }
+    property BufferSize : TDataSize write SetBufferSize;
+
   private
     class function DownloadFunctionCallback (APtr : PChar; ASize : LongWord;
       ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
@@ -100,6 +113,19 @@ begin
   Move(APtr^, FBuffer^.GetAppendBuffer(ASize)^, ASize);
   FBuffer^.SetBufferDataSize(size + ASize);
   Result := ASize;
+end;
+
+procedure TModuleWriter.SetBufferSize (ASize : TDataSize);
+begin
+  if ASize.Bytes < MIN_BUFFER_SIZE then
+  begin
+    ASize.Bytes := MIN_BUFFER_SIZE;
+  end else if ASize.Bytes > MAX_BUFFER_SIZE then
+  begin
+    ASize.Bytes := MAX_BUFFER_SIZE;
+  end;
+
+  Option(CURLOPT_BUFFERSIZE, ASize.Bytes);
 end;
 
 end.
