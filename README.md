@@ -19,6 +19,8 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
 * [Object wrapper](#object-wrapper)
   * [Base functionality](#base-functionality)
   * [Property modules](#property-modules)
+    * [Session modules](#session-modules)
+    * [Response modules](#response-modules)
   * [HTTP](#http)
 
 
@@ -136,9 +138,10 @@ The library contains a set of classes for creating high-level wrappers around th
 
 #### Property modules
 
+##### Session modules
+
 Module class | Description
 -------------|------------
- | **Session modules** 
 [TModuleDNS](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.dns.pas)| Class provide properties to setup libCurl DNS options. 
 [TModuleHeader](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.header.pas)| Class provide properties to setup headers. Can be used only with HTTP-like protocols - HTTP(S), FTP(S), POP3(S), IMAP, SMTP. 
 [TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.options.pas)| Class provide properties to setup different libCurl internal options. 
@@ -146,7 +149,11 @@ Module class | Description
 [TModuleSocket](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.socket.pas)| Class provide properties to socket setup. 
 [TModuleTCP](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tcp.pas)| Class provide properties to setup TCP protocol options. 
 [TModuleWriter](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.writer.pas)| Class provide properties to setup download callback function. 
-| **Response modules** 
+
+##### Response modules
+
+Module class | Description
+-------------|------------
 [TModuleContent](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.content.pas)| Class provide properties to get content data buffer. 
 [TModuleHeader](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.header.pas)| Class provide properties to response headers. Can be used only with HTTP-like protocols - HTTP(S), FTP(S), POP3(S), IMAP, SMTP. 
 [TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.redirect.pas)| Class provide information about request redirects. 
