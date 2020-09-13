@@ -1,12 +1,35 @@
 libPasCURL
 ==========
-It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/). 
-libcurl is the library is using for transferring data specified with URL syntax,
+It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/). libcurl is the library is using for transferring data specified with URL syntax,
 supporting HTTP, HTTPS, FTP, FTPS, GOPHER, TFTP, SCP, SFTP, SMB, TELNET, DICT, LDAP, LDAPS, FILE, IMAP, SMTP, POP3, RTSP and RTMP.
 
 Documentation you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
 
-Project roadmap you can find at [trello.com](https://trello.com/b/4KeflAib/libpascurl).
+### Table of contents
+
+* [Requierements](#requirements)
+* [Installation](#installation)
+* [Usage](#usage)
+* [Bindings](#bindings)
+  * [Usage example](#usage_example)
+* [Object wrapper](#object_wrapper)
+  * [Usage example](#usage_example)
+
+### Requirements
+
+* [Free Pascal Compiler](http://freepascal.org)
+* [Lazarus IDE](http://www.lazarus.freepascal.org/) (optional)
+
+Library is tested with latest stable FreePascal Compiler (currently 3.2.0) and Lazarus IDE (currently 2.0.10).
+
+
+### Installation
+
+Get the sources and add the *source* directory to the *fpc.cfg* file.
+
+### Usage
+
+Add the unit you want to use to the `uses` clause.
 
 ### Bindings
 
@@ -66,6 +89,8 @@ Project roadmap you can find at [trello.com](https://trello.com/b/4KeflAib/libpa
 
   end;
 ```
+
+
 
 ### Object wrapper
 
