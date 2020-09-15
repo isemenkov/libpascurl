@@ -100,22 +100,22 @@ end;
 
 procedure TModuleTCP.SetNoDelay (AEnable : Boolean);
 begin
-  Option(CURLOPT_TCP_NODELAY);
+  Option(CURLOPT_TCP_NODELAY, AEnable);
 end;
 
 procedure TModuleTCP.SetKeepAlive (AEnable : Boolean);
 begin
-  Option(CURLOPT_TCP_KEEPALIVE);
+  Option(CURLOPT_TCP_KEEPALIVE, AEnable);
 end;
 
 procedure TModuleTCP.SetKeepAliveIdle (ATimeout : TTimeInterval);
 begin
-  Option(CURLOPT_TCP_KEEPIDLE, ATimeout.Seconds);
+  Option(CURLOPT_TCP_KEEPIDLE, Longint(ATimeout.Seconds));
 end;
 
 procedure TModuleTCP.SetKeepAliveInterval (ATimeout : TTimeInterval);
 begin
-  Option(CURLOPT_TCP_KEEPINTVL, ATimeout.Seconds);
+  Option(CURLOPT_TCP_KEEPINTVL, Longint(ATimeout.Seconds));
 end;
 
 end.

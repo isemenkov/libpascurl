@@ -47,6 +47,15 @@ type
 
     { Set an abstract Unix domain socket. }
     property AbstractUnixSocket;
+
+    { Set callback for setting socket options. }
+    property SocketCreatedFunction;
+
+    { Set callback for opening sockets. }
+    property OpenSocketFunction;
+
+    { Callback to socket close replacement function. }
+    property CloseSocketFunction;
   end;
 
 implementation

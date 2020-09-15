@@ -125,7 +125,7 @@ begin
     ASize.Bytes := MAX_BUFFER_SIZE;
   end;
 
-  Option(CURLOPT_BUFFERSIZE, ASize.Bytes);
+  Option(CURLOPT_BUFFERSIZE, Longint(ASize.Bytes));
 end;
 
 end.
