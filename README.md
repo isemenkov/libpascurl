@@ -186,15 +186,15 @@ Session modules | Response modules
 
 Module class | Description
 -------------|------------
-[TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.options.pas)| Class provide properties to setup http(s) only internal options.
-[TModuleRequest](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.request.pas)| Class provide properties to setup http(s) only request properties.
-[TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.redirect.pas)| Class provide properties to setup http(s) redirect options.
+[TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.options.pas)| Class provide properties to setup http(s) only internal options.
+[TModuleRequest](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.request.pas)| Class provide properties to setup http(s) only request properties.
+[TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.redirect.pas)| Class provide properties to setup http(s) redirect options.
 
 ##### Response modules
 
 Module class | Description
 -------------|------------
-[TModuleCookie](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.http.response.property_modules.cookie.pas)| Class provide cookies data.
+[TModuleCookie](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/property_modules/curl.http.response.property_modules.cookie.pas)| Class provide cookies data.
 
 #### Usage example
 
