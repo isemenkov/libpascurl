@@ -169,7 +169,7 @@ Module class | Description
 
 [THTTPSession](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/curl.http.session.pas) and [THTTPResponse](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/curl.http.response.pas) classes implements wrapper about HTTP(S) protocol. This classes extends the functionality of base classes and provided new one that is specific only to this protocol.
 
-This wrapper used the next main modules:
+This wrapper used or extends the next main modules:
 Session modules | Response modules
 ----------------|:-----------------
 :heavy_check_mark: TModuleDNS | :heavy_check_mark: TModuleContent
@@ -180,14 +180,11 @@ Session modules | Response modules
 :heavy_check_mark: TModuleTCP |  
 :heavy_check_mark: TModuleWriter |
 :heavy_check_mark: TModuleRequest |
-:heavy_check_mark: TModuleCookie |
 
 ##### Session modules
 
 Module class | Description
 -------------|------------
-[TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.options.pas)| Class provide properties to setup http(s) only internal options.
-[TModuleRequest](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.request.pas)| Class provide properties to setup http(s) only request properties.
 [TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.redirect.pas)| Class provide properties to setup http(s) redirect options.
 
 ##### Response modules
