@@ -50,11 +50,12 @@ type
     FErrorsStack : PErrorsStack;
   
     { Set CURL library option. }
-    function GetBooleanValue (ACURLInfo : CURLINFO) : Boolean;
-    function GetLongintValue (ACURLInfo : CURLINFO) : Longint;
+    function GetBooleanValue (ACURLInfo : CURLINFO) : Boolean; overload;
+    function GetLongintValue (ACURLInfo : CURLINFO) : Longint; overload;
     function GetInt64Value (AOldProp : CURLINFO; ANewProp : CURLINFO): QWord;
-    function GetStringValue (ACURLInfo : CURLINFO) : String;
-    //function GetPointerValue (ACURLInfo : CURLINFO) : Pointer;
+      overload;
+    function GetStringValue (ACURLInfo : CURLINFO) : String; overload;
+    function GetListValue (ACURLInfo : CURLINFO) : pcurl_slist; overload;
   end;
 
 implementation
@@ -121,6 +122,14 @@ begin
   end;
 
   FErrorsStack^.Push(curl_res);
+end;
+
+function TPropertyModule.GetListValue (ACURLInfo : CURLINFO) : pcurl_slist;
+var
+  list : pcurl_slist;
+begin
+  FErrorsStack^.Push(curl_easy_getinfo(FCURL, ACURLInfo, @list));
+  Result := list;
 end;
 
 end.

@@ -22,6 +22,8 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
     * [Session modules](#session-modules)
     * [Response modules](#response-modules)
   * [HTTP](#http)
+    * [Session modules](#session-modules-1)
+    * [Response modules](#response-modules-1)
     * [Usage example](#usage-example-1)
 
 
@@ -167,7 +169,7 @@ Module class | Description
 
 [THTTPSession](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/curl.http.session.pas) and [THTTPResponse](https://github.com/isemenkov/libpascurl/blob/master/source/http/response/curl.http.response.pas) classes implements wrapper about HTTP(S) protocol. This classes extends the functionality of base classes and provided new one that is specific only to this protocol.
 
-This wrapper used the next modules:
+This wrapper used the next main modules:
 Session modules | Response modules
 ----------------|:-----------------
 :heavy_check_mark: TModuleDNS | :heavy_check_mark: TModuleContent
@@ -180,6 +182,19 @@ Session modules | Response modules
 :heavy_check_mark: TModuleRequest |
 :heavy_check_mark: TModuleCookie |
 
+##### Session modules
+
+Module class | Description
+-------------|------------
+[TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.options.pas)| Class provide properties to setup http(s) only internal options.
+[TModuleRequest](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.request.pas)| Class provide properties to setup http(s) only request properties.
+[TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.http.session.property_modules.redirect.pas)| Class provide properties to setup http(s) redirect options.
+
+##### Response modules
+
+Module class | Description
+-------------|------------
+[TModuleCookie](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.http.response.property_modules.cookie.pas)| Class provide cookies data.
 
 #### Usage example
 

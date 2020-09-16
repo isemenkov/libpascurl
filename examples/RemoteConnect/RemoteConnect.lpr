@@ -62,13 +62,13 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'eahf';
-  LongOptions : array [1..28] of string = ('help', 'echo', 'all',
+  LongOptions : array [1..29] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
-    'redirect-time', 'headers', 'request-method', 'follow-redirect');
+    'redirect-time', 'headers', 'request-method', 'follow-redirect', 'cookies');
   StrValue : String;
 const
   COLUMN_SIZE = 40;
@@ -196,6 +196,17 @@ begin
       writeln('-=== Headers ===-');
 
       for StrValue in FResponse.HeadersList do
+      begin
+        writeln(StrValue);
+      end;
+    end;
+
+    if HasOption('cookies') then
+    begin
+      writeln;
+      writeln('-=== Cookies ===-');
+
+      for StrValue in FResponse.CookiesList do
       begin
         writeln(StrValue);
       end;

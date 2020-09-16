@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.cookies;
+unit curl.http.response.property_modules.cookie;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,79 +34,32 @@ unit curl.response.cookies;
 interface
 
 uses
-  curl.utils.errorstack, libpascurl;
+  SysUtils, libpascurl, curl.utils.errors_stack, curl.utils.cookies_list,
+  curl.response.property_module;
 
 type
-  { Get all known cookies }
-  TCookies = class    
-  private
-    constructor Create (ACurl : CURL; AErrors : PErrorStack);        
-  private
-    FCurl : CURL;
-    FErrors : PErrorStack;
-    FList : TCurlStringList;
-  end;
-  
-  TCookiesEnumeratorHelper = class helper for TCookies
-  public
+  TModuleCookie = class(TPropertyModule)
+  protected
     type
-      { Cookies enumerator }
-      TCookiesEnumerator = class
-      protected
-        
-        function GetCurrent : String;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-      public
-        constructor Create;
-        function MoveNext : Boolean;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        function GetEnumerator : TCookiesEnumerator;
-          {$IFNDEF DEBUG}inline;{$ENDIF}
-        property Current : String read GetCurrent;
-      end;
-    public
-      function GetEnumerator : TCookiesEnumerator;
-        {$IFNDEF DEBUG}inline;{$ENDIF}
+      PCookiesList = ^TCookiesList;
+  public
+    constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
+      ACookiesList : PCookiesList);
+  protected
+    FCookiesList : PCookiesList;
   end;
 
 implementation
 
-{ TCookies }
+{ TModuleCookie }
 
-constructor TCookies.Create (ACurl : CURL; AErrors : PErrorStack);
+constructor TModuleCookie.Create(ACURL : libpascurl.CURL; AErrorsStack :
+  PErrorsStack; ACookiesList : PCookiesList);
 begin
-  FCurl := ACurl;
-  FErrors := AErrors;
-end;
+  inherited Create(ACURL, AErrorsStack);
 
-{ TCookiesEnumeratorHelper.TCookiesEnumerator }
-
-constructor TCookiesEnumeratorHelper.TCookiesEnumerator.Create;
-begin
-  // TODO
-end;
-
-function TCookiesEnumeratorHelper.TCookiesEnumerator.GetCurrent : String;
-begin
-  // TODO
-end;
-
-function TCookiesEnumeratorHelper.TCookiesEnumerator.MoveNext : Boolean;
-begin
-  // TODO
-end;
-
-function TCookiesEnumeratorHelper.TCookiesEnumerator.GetEnumerator : 
-  TCookiesEnumerator;
-begin
-  Result := TCookiesEnumerator.Create;
-end;
-
-{ TCookiesEnumeratorHelper }
-
-function TCookiesEnumeratorHelper.GetEnumerator : TCookiesEnumerator;
-begin
-  Result := TCookiesEnumerator.Create;
+  FCookiesList := ACookiesList;
+  FCookiesList^.Append(GetListValue(CURLINFO_COOKIELIST));
 end;
 
 end.

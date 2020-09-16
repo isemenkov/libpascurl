@@ -35,21 +35,25 @@ interface
 
 uses
   SysUtils, libpascurl, curl.utils.errors_stack,  curl.response,
-  curl.utils.headers_list,
+  curl.utils.headers_list, curl.utils.cookies_list,
   curl.http.response.property_modules.content,
   curl.http.response.property_modules.timeout,
   curl.http.response.property_modules.redirect,
   curl.http.response.property_modules.header,
   curl.http.response.property_modules.speed,
-  curl.http.response.property_modules.request;
+  curl.http.response.property_modules.request,
+  curl.http.response.property_modules.cookie;
 
 type
   TResponse = class(curl.response.TResponse)
   public
     type
       PHeadersList = ^THeadersList;
+      PCookiesList = ^TCookiesList;
+
   protected
     FHeadersList : PHeadersList;
+    FCookiesList : TCookiesList;
 
     FContent : TModuleContent;
     FTimeout : TModuleTimeout;
@@ -57,9 +61,13 @@ type
     FHeader : TModuleHeader;
     FSpeed : TModuleSpeed;
     FRequest : TModuleRequest;
+    FCookies : TModuleCookie;
 
     { Get headers list. }
     function GetHeaders : THeadersList;
+
+    { Get cookies list. }
+    function GetCookies : TCookiesList;
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
       ABuffer : PMemoryBuffer; AHeadersList : PHeadersList);
@@ -70,6 +78,9 @@ type
 
     { Get headers list. }
     property HeadersList : THeadersList read GetHeaders;
+
+    { Get cookies list. }
+    property CookiesList : TCookiesList read GetCookies;
 
     { Get headers info. }
     property Header : TModuleHeader read FHeader;
@@ -88,6 +99,9 @@ type
 
     { Get request data. }
     property Request : TModuleRequest read FRequest;
+
+    { Get cookies data. }
+    property Cookies : TModuleCookie read FCookies;
   end;
 
 implementation
@@ -99,6 +113,7 @@ constructor TResponse.Create (ACURL : libpascurl.CURL; AErrorsStack :
 begin
   inherited Create(ACURL, AErrorsStack, ABuffer);
   FHeadersList := AHeadersList;
+  FCookiesList := TCookiesList.Create;
 
   FContent := TModuleContent.Create(Handle, ErrorsStorage, MemoryBuffer);
   FTimeout := TModuleTimeout.Create(Handle, ErrorsStorage);
@@ -106,6 +121,7 @@ begin
   FHeader := TModuleHeader.Create(Handle, ErrorsStorage);
   FSpeed := TModuleSpeed.Create(Handle, ErrorsStorage);
   FRequest := TModuleRequest.Create(Handle, ErrorsStorage);
+  FCookies := TModuleCookie.Create(Handle, ErrorsStorage, @FCookiesList);
 end;
 
 destructor TResponse.Destroy;
@@ -114,12 +130,23 @@ begin
   FreeAndNil(FTimeout);
   FreeAndNil(FRedirect);
   FreeAndNil(FHeader);
+  FreeAndNil(FSpeed);
+  FreeAndNil(FRequest);
+  FreeAndNil(FCookies);
+
+  FreeAndNil(FCookiesList);
+
   inherited Destroy;
 end;
 
 function TResponse.GetHeaders : THeadersList;
 begin
   Result := FHeadersList^;
+end;
+
+function TResponse.GetCookies : TCookiesList;
+begin
+  Result := FCookiesList;
 end;
 
 end.

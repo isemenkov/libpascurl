@@ -34,7 +34,7 @@ unit curl.utils.cookies_list;
 interface
 
 uses
-  SysUtils, container.arraylist, utils.functor, utils.pair;
+  SysUtils, libpascurl, container.arraylist, utils.functor, utils.pair;
 
 type
   TCookiesList = class
@@ -46,7 +46,10 @@ type
     destructor Destroy; override;
 
     { Append a cookie to the list. }
-    procedure Append (ACookie : String);
+    procedure Append (ACookie : String); overload;
+
+    { Append a curl library cookies list. }
+    procedure Append (ACookies : pcurl_slist); overload;
 
     { Remove all cookies from list. }
     procedure Clear;
@@ -120,6 +123,21 @@ end;
 procedure TCookiesList.Append (ACookie : String);
 begin
   FCookies.Append(ACookie);
+end;
+
+procedure TCookiesList.Append (ACookies : pcurl_slist);
+var
+  head : pcurl_slist;
+begin
+  head := ACookies;
+
+  while ACookies <> nil do
+  begin
+    Append(ACookies^.data);    
+    ACookies := ACookies^.next;
+  end;
+
+  curl_slist_free_all(head);
 end;
 
 procedure TCookiesList.Clear;
