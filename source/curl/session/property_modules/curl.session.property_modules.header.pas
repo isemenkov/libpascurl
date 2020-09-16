@@ -75,6 +75,7 @@ class function TModuleHeader.HeaderFunctionCallback (ABuffer : PByte; ASize :
 begin
   if Assigned(TModuleHeader(AData).FHeaderCallbackFunction) then
   begin
+    TModuleHeader(AData).HeaderFunction(ABuffer, ASize * ANitems);
     Result := TModuleHeader(AData).FHeaderCallbackFunction(ABuffer,
       ASize * ANitems);
   end else

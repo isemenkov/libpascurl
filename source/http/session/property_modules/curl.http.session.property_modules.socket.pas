@@ -49,13 +49,13 @@ type
     property AbstractUnixSocket;
 
     { Set callback for setting socket options. }
-    property SocketCreatedFunction;
+    property SocketCreatedCallback;
 
     { Set callback for opening sockets. }
-    property OpenSocketFunction;
+    property OpenSocketCallback;
 
     { Callback to socket close replacement function. }
-    property CloseSocketFunction;
+    property CloseSocketCallback;
   end;
 
 implementation

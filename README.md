@@ -143,7 +143,8 @@ The library contains a set of classes for creating high-level wrappers around th
 
 Module class | Description
 -------------|------------
-[TModuleDNS](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.dns.pas)| Class provide properties to setup libCurl DNS options. 
+[TModuleDNS](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.dns.pas)| Class provide properties to setup libCurl DNS options.
+[TModuleRequest](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.request.pas)| Class provide properties to setup request properties and callbacks.
 [TModuleHeader](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.header.pas)| Class provide properties to setup headers. Can be used only with HTTP-like protocols - HTTP(S), FTP(S), POP3(S), IMAP, SMTP. 
 [TModuleOptions](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.options.pas)| Class provide properties to setup different libCurl internal options. 
 [TModuleProtocols](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.protocols.pas)| Class provide properties to setup libCurl protocol options. 
@@ -174,8 +175,8 @@ Session modules | Response modules
 :heavy_check_mark: TModuleProtocols | :heavy_check_mark: TModuleSpeed
 :heavy_check_mark: TModuleSocket | :heavy_check_mark: TModuleTimeout
 :heavy_check_mark: TModuleTCP |  
-:heavy_check_mark: TModuleWriter |  
-
+:heavy_check_mark: TModuleWriter |
+:heavy_check_mark: TModuleRequest |
 
 
 #### Usage example

@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.request;
+unit curl.session.property_modules.request;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,53 +34,60 @@ unit curl.http.session.property_modules.request;
 interface
 
 uses
-  libpascurl, curl.session.property_modules.request, curl.http.request.method;
+  libpascurl, curl.session.property_module;
 
 type
-  TModuleRequest = class(curl.session.property_modules.request.TModuleRequest)
-  protected
-    { Set request method. }
-    procedure SetMethod (AMethod : TMethod);
-
-    { Set custom request method. }
-    procedure SetCustomMethod (AMethod : String);
+  TModuleRequest = class(TPropertyModule)
   public
-    { Set request method. }
-    property Method : TMethod write SetMethod;
-
-    { Set custom request method. }
-    property CustomMethod : String write SetCustomMethod;
+    type
+      TResolverStartFunction = function (resolver_state : Pointer) : Boolean
+        of object;
+  protected
+    FResolverFunction : TResolverStartFunction;
 
     { Set callback to be called before a new resolve request is started. }
-    property ResolverStartCallback;
+    procedure SetResolverStartFunction (ACallback : TResolverStartFunction);
+  protected
+    { Set callback to be called before a new resolve request is started.
+      This callback function gets called by libcurl every time before a new 
+      resolve request is started. 
+      resolver_state points to a backend-specific resolver state. Currently only 
+      the ares resolver backend has a resolver state. It can be used to set up 
+      any desired option on the ares channel before it's used, for example 
+      setting up socket callback options. }
+    property ResolverStartCallback : TResolverStartFunction 
+      read FResolverFunction write SetResolverStartFunction;
+
+  private
+    class function ResolverStartFunctionCallback (resolver_state : Pointer;
+      reserved : Pointer; userdata : Pointer) : Integer; static; cdecl;
   end;
 
 implementation
 
 { TModuleRequest }
 
-procedure TModuleRequest.SetMethod (AMethod : TMethod);
-var
-  method_str : String;
+class function TModuleRequest.ResolverStartFunctionCallback (resolver_state :
+  Pointer; reserved : Pointer; userdata : Pointer) : Integer; cdecl;
 begin
-  case AMethod of
-    GET     : begin method_str := 'GET';     end;
-    HEAD    : begin method_str := 'HEAD';    end;
-    POST    : begin method_str := 'POST';    end;
-    PUT     : begin method_str := 'PUT';     end;
-    DELETE  : begin method_str := 'DELETE';  end;
-    CONNECT : begin method_str := 'CONNECT'; end;
-    OPTIONS : begin method_str := 'OPTIONS'; end;
-    TRACE   : begin method_str := 'TRACE';   end;
-    PATCH   : begin method_str := 'PATCH';   end;
+  if Assigned(TModuleRequest(userdata).FResolverFunction) then
+  begin
+    Result := Longint(
+        not TModuleRequest(userdata).FResolverFunction(resolver_state));
+  end else
+  begin
+    Result := 1;
   end;
-
-  Option(CURLOPT_CUSTOMREQUEST, method_str);
 end;
 
-procedure TModuleRequest.SetCustomMethod (AMethod : String);
+procedure TModuleRequest.SetResolverStartFunction (ACallback : 
+  TResolverStartFunction);
 begin
-  Option(CURLOPT_CUSTOMREQUEST, AMethod);
+  FResolverFunction := ACallback;
+
+  Option(CURLOPT_RESOLVER_START_DATA, Pointer(Self));
+  Option(CURLOPT_RESOLVER_START_FUNCTION, 
+    @TModuleRequest.ResolverStartFunctionCallback);
 end;
 
 end.

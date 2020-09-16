@@ -71,6 +71,9 @@ type
         { Provide the URL to use in the request. }
         property Url;  
 
+        { Get request options. }
+        property Request : TModuleRequest read FRequest; 
+
         { Get download writer object. }
         property Download : TModuleWriter read FWriter;
 

@@ -128,7 +128,7 @@ type
       application to pass in an already connected socket with 
       TOpenSocketFunction and then have this function make libcurl not attempt 
       to connect (again). }
-    property SocketCreatedFunction : TSocketCreatedFunction 
+    property SocketCreatedCallback : TSocketCreatedFunction 
       read FSocketCreatedFunction write SetSocketCreatedFunction;
 
     { Set callback for opening sockets. 
@@ -145,7 +145,7 @@ type
       libcurl and it will return CURLE_COULDNT_CONNECT from the function that 
       triggered this callback. This return code can be used for IP address block 
       listing. }
-    property OpenSocketFunction : TOpenSocketFunction read FOpenSocketFunction
+    property OpenSocketCallback : TOpenSocketFunction read FOpenSocketFunction
       write SetSocketOpenFunction;
 
     { Callback to socket close replacement function.
@@ -153,7 +153,7 @@ type
       closesocket(3) call when sockets are closed (not for any other file 
       descriptors). This is pretty much the reverse to the OpenSocketFunction 
       option. Return True to signal success and False if there was an error. }
-    property CloseSocketFunction : TCloseSocketFunction 
+    property CloseSocketCallback : TCloseSocketFunction 
       read FCloseSocketFunction write SetSocketCloseFunction;
 
   private
