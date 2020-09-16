@@ -151,6 +151,7 @@ Module class | Description
 [TModuleSocket](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.socket.pas)| Class provide properties to socket setup. 
 [TModuleTCP](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tcp.pas)| Class provide properties to setup TCP protocol options. 
 [TModuleWriter](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.writer.pas)| Class provide properties to setup download callback function. 
+[TModuleCookie](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.cookie.pas)| Class provide properties to setup cookies. 
 
 ##### Response modules
 
@@ -177,6 +178,7 @@ Session modules | Response modules
 :heavy_check_mark: TModuleTCP |  
 :heavy_check_mark: TModuleWriter |
 :heavy_check_mark: TModuleRequest |
+:heavy_check_mark: TModuleCookie |
 
 
 #### Usage example
