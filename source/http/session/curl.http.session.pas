@@ -43,7 +43,8 @@ uses
   curl.http.session.property_modules.redirect,
   curl.http.session.property_modules.dns,
   curl.http.session.property_modules.tcp,
-  curl.http.session.property_modules.cookie;
+  curl.http.session.property_modules.cookie,
+  curl.http.session.property_modules.auth;
 
 type
   THTTP = class
@@ -63,6 +64,7 @@ type
         FDNS : TModuleDNS;
         FTCP : TModuleTCP;
         FCookie : TModuleCookie;
+        FAuth : TModuleAuth;
       public
         constructor Create;
         destructor Destroy; override; 
@@ -94,6 +96,9 @@ type
         { Set cookie properties. }
         property Cookie : TModuleCookie read FCookie;
 
+        { Set auth properties. }
+        property Auth : TModuleAuth read FAuth;
+
         { Send current request using GET method. }
         function Get : TResponse;
       end;
@@ -120,6 +125,7 @@ begin
   FDNS := TModuleDNS.Create(Handle, ErrorsStorage);
   FTCP := TModuleTCP.Create(Handle, ErrorsStorage);
   FCookie := TModuleCookie.Create(Handle, ErrorsStorage);
+  FAuth := TModuleAuth.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -138,6 +144,7 @@ begin
   FreeAndNil(FDNS);
   FreeAndNil(FTCP);
   FreeAndNil(FCookie);
+  FreeAndNil(FAuth);
 
   inherited Destroy;
 end;
