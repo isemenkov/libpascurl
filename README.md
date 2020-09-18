@@ -154,6 +154,7 @@ Module class | Description
 [TModuleTCP](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tcp.pas)| Class provide properties to setup TCP protocol options. 
 [TModuleWriter](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.writer.pas)| Class provide properties to setup download callback function. 
 [TModuleAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.auth.pas)| Class provide properties to setup auth options.  
+[TModuleTLSAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tls_auth.pas)| Class provide properties to setup TLS auth authentication options.  
 
 ##### Response modules
 
@@ -181,6 +182,7 @@ Session modules | Response modules
 :heavy_check_mark: TModuleWriter |
 :heavy_check_mark: TModuleRequest |
 :heavy_check_mark: TModuleAuth |
+:heavy_check_mark: TModuleTLSAuth |
 
 ##### Session modules
 
