@@ -34,7 +34,8 @@ unit curl.http.session;
 interface
 
 uses
-  SysUtils, curl.session, curl.http.response, curl.utils.headers_list,
+  SysUtils, libpascurl, curl.session, curl.http.response, 
+  curl.utils.headers_list,
   curl.http.session.property_modules.protocols, 
   curl.http.session.property_modules.writer,
   curl.http.session.property_modules.request,
@@ -67,6 +68,12 @@ type
         FCookie : TModuleCookie;
         FAuth : TModuleAuth;
         FTLSAuth : TModuleTLSAuth;
+
+        { Request failure on HTTP response >= 400. }
+        procedure SetFailOnError (AFail : Boolean);
+
+        { Keep sending on early HTTP response >= 300. }
+        procedure SetKeepSendingOnError (AKeepSending : Boolean);
       public
         constructor Create;
         destructor Destroy; override; 
@@ -76,6 +83,19 @@ type
 
         { Provide the URL to use in the request. }
         property Url;  
+
+        { Request failure on HTTP response >= 400.
+          Tells the library to fail the request if the HTTP code returned is 
+          equal to or larger than 400. The default action would be to return the 
+          page normally, ignoring that code. }
+        property FailOnError : Boolean write SetFailOnError default False;
+
+        { Keep sending on early HTTP response >= 300.
+          Tells the library to keep sending the request body if the HTTP code 
+          returned is equal to or larger than 300. The default action would be 
+          to stop sending and close the stream or connection. }
+        property KeepSendingOnError : Boolean write SetKeepSendingOnError
+          default False;
 
         { Get request options. }
         property Request : TModuleRequest read FRequest; 
@@ -161,6 +181,18 @@ begin
   FRequest.Method := TMethod.GET;
   Result := TResponse.Create(Handle, ErrorsStorage, MemoryBuffer, 
     @FHeadersList);
+end;
+
+procedure THTTP.TSession.SetFailOnError (AFail : Boolean);
+begin
+  FErrorsStack.Push(curl_easy_setopt(Handle, CURLOPT_FAILONERROR,
+    Longint(AFail)));
+end;
+
+procedure THTTP.TSession.SetKeepSendingOnError (AKeepSending : Boolean);
+begin
+  FErrorsStack.Push(curl_easy_setopt(Handle, CURLOPT_KEEP_SENDING_ON_ERROR,
+    Longint(AKeepSending)));
 end;
 
 end.

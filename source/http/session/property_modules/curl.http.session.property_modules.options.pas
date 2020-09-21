@@ -42,12 +42,46 @@ type
   TModuleOptions = class(curl.session.property_modules.options.TModuleOptions)
   protected
     FSocket : TModuleSocket;  
+
+    { Automatically update the referer header. }
+    procedure SetAutoReferer (AAutoRefer : Boolean);
+
+    { Ask for HTTP Transfer Encoding. }
+    procedure SetTransferEncoding (AEnable : Boolean);
+
+    { Set the HTTP referer header. }
+    procedure SetReferer (AReferer : String);
+
+    { Set HTTP user-agent header. }
+    procedure SetUserAgent (AUserAgent : String);
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
     destructor Destroy; override;
 
     { Do not handle dot dot sequences. }
     property PathAsIs;
+
+    { Automatically update the referer header.
+      When enabled, libcurl will automatically set the Referer: header field in 
+      HTTP requests where it follows a Location: redirect. }
+    property AutoReferer : Boolean write SetAutoReferer default False;
+
+    { Ask for HTTP Transfer Encoding.
+      Adds a request for compressed Transfer Encoding in the outgoing HTTP 
+      request. If the server supports this and so desires, it can respond with 
+      the HTTP response sent using a compressed Transfer-Encoding that will be 
+      automatically uncompressed by libcurl on reception. }
+    property TransferEncoding : Boolean write SetTransferEncoding default False;
+
+    { Set the HTTP referer header.
+      It will be used to set the Referer: header in the http request sent to the 
+      remote server. This can be used to fool servers or scripts. }
+    property Referer : String write SetReferer;
+
+    { Set HTTP user-agent header.
+      It will be used to set the User-Agent: header in the HTTP request sent to 
+      the remote server. This can be used to fool servers or scripts. }
+    property UserAgent : String write SetUserAgent;
 
     { Set socket options. }
     property Socket : TModuleSocket read FSocket;
@@ -68,6 +102,26 @@ destructor TModuleOptions.Destroy;
 begin
   FreeAndNil(FSocket);
   inherited Destroy;
+end;
+
+procedure TModuleOptions.SetAutoReferer (AAutoRefer : Boolean);
+begin
+  Option(CURLOPT_AUTOREFERER, AAutoRefer);
+end;
+
+procedure TModuleOptions.SetTransferEncoding (AEnable : Boolean);
+begin
+  Option(CURLOPT_TRANSFER_ENCODING, AEnable);
+end;
+
+procedure TModuleOptions.SetReferer (AReferer : String);
+begin
+  Option(CURLOPT_REFERER, AReferer);
+end;
+
+procedure TModuleOptions.SetUserAgent (AUserAgent : String);
+begin
+  Option(CURLOPT_USERAGENT, AUserAgent);
 end;
 
 end.

@@ -5,7 +5,7 @@ unit errorstacktestcase;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, curl.utils.errorstack, libpascurl;
+  Classes, SysUtils, fpcunit, testregistry, curl.utils.errorsstack, libpascurl;
 
 type
   { TErrorStackTestCase }

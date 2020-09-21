@@ -44,7 +44,7 @@ type
     procedure SetAuthMethod (AMethod : TTLSAuthMethod);
 
     { User name to use for TLS authentication. }
-    procedure SetUserName (AName : String;)
+    procedure SetUserName (AName : String);
 
     { Password to use for TLS authentication. }
     procedure SetPassword (APass : String);

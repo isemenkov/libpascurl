@@ -33,9 +33,6 @@ unit curl.http.auth_methods;
 
 interface
 
-uses
-  libpascurl;
-
 type
   TAuthMethod = (
     { HTTP Basic authentication. This is the default choice, and the only method 

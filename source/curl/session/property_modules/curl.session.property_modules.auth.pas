@@ -40,7 +40,7 @@ type
   TModuleAuth = class(TPropertyModule)
   protected
     { User name to use in authentication. }
-    procedure SetUserName (AName : String;)
+    procedure SetUserName (AName : String);
 
     { Password to use in authentication. }
     procedure SetPassword (APass : String);

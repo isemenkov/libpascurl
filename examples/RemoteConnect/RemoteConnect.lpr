@@ -62,13 +62,14 @@ var
   ErrorMsg: String;
   NonOptions : TStringList;
   ShortOptions : string = 'eahf';
-  LongOptions : array [1..29] of string = ('help', 'echo', 'all',
+  LongOptions : array [1..30] of string = ('help', 'echo', 'all',
     'effective-url', 'redirect-url', 'response-code', 'content-type',
     'primary-ip', 'local-ip', 'http-version', 'redirect-count', 'content-size',
     'header-size', 'request-size', 'download-speed', 'total-time',
     'name-lookup-time', 'connect-time', 'verify-ssl', 'num-connects',
     'destination-port', 'local-port', 'pretransfer-time', 'start-transfer-time',
-    'redirect-time', 'headers', 'request-method', 'follow-redirect', 'cookies');
+    'redirect-time', 'headers', 'request-method', 'follow-redirect', 'cookies',
+    'user-agent');
   StrValue : String;
 const
   COLUMN_SIZE = 40;
@@ -99,8 +100,10 @@ begin
   if HasOption('f', 'follow-redirect') then
     FSession.Redirect.FollowRedirects := True;
 
-  FResponse := FSession.Get;
+  if HasOption('user-agent') then
+    FSession.Options.UserAgent := GetOptionValue('user-agent');
 
+  FResponse := FSession.Get;
 
   //if FResponse.Ok and not FResponse.Value.HasErrors then
   begin
