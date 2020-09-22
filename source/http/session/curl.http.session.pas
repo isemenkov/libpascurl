@@ -46,7 +46,8 @@ uses
   curl.http.session.property_modules.tcp,
   curl.http.session.property_modules.cookie,
   curl.http.session.property_modules.auth,
-  curl.http.session.property_modules.tls_auth;
+  curl.http.session.property_modules.tls_auth,
+  curl.http.session.property_modules.http2;
 
 type
   THTTP = class
@@ -68,6 +69,7 @@ type
         FCookie : TModuleCookie;
         FAuth : TModuleAuth;
         FTLSAuth : TModuleTLSAuth;
+        FHTTP2 : TModuleHTTP2;
 
         { Request failure on HTTP response >= 400. }
         procedure SetFailOnError (AFail : Boolean);
@@ -124,6 +126,9 @@ type
         { Set TLS auth properties. }
         property TLSAuth : TModuleTLSAuth read FTLSAuth;
 
+        { Set HTTP/2 protocol properties. }
+        property HTTP2 : TModuleHTTP2 read FHTTP2;
+
         { Send current request using GET method. }
         function Get : TResponse;
       end;
@@ -152,6 +157,7 @@ begin
   FCookie := TModuleCookie.Create(Handle, ErrorsStorage);
   FAuth := TModuleAuth.Create(Handle, ErrorsStorage);
   FTLSAuth := TModuleTLSAuth.Create(Handle, ErrorsStorage);
+  FHTTP2 := TModuleHTTP2.Create(Handle, ErrorsStorage);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -172,6 +178,7 @@ begin
   FreeAndNil(FCookie);
   FreeAndNil(FAuth);
   FreeAndNil(FTLSAuth);
+  FreeAndNil(FHTTP2);
 
   inherited Destroy;
 end;

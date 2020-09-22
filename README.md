@@ -189,6 +189,8 @@ Session modules | Response modules
 Module class | Description
 -------------|------------
 [TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.redirect.pas)| Class provide properties to setup http(s) redirect options.
+[TModuleHTTP2](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.http2.pas)| Class provide properties to setup HTTP/2 protocol options.
+[TModuleTimeout](https://github.com/isemenkov/libpascurl/blob/master/source/http/session/property_modules/curl.http.session.property_modules.timeout.pas)| Class provide properties to setup http(s) protocol timeouts options.
 
 ##### Response modules
 
