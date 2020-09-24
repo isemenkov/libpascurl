@@ -34,7 +34,7 @@ unit curl.session.property_modules.proxy;
 interface
 
 uses
-  libpascurl, curl.session.property_module;
+  libpascurl, curl.session.property_module, curl.session.proxy_types;
 
 type
   TModuleProxy = class(TPropertyModule)
@@ -44,6 +44,12 @@ type
 
     { Port number the proxy listens on. }
     procedure SetPort (APort : Word);
+
+    { Proxy protocol type. }
+    procedure SetType (AType : TProxyType);
+
+    { Set pre-proxy to use. }
+    procedure SetPreProxy (AUrl : String);
   protected
     { Set proxy to use. 
       Set the proxy to use for the upcoming request. The parameter should be a 
@@ -79,6 +85,27 @@ type
       Pass the proxy port to connect to unless it is specified in the proxy URL 
       or uses 443 for https proxies and 1080 for all others as default. }
     property Port : Word write SetPort;
+
+    { Proxy protocol type. }
+    property ProxyType : TProxyType write SetType;
+
+    { Set pre-proxy to use.
+      Set the preproxy to use for the upcoming request. The parameter should be 
+      a string holding the host name or dotted numerical IP address. A numerical 
+      IPv6 address must be written within [brackets].
+      To specify port number in this string, append :[port] to the end of the 
+      host name.
+      A pre proxy is a SOCKS proxy that curl connects to before it connects to 
+      the HTTP(S) proxy specified in the CURLOPT_PROXY option. The pre proxy can 
+      only be a SOCKS proxy.
+      The pre proxy string should be prefixed with [scheme]:// to specify which 
+      kind of socks is used. Use socks4://, socks4a://, socks5:// or socks5h:// 
+      (the last one to enable socks5 and asking the proxy to do the resolving, 
+      also known as CURLPROXY_SOCKS5_HOSTNAME type) to request the specific 
+      SOCKS version to be used. Otherwise SOCKS4 is used as default.
+      Setting the pre proxy string to "" (an empty string) will explicitly 
+      disable the use of a pre proxy. }
+    property PreProxy : String write SetPreProxy;
   end;
 
 implementation
@@ -93,6 +120,29 @@ end;
 procedure TModuleProxy.SetPort (APort : Word);
 begin
   Option(CURLOPT_PROXYPORT, Longint(APort));
+end;
+
+procedure TModuleProxy.SetType (AType : TProxyType);
+var
+  proxy_type : Longint = 0;
+begin
+  case AType of
+    PROXY_TYPE_HTTP     : begin proxy_type := CURLPROXY_HTTP;     end;
+    PROXY_TYPE_HTTPS    : begin proxy_type := CURLPROXY_HTTPS;    end;
+    PROXY_TYPE_HTTP_1_0 : begin proxy_type := CURLPROXY_HTTP_1_0; end;
+    PROXY_TYPE_SOCKS4   : begin proxy_type := CURLPROXY_SOCKS4;   end;
+    PROXY_TYPE_SOCKS4A  : begin proxy_type := CURLPROXY_SOCKS4A;  end;
+    PROXY_TYPE_SOCK5    : begin proxy_type := CURLPROXY_SOCKS5;   end;
+    PROXY_TYPE_SOCKS5_HOSTNAME : begin proxy_type := CURLPROXY_SOCKS5_HOSTNAME;
+      end;
+  end;
+
+  Option(CURLOPT_PROXYTYPE, proxy_type);
+end;
+
+procedure TModuleProxy.SetPreProxy (AUrl : String);
+begin
+  Option(CURLOPT_PRE_PROXY, AUrl);
 end;
 
 end.

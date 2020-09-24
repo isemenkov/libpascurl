@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.proxy;
+unit curl.session.proxy_types;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -33,25 +33,31 @@ unit curl.http.session.property_modules.proxy;
 
 interface
 
-uses
-  libpascurl, curl.http.auth_methods, 
-  curl.session.property_modules.proxy;
-
 type
-  TModuleProxy = class(curl.session.property_modules.proxy.TModuleProxy)
-  public
-    { Set proxy to use. }
-    property Url;
+  TProxyType = (
+    { HTTP Proxy. Default. } 
+    PROXY_TYPE_HTTP,
 
-    { Port number the proxy listens on. }
-    property Port;
+    { HTTPS Proxy. }
+    PROXY_TYPE_HTTPS,
 
-    { Proxy protocol type. }
-    property ProxyType;
+    { HTTP 1.0 Proxy. This is very similar to CURLPROXY_HTTP except it uses 
+      HTTP/1.0 for any CONNECT tunnelling. It does not change the HTTP version 
+      of the actual HTTP requests. }
+    PROXY_TYPE_HTTP_1_0,
 
-    { Set pre-proxy to use. }
-    property PreProxy;
-  end;
+    { SOCKS4 Proxy. }
+    PROXY_TYPE_SOCKS4,
+
+    { SOCKS4a Proxy. Proxy resolves URL hostname. }
+    PROXY_TYPE_SOCKS4A,
+
+    { SOCKS5 Proxy. }
+    PROXY_TYPE_SOCK5,
+
+    { SOCKS5 Proxy. Proxy resolves URL hostname. }
+    PROXY_TYPE_SOCKS5_HOSTNAME
+  );
 
 implementation
 
