@@ -51,6 +51,9 @@ type
 
     { Set pre-proxy to use. }
     property PreProxy;
+
+    { Tunnel through HTTP proxy. }
+    property HTTPProxyTunnel : Boolean;
   end;
 
 implementation

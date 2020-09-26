@@ -50,6 +50,9 @@ type
 
     { Set pre-proxy to use. }
     procedure SetPreProxy (AUrl : String);
+
+    { Tunnel through HTTP proxy. }
+    procedure SetHTTPProxyTunnel (AEnable : Boolean);
   protected
     { Set proxy to use. 
       Set the proxy to use for the upcoming request. The parameter should be a 
@@ -106,6 +109,23 @@ type
       Setting the pre proxy string to "" (an empty string) will explicitly 
       disable the use of a pre proxy. }
     property PreProxy : String write SetPreProxy;
+
+    { Tunnel through HTTP proxy. 
+      Set the tunnel parameter to True to make libcurl tunnel all operations 
+      through the HTTP proxy (set with Url). There is a big difference between 
+      using a proxy and to tunnel through it.
+      Tunneling means that an HTTP CONNECT request is sent to the proxy, asking 
+      it to connect to a remote host on a specific port number and then the 
+      traffic is just passed through the proxy. Proxies tend to white-list 
+      specific port numbers it allows CONNECT requests to and often only port 80 
+      and 443 are allowed.
+      HTTP proxies can generally only speak HTTP (for obvious reasons), which 
+      makes libcurl convert non-HTTP requests to HTTP when using an HTTP proxy 
+      without this tunnel option set. For example, asking for an FTP URL and
+      specifying an HTTP proxy will make libcurl send an FTP URL in an HTTP GET 
+      request to the proxy. By instead tunneling through the proxy, you avoid 
+      that conversion (that rarely works through the proxy anyway). }
+    property HTTPProxyTunnel : Boolean write SetHTTPProxyTunnel default False;
   end;
 
 implementation
@@ -143,6 +163,11 @@ end;
 procedure TModuleProxy.SetPreProxy (AUrl : String);
 begin
   Option(CURLOPT_PRE_PROXY, AUrl);
+end;
+
+procedure TModuleProxy.SetHTTPProxyTunnel (AEnable : Boolean);
+begin
+  Option(CURLOPT_HTTPPROXYTUNNEL, AEnable);
 end;
 
 end.
