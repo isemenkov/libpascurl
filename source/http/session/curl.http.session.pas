@@ -48,7 +48,8 @@ uses
   curl.http.session.property_modules.auth,
   curl.http.session.property_modules.tls_auth,
   curl.http.session.property_modules.http2,
-  curl.http.session.property_modules.proxy;
+  curl.http.session.property_modules.proxy,
+  curl.http.session.property_modules.reader;
 
 type
   THTTP = class
@@ -72,6 +73,7 @@ type
         FTLSAuth : TModuleTLSAuth;
         FHTTP2 : TModuleHTTP2;
         FProxy : TModuleProxy;
+        FReader : TModuleReader;
 
         { Request failure on HTTP response >= 400. }
         procedure SetFailOnError (AFail : Boolean);
@@ -106,6 +108,9 @@ type
 
         { Get download writer object. }
         property Download : TModuleWriter read FWriter;
+
+        { Get upload reader object. }
+        property Upload : TModuleReader read FReader;
 
         { Set options. }
         property Options : TModuleOptions read FOptions;
@@ -164,6 +169,7 @@ begin
   FTLSAuth := TModuleTLSAuth.Create(Handle, ErrorsStorage);
   FHTTP2 := TModuleHTTP2.Create(Handle, ErrorsStorage);
   FProxy := TModuleProxy.Create(Handle, ErrorsStorage);
+  FReader := TModuleReader.Create(Handle, ErrorsStorage, MemoryBuffer);
   
   FProtocols.Allowed := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
   FProtocols.AllowedRedirects := [PROTOCOL_HTTP, PROTOCOL_HTTPS];
@@ -186,6 +192,7 @@ begin
   FreeAndNil(FTLSAuth);
   FreeAndNil(FHTTP2);
   FreeAndNil(FProxy);
+  FreeAndNil(FReader);
 
   inherited Destroy;
 end;
@@ -193,6 +200,8 @@ end;
 function THTTP.TSession.Get : TResponse;
 begin
   FRequest.Method := TMethod.GET;
+  FReader.InitUpload;
+  
   Result := TResponse.Create(Handle, ErrorsStorage, MemoryBuffer, 
     @FHeadersList);
 end;

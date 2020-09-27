@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.http.session.property_modules.proxy;
+unit curl.http.session.property_modules.reader;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,25 +34,16 @@ unit curl.http.session.property_modules.proxy;
 interface
 
 uses
-  curl.session.property_modules.proxy;
+  curl.session.property_modules.reader;
 
 type
-  TModuleProxy = class(curl.session.property_modules.proxy.TModuleProxy)
+  TModuleReader = class(curl.session.property_modules.reader.TModuleReader)
   public
-    { Set proxy to use. }
-    property Url;
+    { Set preferred receive buffer size. }
+    property BufferSize;
 
-    { Port number the proxy listens on. }
-    property Port;
-
-    { Proxy protocol type. }
-    property ProxyType;
-
-    { Set pre-proxy to use. }
-    property PreProxy;
-
-    { Tunnel through HTTP proxy. }
-    property HTTPProxyTunnel;
+    { Read callback for data uploads. }
+    property UploadCallback;
   end;
 
 implementation

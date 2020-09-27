@@ -153,6 +153,7 @@ Module class | Description
 [TModuleSocket](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.socket.pas)| Class provide properties to socket setup. 
 [TModuleTCP](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tcp.pas)| Class provide properties to setup TCP protocol options. 
 [TModuleWriter](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.writer.pas)| Class provide properties to setup download callback function. 
+[TModuleReader](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.reader.pas)| Class provide properties to setup upload callback function.
 [TModuleAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.auth.pas)| Class provide properties to setup auth options.  
 [TModuleTLSAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tls_auth.pas)| Class provide properties to setup TLS auth authentication options.  
 [TModuleProxy](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.proxy.pas)| Class provide properties to setup proxy options. 
@@ -181,6 +182,7 @@ Session modules | Response modules
 :heavy_check_mark: TModuleSocket | :heavy_check_mark: TModuleTimeout
 :heavy_check_mark: TModuleTCP |  
 :heavy_check_mark: TModuleWriter |
+:heavy_check_mark: TModuleReader |
 :heavy_check_mark: TModuleRequest |
 :heavy_check_mark: TModuleAuth |
 :heavy_check_mark: TModuleTLSAuth |

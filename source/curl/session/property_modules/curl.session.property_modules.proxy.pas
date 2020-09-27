@@ -147,14 +147,15 @@ var
   proxy_type : Longint = 0;
 begin
   case AType of
-    PROXY_TYPE_HTTP     : begin proxy_type := CURLPROXY_HTTP;     end;
-    PROXY_TYPE_HTTPS    : begin proxy_type := CURLPROXY_HTTPS;    end;
-    PROXY_TYPE_HTTP_1_0 : begin proxy_type := CURLPROXY_HTTP_1_0; end;
-    PROXY_TYPE_SOCKS4   : begin proxy_type := CURLPROXY_SOCKS4;   end;
-    PROXY_TYPE_SOCKS4A  : begin proxy_type := CURLPROXY_SOCKS4A;  end;
-    PROXY_TYPE_SOCK5    : begin proxy_type := CURLPROXY_SOCKS5;   end;
-    PROXY_TYPE_SOCKS5_HOSTNAME : begin proxy_type := CURLPROXY_SOCKS5_HOSTNAME;
-      end;
+    PROXY_TYPE_HTTP     : begin proxy_type := Longint(CURLPROXY_HTTP);     end;
+    PROXY_TYPE_HTTPS    : begin proxy_type := Longint(CURLPROXY_HTTPS);    end;
+    PROXY_TYPE_HTTP_1_0 : begin proxy_type := Longint(CURLPROXY_HTTP_1_0); end;
+    PROXY_TYPE_SOCKS4   : begin proxy_type := Longint(CURLPROXY_SOCKS4);   end;
+    PROXY_TYPE_SOCKS4A  : begin proxy_type := Longint(CURLPROXY_SOCKS4A);  end;
+    PROXY_TYPE_SOCK5    : begin proxy_type := Longint(CURLPROXY_SOCKS5);   end;
+    PROXY_TYPE_SOCKS5_HOSTNAME : begin
+      proxy_type := Longint(CURLPROXY_SOCKS5_HOSTNAME);
+    end;
   end;
 
   Option(CURLOPT_PROXYTYPE, proxy_type);
