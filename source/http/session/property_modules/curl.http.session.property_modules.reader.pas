@@ -44,6 +44,9 @@ type
 
     { Read callback for data uploads. }
     property UploadCallback;
+
+    { Callback for seeking in input stream. }
+    property SeekCallback;
   end;
 
 implementation

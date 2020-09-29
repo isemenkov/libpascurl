@@ -43,9 +43,27 @@ type
     type
       PMemoryBuffer = ^TMemoryBuffer;
 
+      { Seek callback result. }
+      TSeekResult = (
+        SEEK_OK                                                         = 0,
+        SEEK_FAIL,
+        SEEK_CANTSEEK
+      );
+
+      { Seek position. }
+      TSeekPosition = (
+        FROM_BEGIN                                                      = 0,
+        FROM_CURRENT,
+        FROM_END
+      );
+
       { Set callback for reading uploading data. }
       TUploadFunction = function (ABuffer : PChar; ASize : LongWord) :
         LongWord of object;
+
+      { Set callback for seek uploading data buffer. }
+      TSeekFunction = function (AOffset : LongWord; APosition : TSeekPosition) : 
+        TSeekResult;
   public
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack;
         ABuffer : PMemoryBuffer);
@@ -60,6 +78,7 @@ type
     FBuffer : PMemoryBuffer; 
     FBufferOffset : LongWord;
     FUploadFunction : TUploadFunction;
+    FSeekFunction : TSeekFunction;
 
     { Set preferred receive buffer size. }
     procedure SetBufferSize (ASize : TDataSize);
@@ -77,10 +96,26 @@ type
       bytes by your function. }
     property UploadCallback : TUploadFunction read FUploadFunction
       write FUploadFunction;
+
+    { Callback for seeking in input stream.
+      This function gets called by libcurl to seek to a certain position in the 
+      input stream and can be used to fast forward a file in a resumed upload 
+      (instead of reading all uploaded bytes with the normal read 
+      function/callback). It is also called to rewind a stream when data has 
+      already been sent to the server and needs to be sent again. This may 
+      happen when doing an HTTP PUT or POST with a multi-pass authentication 
+      method, or when an existing HTTP connection is reused too late and the 
+      server closes the connection. }
+    property SeekCallback : TSeekFunction read FSeekFunction
+      write FSeekFunction;
   private
     class function UploadFunctionCallback (APtr : PChar; ASize : LongWord;
         ANmemb : LongWord; AData : Pointer) : LongWord; static; cdecl;
+    class function SeekFunctionCallback (APtr : Pointer; AOffset : LongWord;
+      AOrigin : Integer) : Integer; static; cdecl;
     function UploadFunction (APtr : PChar; ASize : LongWord) : LongWord; 
+    function SeekFunction (AOffset : LongWord; APosition : TSeekPosition) : 
+      TSeekResult;
   end;
 
 implementation
@@ -99,6 +134,20 @@ begin
   end;
 end;
 
+class function TModuleReader.SeekFunctionCallback (APtr : Pointer; AOffset :
+  LongWord; AOrigin : Integer) : Integer; cdecl;
+begin
+  if Assigned(TModuleReader(APtr).FSeekFunction) then
+  begin
+    Result := Integer(TModuleReader(APtr).FSeekFunction(AOffset, 
+      TSeekPosition(AOrigin)));
+  end else 
+  begin
+    Result := Integer(TModuleReader(APtr).SeekFunction(AOffset, 
+      TSeekPosition(AOrigin)));
+  end;
+end;
+
 constructor TModuleReader.Create (ACURL : libpascurl.CURL; AErrorsStack :
     PErrorsStack; ABuffer : PMemoryBuffer);
 begin
@@ -109,6 +158,8 @@ begin
   Option(CURLOPT_UPLOAD, True);
   Option(CURLOPT_READDATA, Pointer(Self));
   Option(CURLOPT_READFUNCTION, @TModuleReader.UploadFunctionCallback);
+  Option(CURLOPT_SEEKDATA, Pointer(Self));
+  Option(CURLOPT_SEEKFUNCTION, @TModuleReader.SeekFunctionCallback);
 end;
 
 function TModuleReader.UploadFunction (APtr : PChar; ASize : LongWord) :
@@ -122,6 +173,18 @@ begin
     Move(FBuffer^.GetBufferData, APtr, size);
   end;
   Result := size;
+end;
+
+function TModuleReader.SeekFunction (AOffset : LongWord; APosition : 
+  TSeekPosition) : TSeekResult;
+begin
+  case APosition of
+    FROM_BEGIN :   begin FBufferOffset := AOffset; end;
+    FROM_CURRENT : begin Inc(FBufferOffset, AOffset); end;
+    FROM_END :     begin FBufferOffset := FBuffer^.GetBufferDataSize - AOffset;
+      end;
+  end;
+  Result := SEEK_OK;
 end;
 
 procedure TModuleReader.SetBufferSize (ASize : TDataSize);
