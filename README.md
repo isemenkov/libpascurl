@@ -157,6 +157,7 @@ Module class | Description
 [TModuleAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.auth.pas)| Class provide properties to setup auth options.  
 [TModuleTLSAuth](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.tls_auth.pas)| Class provide properties to setup TLS auth authentication options.  
 [TModuleProxy](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.proxy.pas)| Class provide properties to setup proxy options. 
+[TModuleSock5](https://github.com/isemenkov/libpascurl/blob/master/source/curl/session/property_modules/curl.session.property_modules.sock5.pas)| Class provide properties to setup sock5 proxy options.
 
 ##### Response modules
 
@@ -187,6 +188,7 @@ Session modules | Response modules
 :heavy_check_mark: TModuleAuth |
 :heavy_check_mark: TModuleTLSAuth |
 :heavy_check_mark: TModuleProxy |
+:heavy_check_mark: TModuleSock5 |
 
 ##### Session modules
 
