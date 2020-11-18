@@ -24,7 +24,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-unit curl.response.info;
+unit curl.response.property_modules.info;
 
 {$mode objfpc}{$H+}
 {$IFOPT D+}
@@ -34,124 +34,97 @@ unit curl.response.info;
 interface
 
 uses
-  curl.utils.errorstack, libpascurl;
+  libpascurl, utils.timeinterval, 
+  curl.response.property_module;
 
 type
-  { Additional response information }
-  TInfo = class
-  public
+  TModuleInfo = class(TPropertyModule)
+  protected
     { Get number of created connections }
-    function ConnectionsCount : Cardinal;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetConnectionsCount : Cardinal;
 
     { Get IP address of last connection }
-    function ConnectedIP : String;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetConnectedIP : String;
 
     { Get the latest destination port number }
-    function ConnectedPort : Word;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetConnectedPort : Word;
 
     { Get local IP address of last connection }
-    function LocalIP : String;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetLocalIP : String;
 
     { Get the latest local port number }
-    function LocalPort : Word;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetLocalPort : Word;
 
     { Get the last socket used
     If the socket is no longer valid, -1 is returned. }
-    function LastSocket : curl_socket_t;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetLastSocket : curl_socket_t;
 
     { Get the active socket }
-    function ActiveSocket : curl_socket_t;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
+    function GetActiveSocket : curl_socket_t;
+  protected
+    { Receive how many new connections libcurl had to create to achieve the 
+      previous transfer. }
+    property ConnectionsCount : Cardinal read GetConnectionsCount;
 
-    { Get private pointer }
-    function UserData : Pointer;
-      {$IFNDEF DEBUG}inline;{$ENDIF}
-  private
-    constructor Create (ACurl : CURL; AErrors : PErrorStack);
-  private
-    FCurl : CURL;
-    FErrors : PErrorStack;
+    { Receive the IP address of the recent connection done. }
+    property ConnectedIP : String read GetConnectedIP;
+
+    { Receive the destination port of the recent connection done. }
+    property ConnectedPort : Word read GetConnectedPort;
+
+    { Receive the string holding the IP address of the local end of recent 
+      connection done. }
+    property LocalIP : String read GetLocalIP;
+
+    { Receive the local port number of the recent connection done. }
+    property LocalPort : Word read GetLocalPort;
+
+    { Receive the last socket used by this session. If the socket is no longer 
+      valid, -1 is returned. }
+    property LastSocket : curl_socket_t read GetLastSocket;
+
+    { Receive the recently active socket used for the transfer connection by 
+      this session. If the socket is no longer valid, -1 is returned. }
+    property ActiveSocket : curl_socket_t  read GetActiveSocket;
   end;
 
 implementation
 
-{ THTTPResponse.TInfo }
+{ TModuleInfo }
 
-constructor TInfo.Create (ACurl : CURL; AErrors : PErrorStack);
+function TModuleInfo.GetConnectionsCount : Cardinal;
 begin
-  FCurl := ACurl;
-  FErrors := AErrors;
+  Result := GetLongintValue(CURLINFO_NUM_CONNECTS);
 end;
 
-function TInfo.ConnectionsCount : Cardinal;
-var
-  count : Longint;
+function TModuleInfo.GetConnectedIP : String;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_NUM_CONNECTS, @count));
-  Result := count;
+  Result := GetStringValue(CURLINFO_PRIMARY_IP);
 end;
 
-function TInfo.ConnectedIP : String;
-var
-  ip : PChar;
+function TModuleInfo.GetConnectedPort : Word;
 begin
-  New(ip);
-  ip := '';
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIMARY_IP, @ip));
-  Result := ip;
+  Result := GetLongintValue(CURLINFO_PRIMARY_PORT);
 end;
 
-function TInfo.ConnectedPort : Word;
-var
-  port : Longint;
+function TModuleInfo.GetLocalIP : String;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIMARY_PORT, @port));
-  Result := port;
+  Result := GetStringValue(CURLINFO_LOCAL_IP);
 end;
 
-function TInfo.LocalIP : String;
-var
-  ip : PChar;
+function TModuleInfo.GetLocalPort : Word;
 begin
-  New(ip);
-  ip := '';
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LOCAL_IP, @ip));
-  Result := ip;
+  Result := GetLongintValue(CURLINFO_LOCAL_PORT);
 end;
 
-function TInfo.LocalPort : Word;
-var
-  port : Longint;
+function TModuleInfo.GetLastSocket : curl_socket_t;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LOCAL_PORT, @port));
-  Result := port;
+  Result := curl_socket_t(GetLongintValue(CURLINFO_LASTSOCKET));
 end;
 
-function TInfo.LastSocket : curl_socket_t;
+function TModuleInfo.GetActiveSocket : curl_socket_t;
 begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_LASTSOCKET, @Result));
-end;
-
-function TInfo.ActiveSocket : curl_socket_t;
-begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_ACTIVESOCKET, @Result));
-end;
-
-function TInfo.UserData : Pointer;
-var
-  data : PPChar = nil;
-begin
-  FErrors^.Push(curl_easy_getinfo(FCurl, CURLINFO_PRIVATE, data));
-  if data <> nil then
-    Result := data^
-  else
-    Result := nil;
+  Result := curl_socket_t(GetLongintValue(CURLINFO_ACTIVESOCKET));
 end;
 
 end.

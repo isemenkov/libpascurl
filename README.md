@@ -168,6 +168,7 @@ Module class | Description
 [TModuleRedirect](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.redirect.pas)| Class provide information about request redirects. 
 [TModuleSpeed](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.speed.pas)| Class provide speed download/upload information. 
 [TModuleTimeout](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.timeout.pas)| Class provide timeouts information. 
+[TModuleInfo](https://github.com/isemenkov/libpascurl/blob/master/source/curl/response/property_modules/curl.response.property_modules.info.pas)| Class provide session information. 
 
 #### HTTP
 
@@ -181,7 +182,7 @@ Session modules | Response modules
 :heavy_check_mark: TModuleOptions | :heavy_check_mark: TModuleRedirect
 :heavy_check_mark: TModuleProtocols | :heavy_check_mark: TModuleSpeed
 :heavy_check_mark: TModuleSocket | :heavy_check_mark: TModuleTimeout
-:heavy_check_mark: TModuleTCP |  
+:heavy_check_mark: TModuleTCP | :heavy_check_mark: TModuleInfo 
 :heavy_check_mark: TModuleWriter |
 :heavy_check_mark: TModuleReader |
 :heavy_check_mark: TModuleRequest |
