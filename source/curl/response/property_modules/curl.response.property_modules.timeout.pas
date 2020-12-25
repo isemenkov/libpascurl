@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.response.property_modules.timeout;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -34,8 +36,7 @@ unit curl.response.property_modules.timeout;
 interface
 
 uses
-  libpascurl, utils.timeinterval, 
-  curl.response.property_module;
+  libpascurl, utils.timeinterval, curl.response.property_module;
 
 type
   TModuleTimeout = class(TPropertyModule)

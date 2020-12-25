@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.http.response.property_modules.request;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -75,19 +77,27 @@ var
   method_str : String;
 begin
   method_str := GetStringValue(CURLINFO_EFFECTIVE_METHOD);
-  case UpperCase(method_str) of
-    'GET'     : begin Result := TMethod.GET;     end;
-    'HEAD'    : begin Result := TMethod.HEAD;    end;
-    'POST'    : begin Result := TMethod.POST;    end;
-    'PUT'     : begin Result := TMethod.PUT;     end;
-    'DELETE'  : begin Result := TMethod.DELETE;  end;
-    'CONNECT' : begin Result := TMethod.CONNECT; end;
-    'OPTIONS' : begin Result := TMethod.OPTIONS; end;
-    'TRACE'   : begin Result := TMethod.TRACE;   end;
-    'PATCH'   : begin Result := TMethod.PATCH;   end;
+
+  if UpperCase(method_str) = 'GET' then
+    Result := TMethod.GET
+  else if UpperCase(method_str) = 'HEAD' then
+    Result := TMethod.HEAD
+  else if UpperCase(method_str) = 'POST' then
+    Result := TMethod.POST
+  else if UpperCase(method_str) = 'PUT' then
+    Result := TMethod.PUT
+  else if UpperCase(method_str) = 'DELETE' then
+    Result := TMethod.DELETE
+  else if UpperCase(method_str) = 'CONNECT' then
+    Result := TMethod.CONNECT
+  else if UpperCase(method_str) = 'OPTIONS' then
+    Result := TMethod.OPTIONS
+  else if UpperCase(method_str) = 'TRACE' then
+    Result := TMethod.TRACE
+  else if UpperCase(method_str) = 'PATCH' then
+    Result := TMethod.PATCH
   else
     Result := TMethod.CUSTOM;
-  end; 
 end;
 
 function TModuleRequest.GetUrl : String;

@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.session.property_modules.header;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -99,8 +101,10 @@ function TModuleHeader.HeaderFunction (ABuffer : PByte; ASize : LongWord) :
 var
   Index : Integer;
   Letter : Char;
-  HeaderStr : String = '';
+  HeaderStr : String;
 begin
+  HeaderStr := '';
+
   for index := 0 to ASize do
   begin
     if (ABuffer[index] >= 32) and (ABuffer[index] <= 127) then

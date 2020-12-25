@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.session.property_modules.reader;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -41,8 +43,6 @@ type
   TModuleReader = class(TPropertyModule)
   public
     type
-      PMemoryBuffer = ^TMemoryBuffer;
-
       { Seek callback result. }
       TSeekResult = (
         SEEK_OK                                                         = 0,
@@ -166,11 +166,13 @@ function TModuleReader.UploadFunction (APtr : PChar; ASize : LongWord) :
     LongWord;
 var
   size : LongWord;
+  dataptr : Pointer;
 begin
   size := FBuffer^.GetBufferDataSize - FBufferOffset;
   if size > 0 then
   begin
-    Move(FBuffer^.GetBufferData, APtr, size);
+    dataptr := FBuffer^.GetBufferData;
+    Move(dataptr, APtr, size);
   end;
   Result := size;
 end;

@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.response.property_module;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -34,11 +36,14 @@ unit curl.response.property_module;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack, math;
+  libpascurl, curl.utils.errors_stack, math, container.memorybuffer;
 
 type
   { Base class for all curl.response property modules classes. }
   TPropertyModule = class
+  public
+    type
+      PMemoryBuffer = ^TMemoryBuffer;
   public
     { Property module constructor. }
     constructor Create (ACURL : libpascurl.CURL; AErrorsStack : PErrorsStack);
@@ -52,7 +57,7 @@ type
     { Set CURL library option. }
     function GetBooleanValue (ACURLInfo : CURLINFO) : Boolean; overload;
     function GetLongintValue (ACURLInfo : CURLINFO) : Longint; overload;
-    function GetInt64Value (AOldProp : CURLINFO; ANewProp : CURLINFO): QWord;
+    function GetInt64Value (AOldProp : CURLINFO; ANewProp : CURLINFO): Int64;
       overload;
     function GetStringValue (ACURLInfo : CURLINFO) : String; overload;
     function GetListValue (ACURLInfo : CURLINFO) : pcurl_slist; overload;
@@ -71,8 +76,9 @@ end;
 
 function TPropertyModule.GetLongintValue (ACURLInfo : CURLINFO) : Longint;
 var
-  res : Longint = 0;
+  res : Longint;
 begin
+  res := 0;
   FErrorsStack^.Push(curl_easy_getinfo(FCURL, ACURLInfo, @Res));
   Result := res;
 end;
@@ -96,9 +102,9 @@ begin
 end;
 
 function TPropertyModule.GetInt64Value (AOldProp : CURLINFO; ANewProp : 
-  CURLINFO) : QWord;
+  CURLINFO) : Int64;
 
-  function ResultValue (AValue : Longint) : QWord;
+  function ResultValue (AValue : Longint) : Int64;
   begin
     if AValue >= 0 then
     begin
@@ -108,10 +114,13 @@ function TPropertyModule.GetInt64Value (AOldProp : CURLINFO; ANewProp :
   end;
 
 var
-  size : curl_off_t = 0;
-  dsize : Double = 0;
+  size : curl_off_t;
+  dsize : Double;
   curl_res : CURLcode;
 begin
+  size := 0;
+  dsize := 0;
+
   curl_res := curl_easy_getinfo(FCURL, ANewProp, @size);
   Result := ResultValue(size);
 

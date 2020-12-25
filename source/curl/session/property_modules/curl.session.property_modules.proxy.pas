@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.session.property_modules.proxy;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -144,8 +146,10 @@ end;
 
 procedure TModuleProxy.SetType (AType : TProxyType);
 var
-  proxy_type : Longint = 0;
+  proxy_type : Longint;
 begin
+  proxy_type := 0;
+
   case AType of
     PROXY_TYPE_HTTP     : begin proxy_type := Longint(CURLPROXY_HTTP);     end;
     PROXY_TYPE_HTTPS    : begin proxy_type := Longint(CURLPROXY_HTTPS);    end;

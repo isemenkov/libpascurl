@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.session.property_modules.tls_auth;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -69,8 +71,10 @@ implementation
 
 procedure TModuleTLSAuth.SetAuthMethod (AMethod : TTLSAuthMethod);
 var
-  method : String = '';
+  method : String;
 begin
+  method := '';
+
   case AMethod of
     AUTH_SRP : begin method := 'SRP'; end;
   end;

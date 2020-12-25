@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.utils.cookies_list;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -40,7 +42,8 @@ type
   TCookiesList = class
   public
     type
-      TCookieKeyValue = specialize TPair<String, String>;
+      TCookieKeyValue = {$IFDEF FPC}type specialize{$ENDIF} TPair<String,
+        String>;
   public
     constructor Create;
     destructor Destroy; override;
@@ -64,7 +67,8 @@ type
     function FormatCookie : String;
   protected
     type
-      TCookies = specialize TArrayList<String, TCompareFunctorString>;
+      TCookies = {$IFDEF FPC}specialize{$ENDIF} TArrayList<String,
+        TCompareFunctorString>;
   protected
     function Search (ACookieKey : String) : String;
     function Parse (ACookie : String) : TCookieKeyValue; 

@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.session.property_modules.writer;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -41,8 +43,6 @@ type
   TModuleWriter = class(TPropertyModule)
   public
     type
-      PMemoryBuffer = ^TMemoryBuffer;
-
       { Set callback for writing received data. }
       TDownloadFunction = function (ABuffer : PChar; ASize : LongWord) : 
         LongWord  of object;

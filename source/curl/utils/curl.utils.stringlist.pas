@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.utils.stringlist;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -41,7 +43,7 @@ type
   TStringList = class
   public
     type
-      TOptionalString = specialize TOptional<String>;
+      TOptionalString = {$IFDEF FPC}type specialize{$ENDIF} TOptional<String>;
   private
     FList : pcurl_slist;
     FNext : pcurl_slist;

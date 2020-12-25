@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.utils.headers_list;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -40,7 +42,8 @@ type
   THeadersList = class
   public
     type
-      THeaderKeyValue = specialize TPair<String, String>;
+      THeaderKeyValue = {$IFDEF FPC}type specialize{$ENDIF} TPair<String, 
+        String>;
   public
     constructor Create;
     destructor Destroy; override;
@@ -58,7 +61,8 @@ type
     function Value (AHeaderKey : String) : String;
   protected
     type
-      THeaders = specialize TArrayList<String, TCompareFunctorString>;
+      THeaders = {$IFDEF FPC}type specialize{$ENDIF} TArrayList<String, 
+        TCompareFunctorString>;
   protected
     function Search (AHeaderKey : String) : String;
     function Parse (AHeader : String) : THeaderKeyValue; 

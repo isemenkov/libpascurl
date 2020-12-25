@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.response;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -34,13 +36,11 @@ unit curl.response;
 interface
 
 uses
-  libpascurl, curl.utils.errors_stack, container.memorybuffer;
+  libpascurl, curl.utils.errors_stack, curl.response.property_module,
+  container.memorybuffer;
 
 type
-  TResponse = class
-  public 
-    type
-      PMemoryBuffer = ^TMemoryBuffer;  
+  TResponse = class 
   protected
     { CURL library handle. }
     FCURL : libpascurl.CURL;

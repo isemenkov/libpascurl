@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.http.session.property_modules.auth;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -59,8 +61,10 @@ implementation
 
 procedure TModuleAuth.SetAuthMethods (AMethods : TAuthMethods);
 var
-  Bitmask : Longint = 0;
+  Bitmask : Cardinal;
 begin
+  Bitmask := 0;
+
   if AUTH_BASIC in AMethods then
     Bitmask := Bitmask or CURLAUTH_BASIC;
   if AUTH_DIGEST in AMethods then

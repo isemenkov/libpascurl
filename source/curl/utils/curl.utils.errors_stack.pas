@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2020                                       Ivan Semenkov     *)
@@ -26,7 +26,9 @@
 
 unit curl.utils.errors_stack;
 
-{$mode objfpc}{$H+}
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
 {$IFOPT D+}
   {$DEFINE DEBUG}
 {$ENDIF}
@@ -39,7 +41,7 @@ uses
 type
   { Collect CURL errors. }
   PErrorsStack = ^TErrorsStack;
-  TErrorsStack = class(specialize TListErrorsStack<String>)
+  TErrorsStack = class({$IFDEF FPC}specialize{$ENDIF} TListErrorsStack<String>)
   private
     FErrorBuffer : array [0 .. CURL_ERROR_SIZE] of char;
   
@@ -361,6 +363,9 @@ const
     { CURLE_QUIC_CONNECT_ERROR }
     'QUIC connection error. This error may be caused by an SSL library error. '+
     'QUIC is the protocol used for HTTP/3 transfers.',
+
+    { CURLE_PROXY }
+    'Proxy handshake error.',
 
     { CURL_LAST }
     ''

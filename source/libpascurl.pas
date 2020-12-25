@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                 libPasCURL                                 *)
-(*                 object pascal wrapper around cURL library                  *)
+(*            delphi and object pascal wrapper around cURL library            *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
 (* Copyright (c) 2019 - 2020                                Ivan Semenkov     *)
@@ -484,7 +484,7 @@ type
   ppcurl_slist = ^pcurl_slist;
   curl_slist = record
     data : PChar;
-    next : ^curl_slist;
+    next : pcurl_slist;
   end;
 
   pcurl_httppost = ^curl_httppost;
