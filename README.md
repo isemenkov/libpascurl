@@ -1,9 +1,7 @@
 libPasCURL
 ==========
-It is object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/). libcurl is the library is using for transferring data specified with URL syntax,
+It is delphi and object pascal bindings and wrapper around [cURL library](https://curl.haxx.se/). libcurl is the library is using for transferring data specified with URL syntax,
 supporting HTTP, HTTPS, FTP, FTPS, GOPHER, TFTP, SCP, SFTP, SMB, TELNET, DICT, LDAP, LDAPS, FILE, IMAP, SMTP, POP3, RTSP and RTMP.
-
-Documentation you can find at [wiki page](https://github.com/isemenkov/libpascurl/wiki).
 
 
 
@@ -12,7 +10,6 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
 * [Requierements](#requirements)
 * [Installation](#installation)
 * [Usage](#usage)
-* [Testing](#testing)
 * [Examples](#examples)
 * [Bindings](#bindings)
   * [Usage example](#usage-example)
@@ -30,16 +27,22 @@ Documentation you can find at [wiki page](https://github.com/isemenkov/libpascur
 
 ### Requirements
 
+* [Embarcadero (R) Rad Studio](https://www.embarcadero.com)
 * [Free Pascal Compiler](http://freepascal.org)
 * [Lazarus IDE](http://www.lazarus.freepascal.org/) (optional)
 
-Library is tested with latest stable FreePascal Compiler (currently 3.2.0) and Lazarus IDE (currently 2.0.10).
+
+
+Library is tested for 
+
+- Embarcadero (R) Delphi 10.3 on Windows 7 Service Pack 1 (Version 6.1, Build 7601, 64-bit Edition)
+- FreePascal Compiler (3.2.0) and Lazarus IDE (2.0.10) on Ubuntu Linux 5.8.0-33-generic x86_64
 
 
 
 ### Installation
 
-Get the sources and add the *source* directory to the *fpc.cfg* file.
+Get the sources and add the *source* directory to the project search path. For FPC add the *source* directory to the *fpc.cfg* file.
 
 
 
@@ -48,14 +51,6 @@ Get the sources and add the *source* directory to the *fpc.cfg* file.
 Clone the repository `git clone https://github.com/isemenkov/libpascurl`.
 
 Add the unit you want to use to the `uses` clause.
-
-
-
-### Testing
-
-A testing framework consists of the following ingredients:
-1. Test runner project located in `unit-tests` directory.
-2. Test cases (FPCUnit based) for additional helpers classes.  
 
 
 
