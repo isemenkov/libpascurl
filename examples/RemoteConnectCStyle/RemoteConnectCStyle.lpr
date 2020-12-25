@@ -3,7 +3,7 @@
 (*                 object pascal wrapper around cURL library                  *)
 (*                        https://github.com/curl/curl                        *)
 (*                                                                            *)
-(* Copyright (c) 2019                                       Ivan Semenkov     *)
+(* Copyright (c) 2019 - 2020                                Ivan Semenkov     *)
 (* https://github.com/isemenkov/libpascurl                  ivan@semenkov.pro *)
 (*                                                          Ukraine           *)
 (******************************************************************************)
@@ -35,10 +35,9 @@ program RemoteConnectCStyle;
 {$mode objfpc}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
-  cthreads,
-  {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, libpascurl, pascurl;
+  {$IFDEF UNIX}{$IFDEF UseCThreads}cthreads,{$ENDIF}{$ENDIF}
+  Classes, SysUtils, CustApp, libpascurl, curl.http.response.status_code,
+  curl.http.response.http_version;
 
 type
 
@@ -46,7 +45,7 @@ type
 
   TApplication = class(TCustomApplication)
   protected
-    FCURL : CURL;
+    FCURL : libpascurl.CURL;
     FBuffer : TMemoryStream;
 
     procedure DoRun; override;
@@ -198,11 +197,9 @@ begin
       curl_easy_getinfo(FCURL, CURLINFO_RESPONSE_CODE, @LongintParam);
 
       if (Scheme = 'http') or (Scheme = 'https') then
-        writeln('Response code: ':25,
-        TSession.THTTPProperty.THTTPStatusCode(LongintParam))
+        writeln('Response code: ':25, THTTPStatusCode(LongintParam))
       else if (Scheme = 'ftp') or (Scheme = 'ftps') then
-        writeln('Response code: ':25,
-        TSession.TFTPProperty.TFTPStatusCode(LongintParam));
+        writeln('Response code: ':25, LongintParam);
     end;
 
     if HasOption('a', 'all') or HasOption('http-version') then
@@ -210,8 +207,7 @@ begin
       curl_easy_getinfo(FCURL, CURLINFO_HTTP_VERSION, @LongintParam);
 
       if (Scheme = 'http') or (Scheme = 'https') then
-        writeln('HTTP version: ':25,
-        TSession.THTTPProperty.THTTPVersion(LongintParam));
+        writeln('HTTP version: ':25, THTTPVersion(LongintParam));
     end;
 
     if HasOption('a', 'all') or HasOption('download-speed') then

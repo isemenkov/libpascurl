@@ -33,19 +33,28 @@ unit libpascurl;
 interface
 
 uses
-  Classes, SysUtils, Types, Sockets{$IFDEF LINUX}, BaseUnix{$ENDIF}
-  {$IFDEF WINDOWS OR IFDEF MSWINDOWS OR defined(MSWINDOWS)}, WinSock{$ENDIF};
+  Classes, SysUtils, Types{$IFDEF LINUX}, Sockets, BaseUnix{$ELSE}, WinSock
+  {$ENDIF};
 
 {$IFDEF FPC}
   {$PACKRECORDS C}
 {$ENDIF}
 
 const
-  {$IFDEF WINDOWS OR IFDEF MSWINDOWS OR defined(MSWINDOWS)}
-    CurlLib = 'libcurl.dll';
-  {$ENDIF}
-  {$IFDEF LINUX}
-    CurlLib = 'libcurl.so';
+  {$IFDEF FPC}
+    {$IFDEF WINDOWS}
+      CurlLib = 'libcurl.dll';
+    {$ENDIF}
+    {$IFDEF LINUX}
+      CurlLib = 'libcurl.so';
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF MSWINDOWS OR defined(MSWINDOWS)}
+      CurlLib = 'libcurl.dll';
+    {$ENDIF}
+    {$IFDEF LINUX}
+      CurlLib = 'libcurl.so';
+    {$ENDIF}
   {$ENDIF}
 
   CURL_SOCKET_BAD                                                   = -1;
@@ -303,7 +312,7 @@ const
   CURL_REDIR_POST_ALL = CURL_REDIR_POST_301 or CURL_REDIR_POST_302 or
     CURL_REDIR_POST_303;
 
-  CURL_ZERO_TERMINATED                                              = QWord(-1);
+  CURL_ZERO_TERMINATED                                           = Cardinal(-1);
 
   CURLINFO_STRING                                                   = $100000;
   CURLINFO_LONG                                                     = $200000;
@@ -606,7 +615,8 @@ type
     addrlen : Cardinal;         { addrlen was a socklen_t type before 7.18.0 }
                                 { but it turned really ugly and painful on the }
                                 { systems that lack this type }
-    addr : sockaddr;
+    addr : {$IFDEF FPC}sockaddr
+      {$ELSE IFDEF DCC32 OR IFDEF DCC64}Pointer{$ENDIF};
   end;
 
   curl_opensocket_callback = function (clientp : Pointer;
@@ -636,13 +646,13 @@ type
     curl_global_init_mem() function to set user defined memory management
     callback routines. }
 
-  curl_malloc_callback = function (size : QWord) : Pointer of object;
+  curl_malloc_callback = function (size : Cardinal) : Pointer of object;
   curl_free_callback = procedure (ptr : Pointer) of object;
-  curl_realloc_callback = function (ptr : Pointer; size : QWord) : Pointer of
+  curl_realloc_callback = function (ptr : Pointer; size : Cardinal) : Pointer of
     object;
   curl_strdup_callback = function (const str : PChar) : PChar of object;
-  curl_calloc_callback = function (nmemb : QWord; size : QWord) : Pointer of
-    object;
+  curl_calloc_callback = function (nmemb : Cardinal; size : Cardinal) : Pointer
+    of object;
 
   { the kind of data that is passed to information_callback }
   curl_infotype = (
@@ -660,7 +670,7 @@ type
     handle : CURL;              { the handle/transfer this concerns }
     type_ : curl_infotype;      { what kind of data }
     data : PChar;               { points to the data }
-    size: QWord;                { size of the data pointed to }
+    size: Cardinal;             { size of the data pointed to }
     userptr : Pointer)          { whatever the user please }
   : Integer of object;
 
@@ -843,8 +853,8 @@ type
     CURLPX_LAST                 { never use }
   );
 
-  curl_conv_callback = function (buffer : PChar; length : QWord) : CURLcode of
-    object;
+  curl_conv_callback = function (buffer : PChar; length : Cardinal) : CURLcode
+    of object;
 
   curl_ssl_ctx_callback = function (curl : CURL; { easy handle }
     ssl_ctx : Pointer; { actually an OpenSSL SSL_CTX or an mbedTLS
@@ -879,7 +889,7 @@ type
     key : PChar;                { points to a zero-terminated string encoded }
                                 { with base64 if len is zero, otherwise to the }
                                 { "raw" data }
-    len : QWord;
+    len : Cardinal;
     keytype : curl_khtype;
   end;
 
@@ -2143,7 +2153,7 @@ type
     Should return the buffer length passed to it as the argument "len" on
     success. }
   curl_formget_callback = function (arg : Pointer; const buf : PChar;
-     len : QWord) : QWord of object;
+     len : Cardinal) : Cardinal of object;
 
   pcurl_ssl_backend = ^curl_ssl_backend;
   ppcurl_ssl_backend = ^pcurl_ssl_backend;
@@ -2511,8 +2521,8 @@ type
   pcurl_pushheaders = ^curl_pushheaders;
   curl_pushheaders = Pointer;
 
-  curl_push_callback = function (parent : CURL; easy : CURL; num_header : QWord;
-    headers : pcurl_pushheaders; userp : Pointer) : Integer of object;
+  curl_push_callback = function (parent : CURL; easy : CURL; num_header :
+    Cardinal; headers : pcurl_pushheaders; userp : Pointer) : Integer of object;
 
   { the error codes for the URL API }
   CURLUcode = (
@@ -2596,7 +2606,7 @@ const
     release }
   function curl_strequal (const s1 : PChar; const s2 : PChar) : Integer; cdecl;
     external CurlLib;
-  function curl_strnequal (const s1 : PChar; const s2 : PChar; n : QWord) :
+  function curl_strnequal (const s1 : PChar; const s2 : PChar; n : Cardinal) :
     Integer; cdecl; external CurlLib;
 
   { NAME curl_mime_init()
@@ -2653,7 +2663,7 @@ const
     DESCRIPTION
     Set mime part data source from memory data, }
   function curl_mime_data (part : pcurl_mimepart; const data : PChar;
-    datasize : QWord) : CURLcode; cdecl; external CurlLib;
+    datasize : Cardinal) : CURLcode; cdecl; external CurlLib;
 
   { NAME curl_mime_filedata()
 
@@ -2927,8 +2937,8 @@ const
     DESCRIPTION
     Receives data from the connected socket. Use after successful
     curl_easy_perform() with CURLOPT_CONNECT_ONLY option. }
-  function curl_easy_recv (handle : CURL; buffer : Pointer; buflen : QWord;
-    n : PQWord) : CURLcode; cdecl; external CurlLib;
+  function curl_easy_recv (handle : CURL; buffer : Pointer; buflen : Cardinal;
+    n : PCardinal) : CURLcode; cdecl; external CurlLib;
 
   { NAME curl_easy_send()
 
@@ -2936,7 +2946,7 @@ const
     Sends data over the connected socket. Use after successful
     curl_easy_perform() with CURLOPT_CONNECT_ONLY option. }
   function curl_easy_send (handle : CURL; const buffer : Pointer;
-    buflen : QWord; n : PQWord) : CURLcode; cdecl; external CurlLib;
+    buflen : Cardinal; n : PCardinal) : CURLcode; cdecl; external CurlLib;
 
   { NAME curl_easy_upkeep()
 
@@ -3122,8 +3132,8 @@ const
           server. It approves or denies the new stream.
 
     Returns: CURL_PUSH_OK or CURL_PUSH_DENY. }
-  function curl_pushheader_bynum (h : pcurl_pushheaders; num : QWord) : PChar;
-    cdecl; external CurlLib;
+  function curl_pushheader_bynum (h : pcurl_pushheaders; num : Cardinal) :
+    PChar; cdecl; external CurlLib;
 
   function curl_pushheader_byname (h : pcurl_pushheaders; const name : PChar) :
     PChar; cdecl; external CurlLib;
