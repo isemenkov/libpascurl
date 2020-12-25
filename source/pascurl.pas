@@ -3576,13 +3576,6 @@ type
         ALTSVC_DISABLE                 = 0,
 
         (**
-         * If an Alt-Svc: header is received, this instructs libcurl to switch
-         * to one of those alternatives asap rather than to save it and use for
-         * the next request. (Not currently supported).
-         *)
-        ALTSVC_IMMEDIATELY             = Longint(CURLALTSVC_IMMEDIATELY),
-
-        (**
          * Do not write the alt-svc cache back to the file specified with
          * TSession.HTTP.AltSvcCacheFile even if it gets updated. By default a
          * file specified with that option will be read and written to as deemed
@@ -8392,10 +8385,6 @@ begin
     FErrorStack.Push(curl_easy_setopt(FHandle, CURLOPT_ALTSVC_CTRL, 0));
   end else
   begin
-    if ALTSVC_IMMEDIATELY in AAltSvc then
-    begin
-      bitmask := bitmask or CURLALTSVC_IMMEDIATELY;
-    end;
     if ALTSVC_READONLYFILE in AAltSvc then
     begin
       bitmask := bitmask or CURLALTSVC_READONLYFILE;
