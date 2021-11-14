@@ -33,8 +33,8 @@ unit libpascurl;
 interface
 
 uses
-  Classes, SysUtils, Types{$IFDEF LINUX}, Sockets, BaseUnix{$ELSE}, WinSock
-  {$ENDIF};
+  Classes, SysUtils, Types{$IF DEFINED(LINUX) OR DEFINED(DARWIN)}, Sockets, BaseUnix{$ELSE}, WinSock
+  {$IFEND};
 
 {$IFDEF FPC}
   {$PACKRECORDS C}
@@ -48,12 +48,19 @@ const
     {$IFDEF LINUX}
       CurlLib = 'libcurl.so';
     {$ENDIF}
+    {$IFDEF DARWIN}
+      CurlLib = 'libcurl.dylib';
+      {$LINKLIB libcurl}
+    {$ENDIF}
   {$ELSE}
     {$IFDEF MSWINDOWS OR defined(MSWINDOWS)}
       CurlLib = 'libcurl.dll';
     {$ENDIF}
     {$IFDEF LINUX}
       CurlLib = 'libcurl.so';
+    {$ENDIF}
+    {$IFDEF DARWIN}
+      CurlLib = 'libcurl.dylib';
     {$ENDIF}
   {$ENDIF}
 
