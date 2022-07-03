@@ -2426,6 +2426,7 @@ type
     CURLMSG_LAST               { last, not used }
   );
 
+  pCURLMsg_rec = ^CURLMsg_rec;
   CURLMsg_rec = record
     msg : CURLMSG;             { what this message means }
     easy_handle : CURL;        { the handle it concerns }
@@ -3075,7 +3076,7 @@ const
              queue (after this read) in the integer the second argument points
              to. }
   function curl_multi_info_read (multi_handle : CURLM;
-    mdgs_in_queue : PInteger) : CURLMsg_rec; cdecl; external CurlLib;
+    mdgs_in_queue : PInteger) : pCURLMsg_rec; cdecl; external CurlLib;
 
 
   { Name:    curl_multi_strerror()
